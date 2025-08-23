@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { useDropzone } from "react-dropzone";
 
 interface Facility {
 	id: string;
@@ -68,6 +69,12 @@ const CourtsFieldsPage: React.FC = () => {
 	function removeImageField(idx: number) {
 		setForm((p) => ({ ...p, images: (p.images ?? []).filter((_, i) => i !== idx) }));
 	}
+
+	const onDrop = useCallback((acceptedFiles: File[]) => {
+		const urls = acceptedFiles.map((f) => URL.createObjectURL(f));
+		setForm((p) => ({ ...p, images: [ ...(p.images ?? []).filter(Boolean), ...urls ] }));
+	}, []);
+	const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { "image/*": [] } });
 
 	return (
 		<div className="space-y-4">
@@ -163,6 +170,10 @@ const CourtsFieldsPage: React.FC = () => {
 								<Button type="button" size="sm" variant="outline" onClick={addImageField}>Add Image</Button>
 							</div>
 							<div className="space-y-2">
+								<div {...getRootProps()} className={`rounded-md border border-dashed p-4 text-center text-sm ${isDragActive ? 'bg-muted/50' : 'bg-transparent'}`}>
+									<input {...getInputProps()} />
+									<p>Drag & drop images here, or click to select</p>
+								</div>
 								{(form.images ?? []).map((src, idx) => (
 									<div key={idx} className="flex items-center gap-2">
 										<Input className="flex-1" placeholder="https://..." value={src} onChange={(e) => updateImage(idx, e.target.value)} />
