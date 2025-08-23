@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
 
 interface BookingEvent {
 	id: string;
@@ -15,15 +16,16 @@ interface BookingEvent {
 	available: number;
 	start: Date;
 	end: Date;
+	players?: PlayerItem[];
 }
 
 const locales = {} as any;
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }), getDay, locales });
 
 const initial: BookingEvent[] = [
-	{ id: "b1", title: "Open Play", description: "Casual badminton", type: "Open Play", location: "Court 1", available: 8, start: new Date(), end: new Date(new Date().getTime() + 60*60*1000) },
-	{ id: "b2", title: "Tennis One-time", description: "Evening session", type: "One-time", location: "Court 2", available: 4, start: new Date(), end: new Date(new Date().getTime() + 90*60*1000) },
-	{ id: "b3", title: "Basketball Tournament", description: "3v3", type: "Tournament", location: "Court A", available: 12, start: new Date(), end: new Date(new Date().getTime() + 2*60*60*1000) },
+	{ id: "b1", title: "Open Play", description: "Casual badminton", type: "Open Play", location: "Court 1", available: 8, start: new Date(), end: new Date(new Date().getTime() + 60*60*1000), players: [ { id: "u1", name: "Alice", status: "In-Game" }, { id: "u2", name: "Bob", status: "Resting" } ] },
+	{ id: "b2", title: "Tennis One-time", description: "Evening session", type: "One-time", location: "Court 2", available: 4, start: new Date(), end: new Date(new Date().getTime() + 90*60*1000), players: [ { id: "u3", name: "Chris", status: "In-Game" } ] },
+	{ id: "b3", title: "Basketball Tournament", description: "3v3", type: "Tournament", location: "Court A", available: 12, start: new Date(), end: new Date(new Date().getTime() + 2*60*60*1000), players: [] },
 ];
 
 const colorForType: Record<BookingEvent["type"], string> = {
@@ -34,12 +36,14 @@ const colorForType: Record<BookingEvent["type"], string> = {
 };
 
 const BookingsCalendarPage: React.FC = () => {
-	const [events] = useState<BookingEvent[]>(initial);
+	const [events, setEvents] = useState<BookingEvent[]>(initial);
 	const [query, setQuery] = useState("");
 	const [type, setType] = useState<"All" | BookingEvent["type"]>("All");
 	const [selected, setSelected] = useState<BookingEvent | null>(null);
 	const [open, setOpen] = useState(false);
 	const [form, setForm] = useState({ name: "", email: "", players: 1 });
+	const [openPlayers, setOpenPlayers] = useState(false);
+	const [notice, setNotice] = useState<string>("");
 
 	const filtered = useMemo(() => {
 		return events.filter((e) => {
@@ -65,6 +69,20 @@ const BookingsCalendarPage: React.FC = () => {
 		if (!form.name.trim() || !form.email.trim() || form.players <= 0) return alert("Fill all required fields");
 		alert(`Booked ${selected?.title} for ${form.name}`);
 		setOpen(false);
+	}
+
+	function openPlayersPanel(ev: BookingEvent) {
+		setSelected(ev);
+		setOpenPlayers(true);
+	}
+
+	function requestChange(playerId: string, to: PlayerItem["status"]) {
+		if (!selected) return;
+		setEvents((prev) => prev.map((ev) => {
+			if (ev.id !== selected.id) return ev;
+			return { ...ev, players: (ev.players ?? []).map((p) => p.id === playerId ? { ...p, status: to } : p) };
+		}));
+		setNotice(`Request sent: set to ${to}`);
 	}
 
 	return (
@@ -108,7 +126,12 @@ const BookingsCalendarPage: React.FC = () => {
 								<Badge variant="muted">{e.available} spots</Badge>
 							</div>
 							<p className="text-xs text-muted-foreground">{format(e.start, "PP p")} • {e.location} • {e.type}</p>
-							<Button size="sm" onClick={() => openBooking(e)}>Book</Button>
+							<div className="flex items-center gap-2">
+								<Button size="sm" onClick={() => openBooking(e)}>Book</Button>
+								{(e.type === "One-time" || e.type === "Open Play") && (
+									<Button size="sm" variant="outline" onClick={() => openPlayersPanel(e)}>Players</Button>
+								)}
+							</div>
 						</div>
 					))}
 				</div>
@@ -148,6 +171,15 @@ const BookingsCalendarPage: React.FC = () => {
 					</form>
 				</SheetContent>
 			</Sheet>
+
+			<PlayerStatusPanel
+				open={openPlayers}
+				onOpenChange={setOpenPlayers}
+				title={`Players${selected ? ` • ${selected.title}` : ""}`}
+				players={selected?.players ?? []}
+				notice={notice}
+				onRequestChange={(pid, to) => requestChange(pid, to)}
+			/>
 		</div>
 	);
 };
