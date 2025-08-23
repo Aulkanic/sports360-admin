@@ -12,12 +12,16 @@ interface Facility {
 	location: string;
 	status: "Available" | "Maintenance" | "Booked";
 	images?: string[];
+	capacity?: number;
+	openingHours?: string;
+	reservations?: number;
+	amenities?: string[];
 }
 
 const initialFacilities: Facility[] = [
-	{ id: "f1", name: "Court A", type: "Court", location: "Building 1", status: "Available", images: ["/bglogin.webp"] },
-	{ id: "f2", name: "Field 1", type: "Field", location: "North Wing", status: "Booked", images: ["/bglogin.webp"] },
-	{ id: "f3", name: "Court 2", type: "Court", location: "Building 2", status: "Maintenance", images: [] },
+	{ id: "f1", name: "Court A", type: "Court", location: "Building 1", status: "Available", images: ["/bglogin.webp"], capacity: 10, openingHours: "08:00 - 22:00", reservations: 2, amenities: ["Lighting", "Benches"] },
+	{ id: "f2", name: "Field 1", type: "Field", location: "North Wing", status: "Booked", images: ["/bglogin.webp"], capacity: 22, openingHours: "06:00 - 21:00", reservations: 1, amenities: ["Locker Rooms", "Shower"] },
+	{ id: "f3", name: "Court 2", type: "Court", location: "Building 2", status: "Maintenance", images: [], capacity: 8, openingHours: "09:00 - 18:00", reservations: 0, amenities: ["Water Station"] },
 ];
 
 const CourtsFieldsPage: React.FC = () => {
@@ -25,7 +29,7 @@ const CourtsFieldsPage: React.FC = () => {
 	const [query, setQuery] = useState("");
 	const [type, setType] = useState<"All" | Facility["type"]>("All");
 	const [open, setOpen] = useState(false);
-	const [form, setForm] = useState<Omit<Facility, "id">>({ name: "", type: "Court", location: "", status: "Available", images: [""] });
+	const [form, setForm] = useState<Omit<Facility, "id">>({ name: "", type: "Court", location: "", status: "Available", images: [""], capacity: 0, openingHours: "", reservations: 0, amenities: [""] });
 	const [editing, setEditing] = useState<Facility | null>(null);
 	const [confirmId, setConfirmId] = useState<string | null>(null);
 
@@ -41,18 +45,19 @@ const CourtsFieldsPage: React.FC = () => {
 
 	function openCreate() {
 		setEditing(null);
-		setForm({ name: "", type: "Court", location: "", status: "Available", images: [""] });
+		setForm({ name: "", type: "Court", location: "", status: "Available", images: [""], capacity: 0, openingHours: "", reservations: 0, amenities: [""] });
 		setOpen(true);
 	}
 	function openEdit(it: Facility) {
 		setEditing(it);
-		setForm({ name: it.name, type: it.type, location: it.location, status: it.status, images: it.images && it.images.length ? it.images : [""] });
+		setForm({ name: it.name, type: it.type, location: it.location, status: it.status, images: it.images && it.images.length ? it.images : [""], capacity: it.capacity ?? 0, openingHours: it.openingHours ?? "", reservations: it.reservations ?? 0, amenities: (it.amenities && it.amenities.length ? it.amenities : [""]) });
 		setOpen(true);
 	}
 	function save(e: React.FormEvent) {
 		e.preventDefault();
 		const images = (form.images ?? []).map((s) => s.trim()).filter(Boolean);
-		const payload = { ...form, images };
+		const amenities = (form.amenities ?? []).map((s) => s.trim()).filter(Boolean);
+		const payload = { ...form, images, amenities };
 		if (editing) setItems((prev) => prev.map((i) => (i.id === editing.id ? { ...editing, ...payload } : i)));
 		else setItems((prev) => [{ id: `f${Date.now()}`, ...payload }, ...prev]);
 		setOpen(false);
@@ -68,6 +73,16 @@ const CourtsFieldsPage: React.FC = () => {
 	}
 	function removeImageField(idx: number) {
 		setForm((p) => ({ ...p, images: (p.images ?? []).filter((_, i) => i !== idx) }));
+	}
+
+	function updateAmenity(idx: number, value: string) {
+		setForm((p) => ({ ...p, amenities: (p.amenities ?? []).map((s, i) => (i === idx ? value : s)) }));
+	}
+	function addAmenityField() {
+		setForm((p) => ({ ...p, amenities: [...(p.amenities ?? []), ""] }));
+	}
+	function removeAmenityField(idx: number) {
+		setForm((p) => ({ ...p, amenities: (p.amenities ?? []).filter((_, i) => i !== idx) }));
 	}
 
 	const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -113,8 +128,20 @@ const CourtsFieldsPage: React.FC = () => {
 								<div>
 									<h3 className="text-base font-semibold">{f.name}</h3>
 									<p className="text-sm text-muted-foreground">{f.location}</p>
+									<div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+										{typeof f.capacity === "number" && <span>Capacity: {f.capacity}</span>}
+										{f.openingHours && <span>• Hours: {f.openingHours}</span>}
+										{typeof f.reservations === "number" && <span>• Reservations: {f.reservations}</span>}
+									</div>
 								</div>
 							</div>
+							{(f.amenities && f.amenities.length > 0) && (
+								<div className="flex items-center gap-2 flex-wrap">
+									{f.amenities.map((a, idx) => (
+										<Badge key={idx} variant="ghost" className="border px-2 py-0.5">{a}</Badge>
+									))}
+								</div>
+							)}
 							{(f.images && f.images.length > 1) && (
 								<div className="flex items-center gap-2 overflow-x-auto">
 									{f.images.slice(1).map((src, idx) => (
@@ -162,6 +189,18 @@ const CourtsFieldsPage: React.FC = () => {
 									<option value="Booked">Booked</option>
 								</select>
 							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Capacity</span>
+								<Input type="number" min={0} value={form.capacity ?? 0} onChange={(e) => setForm((p) => ({ ...p, capacity: Number(e.target.value) }))} />
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Opening Hours</span>
+								<Input placeholder="e.g., 08:00 - 22:00" value={form.openingHours ?? ""} onChange={(e) => setForm((p) => ({ ...p, openingHours: e.target.value }))} />
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Reservations</span>
+								<Input type="number" min={0} value={form.reservations ?? 0} onChange={(e) => setForm((p) => ({ ...p, reservations: Number(e.target.value) }))} />
+							</label>
 						</div>
 
 						<div className="space-y-2">
@@ -178,6 +217,21 @@ const CourtsFieldsPage: React.FC = () => {
 									<div key={idx} className="flex items-center gap-2">
 										<Input className="flex-1" placeholder="https://..." value={src} onChange={(e) => updateImage(idx, e.target.value)} />
 										<Button type="button" variant="outline" size="sm" onClick={() => removeImageField(idx)}>Remove</Button>
+									</div>
+								))}
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<span className="text-sm font-medium">Amenities</span>
+								<Button type="button" size="sm" variant="outline" onClick={addAmenityField}>Add Amenity</Button>
+							</div>
+							<div className="space-y-2">
+								{(form.amenities ?? []).map((val, idx) => (
+									<div key={idx} className="flex items-center gap-2">
+										<Input className="flex-1" placeholder="e.g., Lighting" value={val} onChange={(e) => updateAmenity(idx, e.target.value)} />
+										<Button type="button" variant="outline" size="sm" onClick={() => removeAmenityField(idx)}>Remove</Button>
 									</div>
 								))}
 							</div>
