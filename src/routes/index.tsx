@@ -1,11 +1,12 @@
 import { PrivateLayout, PublicLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage } from "@/pages";
 
 export const urls = {
 	login: "/",
 	superadmindashboard: '/super-admin/dashboard',
 	members: '/super-admin/members',
 	plans: '/super-admin/membership-plans',
+	sports: '/super-admin/sports',
 };
 
 export const routeList = {
@@ -19,6 +20,7 @@ export const routeList = {
 			{ path: urls.superadmindashboard, element: <SuperAdminDashboardPage /> },
 			{ path: urls.members, element: <MembersPage /> },
 			{ path: urls.plans, element: <MembershipPlansPage /> },
+			{ path: urls.sports, element: <SportsPage /> },
 		]
 	}
 };

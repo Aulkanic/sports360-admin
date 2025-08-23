@@ -48,11 +48,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Dashboard",
         url: urls.superadmindashboard,
         icon: <FaTachometerAlt className="w-5 h-5" />,
+        badge: "3",
+      },
+      {
+        title: "Sports",
+        url: urls.sports,
+        icon: <FaFutbol className="w-5 h-5" />,
       },
       {
         title: "Members",
         url: urls.members,
         icon: <FaUsers className="w-5 h-5" />,
+        badge: "124",
       },
       {
         title: "Membership Plans",
