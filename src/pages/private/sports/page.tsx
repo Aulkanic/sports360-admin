@@ -9,6 +9,9 @@ interface SportItem {
 	name: string;
 	description: string;
 	type: "Team" | "Individual";
+	category: "Indoor" | "Outdoor" | "Racquet" | "Ball" | "Fitness" | "Other";
+	level: "Beginner" | "Intermediate" | "Advanced";
+	coaching: "Available" | "Unavailable";
 	numPlayers: number;
 	facility: string;
 	equipment: string[];
@@ -18,9 +21,9 @@ interface SportItem {
 }
 
 const initialSports: SportItem[] = [
-	{ id: "s1", name: "Basketball", description: "Team-based indoor sport.", type: "Team", numPlayers: 10, facility: "Court A", equipment: ["Basketballs", "Hoop"], positions: ["Guard", "Forward", "Center"], status: "Active", participants: 58 },
-	{ id: "s2", name: "Tennis", description: "Individual or doubles court sport.", type: "Individual", numPlayers: 2, facility: "Court 2", equipment: ["Rackets", "Balls", "Net"], positions: ["Player"], status: "Active", participants: 32 },
-	{ id: "s3", name: "Soccer", description: "Outdoor team sport.", type: "Team", numPlayers: 22, facility: "Field 1", equipment: ["Soccer Balls", "Nets"], positions: ["Goalkeeper", "Defender", "Midfielder", "Forward"], status: "Inactive", participants: 76 },
+	{ id: "s1", name: "Basketball", description: "Team-based indoor sport.", type: "Team", category: "Indoor", level: "Intermediate", coaching: "Available", numPlayers: 10, facility: "Court A", equipment: ["Basketballs", "Hoop"], positions: ["Guard", "Forward", "Center"], status: "Active", participants: 58 },
+	{ id: "s2", name: "Tennis", description: "Individual or doubles court sport.", type: "Individual", category: "Racquet", level: "Beginner", coaching: "Available", numPlayers: 2, facility: "Court 2", equipment: ["Rackets", "Balls", "Net"], positions: ["Player"], status: "Active", participants: 32 },
+	{ id: "s3", name: "Soccer", description: "Outdoor team sport.", type: "Team", category: "Outdoor", level: "Advanced", coaching: "Unavailable", numPlayers: 22, facility: "Field 1", equipment: ["Soccer Balls", "Nets"], positions: ["Goalkeeper", "Defender", "Midfielder", "Forward"], status: "Inactive", participants: 76 },
 ];
 
 const facilities = ["Court A", "Court B", "Court 1", "Court 2", "Field 1", "Field 2"];
@@ -36,6 +39,9 @@ const SportsPage: React.FC = () => {
 		name: "",
 		description: "",
 		type: "Team",
+		category: "Indoor",
+		level: "Beginner",
+		coaching: "Available",
 		numPlayers: 0,
 		facility: facilities[0],
 		equipment: [],
@@ -52,7 +58,7 @@ const SportsPage: React.FC = () => {
 		if (typeFilter !== "All") list = list.filter((s) => s.type === typeFilter);
 		if (query.trim()) {
 			const q = query.toLowerCase();
-			list = list.filter((s) => [s.name, s.type, s.facility, s.status].some((v) => v.toLowerCase().includes(q)));
+			list = list.filter((s) => [s.name, s.type, s.facility, s.status, s.category, s.level, s.coaching].some((v) => v.toLowerCase().includes(q)));
 		}
 		return list;
 	}, [sports, typeFilter, query]);
@@ -68,13 +74,13 @@ const SportsPage: React.FC = () => {
 
 	function openCreate() {
 		setEditing(null);
-		setForm({ name: "", description: "", type: "Team", numPlayers: 0, facility: facilities[0], equipment: [], positions: [], status: "Active", participants: 0 });
+		setForm({ name: "", description: "", type: "Team", category: "Indoor", level: "Beginner", coaching: "Available", numPlayers: 0, facility: facilities[0], equipment: [], positions: [], status: "Active", participants: 0 });
 		setOpenEdit(true);
 	}
 
 	function openEditSheet(item: SportItem) {
 		setEditing(item);
-		setForm({ name: item.name, description: item.description, type: item.type, numPlayers: item.numPlayers, facility: item.facility, equipment: item.equipment, positions: item.positions, status: item.status, participants: item.participants ?? 0 });
+		setForm({ name: item.name, description: item.description, type: item.type, category: item.category, level: item.level, coaching: item.coaching, numPlayers: item.numPlayers, facility: item.facility, equipment: item.equipment, positions: item.positions, status: item.status, participants: item.participants ?? 0 });
 		setOpenEdit(true);
 	}
 
@@ -119,7 +125,7 @@ const SportsPage: React.FC = () => {
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
 				<h1 className="text-xl font-semibold">Sports</h1>
 				<div className="flex flex-1 items-center gap-2">
-					<Input className="w-full md:w-80" placeholder="Search by name, type, facility" value={query} onChange={(e) => setQuery(e.target.value)} />
+					<Input className="w-full md:w-80" placeholder="Search name, type, category, level" value={query} onChange={(e) => setQuery(e.target.value)} />
 					<select
 						className="h-9 rounded-md border bg-background px-3 text-sm"
 						value={typeFilter}
@@ -141,6 +147,7 @@ const SportsPage: React.FC = () => {
 								<h3 className="text-base font-semibold">{s.name}</h3>
 								<p className="text-sm text-muted-foreground line-clamp-2">{s.description}</p>
 								<p className="text-xs text-muted-foreground mt-1">Facility: {s.facility}</p>
+								<p className="text-xs text-muted-foreground mt-1">Category: {s.category} • Level: {s.level} • Coaching: {s.coaching}</p>
 							</div>
 							<Badge variant={s.status === "Active" ? "success" : "muted"}>{s.status}</Badge>
 						</div>
@@ -206,6 +213,44 @@ const SportsPage: React.FC = () => {
 								>
 									<option value="Team">Team</option>
 									<option value="Individual">Individual</option>
+								</select>
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Category</span>
+								<select
+									className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+									value={form.category}
+									onChange={(e) => setForm((p) => ({ ...p, category: e.target.value as SportItem["category"] }))}
+								>
+									<option value="Indoor">Indoor</option>
+									<option value="Outdoor">Outdoor</option>
+									<option value="Racquet">Racquet</option>
+									<option value="Ball">Ball</option>
+									<option value="Fitness">Fitness</option>
+									<option value="Other">Other</option>
+								</select>
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Level / Skill</span>
+								<select
+									className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+									value={form.level}
+									onChange={(e) => setForm((p) => ({ ...p, level: e.target.value as SportItem["level"] }))}
+								>
+									<option value="Beginner">Beginner</option>
+									<option value="Intermediate">Intermediate</option>
+									<option value="Advanced">Advanced</option>
+								</select>
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Coaching Availability</span>
+								<select
+									className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+									value={form.coaching}
+									onChange={(e) => setForm((p) => ({ ...p, coaching: e.target.value as SportItem["coaching"] }))}
+								>
+									<option value="Available">Available</option>
+									<option value="Unavailable">Unavailable</option>
 								</select>
 							</label>
 							<label className="space-y-1">
@@ -285,6 +330,7 @@ const SportsPage: React.FC = () => {
 								<div>
 									<h3 className="text-lg font-semibold">{detailItem.name} <Badge variant={detailItem.status === "Active" ? "success" : "muted"}>{detailItem.status}</Badge></h3>
 									<p className="text-sm text-muted-foreground mt-1">{detailItem.description}</p>
+									<p className="text-xs text-muted-foreground mt-1">Category: {detailItem.category} • Level: {detailItem.level} • Coaching: {detailItem.coaching}</p>
 								</div>
 								<div className="grid grid-cols-2 gap-4 text-sm">
 									<div>

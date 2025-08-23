@@ -3,6 +3,7 @@ import LoginPage from "./public/login/page";
 import MembersPage from "./private/members/page";
 import MembershipPlansPage from "./private/membership-plans/page";
 import SportsPage from "./private/sports/page";
+import CourtsFieldsPage from "./private/sports/courts-fields";
 
 export {
 	LoginPage,
@@ -10,4 +11,5 @@ export {
 	MembersPage,
 	MembershipPlansPage,
 	SportsPage,
+	CourtsFieldsPage,
 }

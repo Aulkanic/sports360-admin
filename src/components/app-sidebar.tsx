@@ -52,8 +52,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         title: "Sports",
-        url: urls.sports,
         icon: <FaFutbol className="w-5 h-5" />,
+        submenu: [
+          { title: "List of Sports", url: urls.sports, icon: <FaList className="w-4 h-4" /> },
+          { title: "Courts/Fields", url: urls.courtsFields, icon: <FaRegCalendar className="w-4 h-4" /> },
+        ],
       },
       {
         title: "Members",

@@ -1,5 +1,5 @@
 import { PrivateLayout, PublicLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, CourtsFieldsPage } from "@/pages";
 
 export const urls = {
 	login: "/",
@@ -7,6 +7,7 @@ export const urls = {
 	members: '/super-admin/members',
 	plans: '/super-admin/membership-plans',
 	sports: '/super-admin/sports',
+	courtsFields: '/super-admin/sports/courts-fields',
 };
 
 export const routeList = {
@@ -21,6 +22,7 @@ export const routeList = {
 			{ path: urls.members, element: <MembersPage /> },
 			{ path: urls.plans, element: <MembershipPlansPage /> },
 			{ path: urls.sports, element: <SportsPage /> },
+			{ path: urls.courtsFields, element: <CourtsFieldsPage /> },
 		]
 	}
 };
