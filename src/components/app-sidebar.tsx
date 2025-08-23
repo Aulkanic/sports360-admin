@@ -72,23 +72,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {
         title: "Bookings",
         icon: <FaCalendarAlt className="w-5 h-5" />,
-
+        badge: "12",
         submenu: [
-          {
-            title: "Manage Reservations",
-            url: "#",
-            icon: <FaList className="w-4 h-4" />,
-          },
-          {
-            title: "Calendar View",
-            url: "#",
-            icon: <FaCalendarAlt className="w-4 h-4" />,
-          },
-          {
-            title: "Booking History",
-            url: "#",
-            icon: <FaChartLine className="w-4 h-4" />,
-          },
+          { title: "Calendar", url: urls.bookingsCalendar, icon: <FaCalendarAlt className="w-4 h-4" /> },
+          { title: "Manage", url: urls.bookingsAdmin, icon: <FaList className="w-4 h-4" /> },
         ],
       },
       {
