@@ -56,8 +56,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         title: "Membership Plans",
-        url: "#",
+        url: urls.plans,
         icon: <FaDollarSign className="w-5 h-5" />,
+        badge: "5",
       },
       {
         title: "Bookings",
