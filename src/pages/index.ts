@@ -7,6 +7,7 @@ import CourtsFieldsPage from "./private/sports/courts-fields";
 import EventsPage from "./private/events/page";
 import BookingsCalendarPage from "./private/bookings/calendar";
 import BookingsAdminPage from "./private/bookings/admin";
+import EquipmentPage from "./private/sports/equipment";
 
 export {
 	LoginPage,
@@ -18,4 +19,5 @@ export {
 	EventsPage,
 	BookingsCalendarPage,
 	BookingsAdminPage,
+	EquipmentPage,
 }
