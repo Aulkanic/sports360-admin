@@ -1,11 +1,10 @@
 import { PrivateLayout, PublicLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, AddMemberPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage } from "@/pages";
 
 export const urls = {
 	login: "/",
 	superadmindashboard: '/super-admin/dashboard',
 	members: '/super-admin/members',
-	addMember: '/super-admin/members/add',
 };
 
 export const routeList = {
@@ -18,7 +17,6 @@ export const routeList = {
 		routes : [
 			{ path: urls.superadmindashboard, element: <SuperAdminDashboardPage /> },
 			{ path: urls.members, element: <MembersPage /> },
-			{ path: urls.addMember, element: <AddMemberPage /> },
 		]
 	}
 };

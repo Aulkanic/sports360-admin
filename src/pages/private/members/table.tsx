@@ -1,7 +1,7 @@
 import React from "react";
 import CustomDataTable from "@/components/custom-data-table";
 import { memberColumnDefs } from "./columns-def";
-import type { GridOptions } from "ag-grid-community";
+import type { GridOptions, RowDoubleClickedEvent } from "ag-grid-community";
 
 export interface MemberRow {
 	id: string;
@@ -12,7 +12,7 @@ export interface MemberRow {
 	joinedAt: string;
 }
 
-const gridOptions: GridOptions = {
+const baseGridOptions: GridOptions = {
 	defaultColDef: {
 		sortable: true,
 		filter: true,
@@ -26,9 +26,15 @@ const gridOptions: GridOptions = {
 interface MembersTableProps {
 	rows: MemberRow[];
 	loading?: boolean;
+	onRowDoubleClicked?: (event: RowDoubleClickedEvent<MemberRow>) => void;
 }
 
-const MembersTable: React.FC<MembersTableProps> = ({ rows, loading }) => {
+const MembersTable: React.FC<MembersTableProps> = ({ rows, loading, onRowDoubleClicked }) => {
+	const gridOptions: GridOptions = {
+		...baseGridOptions,
+		onRowDoubleClicked,
+	};
+
 	return (
 		<CustomDataTable
 			columnDefs={memberColumnDefs}

@@ -52,12 +52,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			},
 			{
 				title: "Members",
+				url: urls.members,
 				icon: <FaUsers className="w-5 h-5" />,
 				badge: "124",
-				submenu: [
-					{ title: "View All Members", url: urls.members, icon: <FaList className="w-4 h-4" /> },
-					{ title: "Add New Member", url: urls.addMember, icon: <FaPlusCircle className="w-4 h-4" /> },
-				],
 			},
 			{
 				title: "Membership Plans",
@@ -154,57 +151,84 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								onOpenChange={() => item.submenu && handleSubmenuToggle(item.title)}
 							>
 								<SidebarMenuItem>
-									<CollapsibleTrigger asChild>
-										<SidebarMenuButton 
-											tooltip={item.title} 
+									{item.submenu ? (
+										<>
+											<CollapsibleTrigger asChild>
+												<SidebarMenuButton 
+													tooltip={item.title} 
+													className={`text-base h-12 px-4 rounded-xl transition-all duration-200 hover:bg-white/10 hover:shadow-md ${
+														activeItem === item.title ? 'bg-white/15 shadow-md border border-white/20' : ''
+													} ${openSubmenu === item.title ? 'bg-white/10' : ''}`}
+													onClick={() => handleSubmenuToggle(item.title)}
+												>
+													<div className="flex items-center gap-3 flex-1">
+														<span className="text-white/90 group-hover:text-white transition-colors">
+															{item.icon}
+														</span>
+														<span className="text-white font-medium">{item.title}</span>
+													</div>
+													<div className="flex items-center gap-2">
+														{item.badge && (
+															<span className={`px-2 py-1 text-xs font-bold rounded-full ${
+																item.badge === "New" 
+																	? "bg-green-500 text-white" 
+																	: "bg-white/20 text-white"
+															}`}> 
+															{item.badge}
+														</span>
+														)}
+														{item.submenu && (
+															<ChevronRight className={`ml-auto w-4 h-4 text-white/70 transition-transform duration-200 ${
+																openSubmenu === item.title ? 'rotate-90' : ''
+															}`} />
+														)}
+													</div>
+												</SidebarMenuButton>
+											</CollapsibleTrigger>
+											<CollapsibleContent>
+												{item.submenu && (
+													<SidebarMenuSub className="!border-0 mt-2 ml-4">
+														{item.submenu.map((subItem) => (
+															<SidebarMenuSubItem key={subItem.title}>
+																<SidebarMenuSubButton 
+																	asChild
+																	className="h-10 px-4 rounded-lg hover:bg-white/10 transition-all duration-200"
+																>
+																	<Link to={subItem.url} className="flex items-center gap-3">
+																		<span className="text-white/70">{subItem.icon}</span>
+																		<span className="text-white/90 text-sm">{subItem.title}</span>
+																	</Link>
+																</SidebarMenuSubButton>
+															</SidebarMenuSubItem>
+														))}
+													</SidebarMenuSub>
+												)}
+											</CollapsibleContent>
+										</>
+									) : (
+										<SidebarMenuButton
+											asChild
+											tooltip={item.title}
 											className={`text-base h-12 px-4 rounded-xl transition-all duration-200 hover:bg-white/10 hover:shadow-md ${
 												activeItem === item.title ? 'bg-white/15 shadow-md border border-white/20' : ''
-											} ${openSubmenu === item.title ? 'bg-white/10' : ''}`}
-											onClick={() => item.submenu ? handleSubmenuToggle(item.title) : setActiveItem(item.title)}
+											}`}
+											onClick={() => setActiveItem(item.title)}
 										>
-											<div className="flex items-center gap-3 flex-1">
+											<Link to={item.url || "#"} className="flex items-center gap-3 flex-1">
 												<span className="text-white/90 group-hover:text-white transition-colors">
 													{item.icon}
 												</span>
 												<span className="text-white font-medium">{item.title}</span>
-											</div>
-											<div className="flex items-center gap-2">
 												{item.badge && (
-													<span className={`px-2 py-1 text-xs font-bold rounded-full ${
+													<span className={`ml-auto px-2 py-1 text-xs font-bold rounded-full ${
 														item.badge === "New" 
 															? "bg-green-500 text-white" 
 															: "bg-white/20 text-white"
-													}`}> 
-														{item.badge}
-													</span>
+													}`}>{item.badge}</span>
 												)}
-												{item.submenu && (
-													<ChevronRight className={`ml-auto w-4 h-4 text-white/70 transition-transform duration-200 ${
-														openSubmenu === item.title ? 'rotate-90' : ''
-													}`} />
-												)}
-											</div>
+											</Link>
 										</SidebarMenuButton>
-									</CollapsibleTrigger>
-									<CollapsibleContent>
-										{item.submenu && (
-											<SidebarMenuSub className="!border-0 mt-2 ml-4">
-												{item.submenu.map((subItem) => (
-													<SidebarMenuSubItem key={subItem.title}>
-														<SidebarMenuSubButton 
-															asChild
-															className="h-10 px-4 rounded-lg hover:bg-white/10 transition-all duration-200"
-														>
-															<Link to={subItem.url} className="flex items-center gap-3">
-																<span className="text-white/70">{subItem.icon}</span>
-																<span className="text-white/90 text-sm">{subItem.title}</span>
-															</Link>
-														</SidebarMenuSubButton>
-													</SidebarMenuSubItem>
-												))}
-											</SidebarMenuSub>
-										)}
-									</CollapsibleContent>
+									)}
 								</SidebarMenuItem>
 							</Collapsible>
 						))}
