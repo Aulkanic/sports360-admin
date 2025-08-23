@@ -39,6 +39,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [activeItem, setActiveItem] = React.useState("Dashboard");
+  const [openSubmenu, setOpenSubmenu] = React.useState<string | null>(null);
 
   const data = {
     navMain: [
@@ -55,7 +56,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         submenu: [
           { title: "View All Members", url: "#", icon: <FaList className="w-4 h-4" /> },
           { title: "Add New Member", url: "#", icon: <FaPlusCircle className="w-4 h-4" /> },
-          { title: "Member Analytics", url: "#", icon: <FaChartLine className="w-4 h-4" /> },
         ],
       },
       {
@@ -81,7 +81,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         submenu: [
           { title: "View All Events", url: "#", icon: <FaList className="w-4 h-4" /> },
           { title: "Create Event", url: "#", icon: <FaPlusCircle className="w-4 h-4" /> },
-          { title: "Event Analytics", url: "#", icon: <FaChartLine className="w-4 h-4" /> },
         ],
       },
       {
@@ -117,6 +116,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
+  const handleSubmenuToggle = (itemTitle: string) => {
+    setOpenSubmenu(openSubmenu === itemTitle ? null : itemTitle);
+    setActiveItem(itemTitle);
+  };
   return (
     <Sidebar collapsible="icon" className="h-screen overflow-hidden" {...props}>
       <SidebarHeader className="border-b border-white/10">
@@ -143,15 +146,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
           <SidebarMenu className="gap-1 px-2">
             {data.navMain.map((item) => (
-              <Collapsible key={item.title} className="group/collapsible">
+              <Collapsible 
+                key={item.title} 
+                className="group/collapsible"
+                open={openSubmenu === item.title}
+                onOpenChange={() => item.submenu && handleSubmenuToggle(item.title)}
+              >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton 
                       tooltip={item.title} 
-                      className={`text-base h-12 px-4 rounded-xl transition-all duration-200 hover:bg-white/10 hover:shadow-md group-data-[state=open]/collapsible:bg-white/10 ${
+                      className={`text-base h-12 px-4 rounded-xl transition-all duration-200 hover:bg-white/10 hover:shadow-md ${
                         activeItem === item.title ? 'bg-white/15 shadow-md border border-white/20' : ''
-                      }`}
-                      onClick={() => setActiveItem(item.title)}
+                      } ${openSubmenu === item.title ? 'bg-white/10' : ''}`}
+                      onClick={() => item.submenu ? handleSubmenuToggle(item.title) : setActiveItem(item.title)}
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <span className="text-white/90 group-hover:text-white transition-colors">
@@ -170,7 +178,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           </span>
                         )}
                         {item.submenu && (
-                          <ChevronRight className="ml-auto w-4 h-4 text-white/70 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          <ChevronRight className={`ml-auto w-4 h-4 text-white/70 transition-transform duration-200 ${
+                            openSubmenu === item.title ? 'rotate-90' : ''
+                          }`} />
                         )}
                       </div>
                     </SidebarMenuButton>
