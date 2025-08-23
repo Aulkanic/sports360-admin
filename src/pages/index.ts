@@ -5,6 +5,8 @@ import MembershipPlansPage from "./private/membership-plans/page";
 import SportsPage from "./private/sports/page";
 import CourtsFieldsPage from "./private/sports/courts-fields";
 import EventsPage from "./private/events/page";
+import BookingsCalendarPage from "./private/bookings/calendar";
+import BookingsAdminPage from "./private/bookings/admin";
 
 export {
 	LoginPage,
@@ -14,4 +16,6 @@ export {
 	SportsPage,
 	CourtsFieldsPage,
 	EventsPage,
+	BookingsCalendarPage,
+	BookingsAdminPage,
 }
