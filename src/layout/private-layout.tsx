@@ -11,10 +11,10 @@ import { Outlet } from "react-router-dom";
 
 const PrivateLayout = () => {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-screen overflow-hidden">
       <AppSidebar className="!bg-white" />
       <SidebarInset>
-        <header className="flex bg-white sticky top-0 shadow-b-2 h-20 shrink-0 items-center gap-4 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)]">
+        <header className="flex bg-white sticky top-0 shadow-b-2 h-20 shrink-0 items-center gap-4 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] z-10">
           {/* Left section: Search Input */}
           <div className="flex-1 flex items-center space-x-4">
             <SidebarTrigger />
@@ -40,7 +40,7 @@ const PrivateLayout = () => {
             </Avatar>
           </div>
         </header>
-        <div className="p-4 bg-input min-h-screen">
+        <div className="flex-1 p-4 bg-input overflow-y-auto overflow-x-hidden h-[calc(100vh-5rem)]">
           <Outlet />
         </div>
       </SidebarInset>

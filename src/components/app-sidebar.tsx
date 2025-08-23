@@ -118,7 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   ];
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" className="h-screen overflow-hidden" {...props}>
       <SidebarHeader className="border-b border-white/10">
         <div className="flex h-16 text-white bg-gradient-to-r from-primary to-accent gap-3 items-center justify-start px-4 rounded-lg mx-2 mt-2 shadow-lg">
           <div className="flex aspect-square bg-white/95 size-12 items-center justify-center rounded-xl shadow-md">
@@ -134,7 +134,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="bg-primary pt-2">
+      <SidebarContent className="bg-primary pt-2 overflow-y-auto overflow-x-hidden flex-1">
         <SidebarGroup>
           <div className="px-3 py-2">
             <p className="text-xs font-semibold text-white/70 uppercase tracking-wider mb-3">
@@ -229,7 +229,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-white/10">
+      <SidebarFooter className="p-4 border-t border-white/10 shrink-0">
         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm">
           <Avatar className="w-10 h-10 border-2 border-white/20">
             <AvatarImage src="https://github.com/shadcn.png" />
