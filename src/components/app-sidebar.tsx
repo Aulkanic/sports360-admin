@@ -16,18 +16,17 @@ import {
 import { urls } from "@/routes";
 import { Separator } from "./ui/separator";
 import {
-  FaTachometerAlt,
-  FaUsers,
-  FaCalendarAlt,
-  FaRegCalendar,
-  FaDollarSign,
-  FaFutbol,
-  FaChartLine,
-  FaCog,
-  FaUserAlt,
-  FaPlusCircle,
-  FaList,
-  FaSignOutAlt,
+	FaTachometerAlt,
+	FaUsers,
+	FaCalendarAlt,
+	FaRegCalendar,
+	FaDollarSign,
+	FaFutbol,
+	FaChartLine,
+	FaCog,
+	FaUserAlt,
+	FaList,
+	FaSignOutAlt,
 } from "react-icons/fa";
 import {
   Collapsible,
@@ -94,20 +93,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
       {
         title: "Events",
+        url: urls.events,
         icon: <FaRegCalendar className="w-5 h-5" />,
-
-        submenu: [
-          {
-            title: "View All Events",
-            url: "#",
-            icon: <FaList className="w-4 h-4" />,
-          },
-          {
-            title: "Create Event",
-            url: "#",
-            icon: <FaPlusCircle className="w-4 h-4" />,
-          },
-        ],
+        badge: "8",
       },
       {
         title: "Payments",
