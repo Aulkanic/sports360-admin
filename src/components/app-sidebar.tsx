@@ -54,7 +54,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: <FaUsers className="w-5 h-5" />,
         badge: "124",
         submenu: [
-          { title: "View All Members", url: "#", icon: <FaList className="w-4 h-4" /> },
+          { title: "View All Members", url: urls.members, icon: <FaList className="w-4 h-4" /> },
           { title: "Add New Member", url: "#", icon: <FaPlusCircle className="w-4 h-4" /> },
         ],
       },
