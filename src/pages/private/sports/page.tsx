@@ -18,12 +18,14 @@ interface SportItem {
 	positions: string[];
 	status: "Active" | "Inactive";
 	participants?: number;
+	imageUrl?: string;
+	bannerUrl?: string;
 }
 
 const initialSports: SportItem[] = [
-	{ id: "s1", name: "Basketball", description: "Team-based indoor sport.", type: "Team", category: "Indoor", level: "Intermediate", coaching: "Available", numPlayers: 10, facility: "Court A", equipment: ["Basketballs", "Hoop"], positions: ["Guard", "Forward", "Center"], status: "Active", participants: 58 },
-	{ id: "s2", name: "Tennis", description: "Individual or doubles court sport.", type: "Individual", category: "Racquet", level: "Beginner", coaching: "Available", numPlayers: 2, facility: "Court 2", equipment: ["Rackets", "Balls", "Net"], positions: ["Player"], status: "Active", participants: 32 },
-	{ id: "s3", name: "Soccer", description: "Outdoor team sport.", type: "Team", category: "Outdoor", level: "Advanced", coaching: "Unavailable", numPlayers: 22, facility: "Field 1", equipment: ["Soccer Balls", "Nets"], positions: ["Goalkeeper", "Defender", "Midfielder", "Forward"], status: "Inactive", participants: 76 },
+	{ id: "s1", name: "Basketball", description: "Team-based indoor sport.", type: "Team", category: "Indoor", level: "Intermediate", coaching: "Available", numPlayers: 10, facility: "Court A", equipment: ["Basketballs", "Hoop"], positions: ["Guard", "Forward", "Center"], status: "Active", participants: 58, bannerUrl: "/bglogin.webp" },
+	{ id: "s2", name: "Tennis", description: "Individual or doubles court sport.", type: "Individual", category: "Racquet", level: "Beginner", coaching: "Available", numPlayers: 2, facility: "Court 2", equipment: ["Rackets", "Balls", "Net"], positions: ["Player"], status: "Active", participants: 32, bannerUrl: "/bglogin.webp" },
+	{ id: "s3", name: "Soccer", description: "Outdoor team sport.", type: "Team", category: "Outdoor", level: "Advanced", coaching: "Unavailable", numPlayers: 22, facility: "Field 1", equipment: ["Soccer Balls", "Nets"], positions: ["Goalkeeper", "Defender", "Midfielder", "Forward"], status: "Inactive", participants: 76, bannerUrl: "/bglogin.webp" },
 ];
 
 const facilities = ["Court A", "Court B", "Court 1", "Court 2", "Field 1", "Field 2"];
@@ -48,6 +50,8 @@ const SportsPage: React.FC = () => {
 		positions: [],
 		status: "Active",
 		participants: 0,
+		imageUrl: "",
+		bannerUrl: "",
 	});
 	const [openDetails, setOpenDetails] = useState(false);
 	const [detailItem, setDetailItem] = useState<SportItem | null>(null);
@@ -74,13 +78,13 @@ const SportsPage: React.FC = () => {
 
 	function openCreate() {
 		setEditing(null);
-		setForm({ name: "", description: "", type: "Team", category: "Indoor", level: "Beginner", coaching: "Available", numPlayers: 0, facility: facilities[0], equipment: [], positions: [], status: "Active", participants: 0 });
+		setForm({ name: "", description: "", type: "Team", category: "Indoor", level: "Beginner", coaching: "Available", numPlayers: 0, facility: facilities[0], equipment: [], positions: [], status: "Active", participants: 0, imageUrl: "", bannerUrl: "" });
 		setOpenEdit(true);
 	}
 
 	function openEditSheet(item: SportItem) {
 		setEditing(item);
-		setForm({ name: item.name, description: item.description, type: item.type, category: item.category, level: item.level, coaching: item.coaching, numPlayers: item.numPlayers, facility: item.facility, equipment: item.equipment, positions: item.positions, status: item.status, participants: item.participants ?? 0 });
+		setForm({ name: item.name, description: item.description, type: item.type, category: item.category, level: item.level, coaching: item.coaching, numPlayers: item.numPlayers, facility: item.facility, equipment: item.equipment, positions: item.positions, status: item.status, participants: item.participants ?? 0, imageUrl: item.imageUrl ?? "", bannerUrl: item.bannerUrl ?? "" });
 		setOpenEdit(true);
 	}
 
@@ -141,38 +145,46 @@ const SportsPage: React.FC = () => {
 
 			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 				{filtered.map((s) => (
-					<div key={s.id} className="rounded-xl border bg-card p-4 shadow-sm flex flex-col gap-3">
-						<div className="flex items-start justify-between gap-2">
-							<div>
-								<h3 className="text-base font-semibold">{s.name}</h3>
-								<p className="text-sm text-muted-foreground line-clamp-2">{s.description}</p>
-								<p className="text-xs text-muted-foreground mt-1">Facility: {s.facility}</p>
-								<p className="text-xs text-muted-foreground mt-1">Category: {s.category} • Level: {s.level} • Coaching: {s.coaching}</p>
+					<div key={s.id} className="rounded-xl border bg-card shadow-sm overflow-hidden">
+						<div className="relative h-28 bg-muted">
+							{s.bannerUrl ? (
+								<img src={s.bannerUrl} alt="banner" className="absolute inset-0 h-full w-full object-cover" />
+							) : (
+								<div className="h-full w-full bg-gradient-to-r from-primary/20 to-accent/20" />
+							)}
+							<div className="absolute top-2 right-2">
+								<Badge variant={s.status === "Active" ? "success" : "muted"}>{s.status}</Badge>
 							</div>
-							<Badge variant={s.status === "Active" ? "success" : "muted"}>{s.status}</Badge>
 						</div>
-						<div className="flex items-center justify-between text-sm">
+						<div className="p-4 flex flex-col gap-3">
+							<div className="flex items-start gap-3">
+								{(s.imageUrl || s.bannerUrl) ? (
+									<img src={s.imageUrl || s.bannerUrl} alt={s.name} className="h-12 w-12 rounded-md object-cover border" />
+								) : (
+									<div className="h-12 w-12 rounded-md border flex items-center justify-center text-xs text-muted-foreground">No Img</div>
+								)}
+								<div className="flex-1">
+									<h3 className="text-base font-semibold">{s.name}</h3>
+									<p className="text-sm text-muted-foreground line-clamp-2">{s.description}</p>
+									<p className="text-xs text-muted-foreground mt-1">Facility: {s.facility}</p>
+									<p className="text-xs text-muted-foreground mt-1">Category: {s.category} • Level: {s.level} • Coaching: {s.coaching}</p>
+								</div>
+							</div>
+							<div className="flex items-center justify-between text-sm">
+								<div className="flex items-center gap-2">
+									<span className="font-medium">{s.type}</span>
+									<span className="text-muted-foreground">•</span>
+									<span>{s.numPlayers} players</span>
+								</div>
+								{typeof s.participants === "number" && (
+									<span className="text-muted-foreground">{s.participants} participants</span>
+								)}
+							</div>
 							<div className="flex items-center gap-2">
-								<span className="font-medium">{s.type}</span>
-								<span className="text-muted-foreground">•</span>
-								<span>{s.numPlayers} players</span>
+								<Button size="sm" onClick={() => openDetailsSheet(s)}>View</Button>
+								<Button size="sm" variant="outline" onClick={() => openEditSheet(s)}>Edit</Button>
+								<Button size="sm" variant="destructive" onClick={() => remove(s.id)}>Delete</Button>
 							</div>
-							{typeof s.participants === "number" && (
-								<span className="text-muted-foreground">{s.participants} participants</span>
-							)}
-						</div>
-						<div className="flex items-center gap-2 flex-wrap">
-							{s.positions.slice(0, 4).map((p) => (
-								<Badge key={p} variant="ghost" className="border px-2 py-0.5">{p}</Badge>
-							))}
-							{s.positions.length > 4 && (
-								<span className="text-xs text-muted-foreground">+{s.positions.length - 4} more</span>
-							)}
-						</div>
-						<div className="flex items-center gap-2">
-							<Button size="sm" onClick={() => openDetailsSheet(s)}>View</Button>
-							<Button size="sm" variant="outline" onClick={() => openEditSheet(s)}>Edit</Button>
-							<Button size="sm" variant="destructive" onClick={() => remove(s.id)}>Delete</Button>
 						</div>
 					</div>
 				))}
@@ -307,6 +319,14 @@ const SportsPage: React.FC = () => {
 									<option value="Inactive">Inactive</option>
 								</select>
 							</label>
+							<label className="space-y-1 md:col-span-2">
+								<span className="text-sm">Image URL</span>
+								<Input placeholder="https://..." value={form.imageUrl ?? ""} onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))} />
+							</label>
+							<label className="space-y-1 md:col-span-2">
+								<span className="text-sm">Banner URL</span>
+								<Input placeholder="https://..." value={form.bannerUrl ?? ""} onChange={(e) => setForm((p) => ({ ...p, bannerUrl: e.target.value }))} />
+							</label>
 						</div>
 						<SheetFooter>
 							<div className="flex gap-2">
@@ -327,10 +347,22 @@ const SportsPage: React.FC = () => {
 					<div className="p-4 space-y-4">
 						{detailItem && (
 							<>
-								<div>
-									<h3 className="text-lg font-semibold">{detailItem.name} <Badge variant={detailItem.status === "Active" ? "success" : "muted"}>{detailItem.status}</Badge></h3>
-									<p className="text-sm text-muted-foreground mt-1">{detailItem.description}</p>
-									<p className="text-xs text-muted-foreground mt-1">Category: {detailItem.category} • Level: {detailItem.level} • Coaching: {detailItem.coaching}</p>
+								<div className="relative h-32 w-full rounded-lg overflow-hidden border">
+									{detailItem.bannerUrl ? (
+										<img src={detailItem.bannerUrl} alt="banner" className="absolute inset-0 h-full w-full object-cover" />
+									) : (
+										<div className="h-full w-full bg-gradient-to-r from-primary/20 to-accent/20" />
+									)}
+								</div>
+								<div className="flex items-start gap-3">
+									{detailItem.imageUrl ? (
+										<img src={detailItem.imageUrl} alt={detailItem.name} className="h-16 w-16 rounded-md object-cover border mt-2" />
+									) : null}
+									<div className="flex-1">
+										<h3 className="text-lg font-semibold">{detailItem.name} <Badge variant={detailItem.status === "Active" ? "success" : "muted"}>{detailItem.status}</Badge></h3>
+										<p className="text-sm text-muted-foreground mt-1">{detailItem.description}</p>
+										<p className="text-xs text-muted-foreground mt-1">Category: {detailItem.category} • Level: {detailItem.level} • Coaching: {detailItem.coaching}</p>
+									</div>
 								</div>
 								<div className="grid grid-cols-2 gap-4 text-sm">
 									<div>
