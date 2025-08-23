@@ -324,7 +324,7 @@ const EquipmentPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:justify-between gap-3">
-        <h1 className="text-xl font-semibold">Equipment</h1>
+        <h1 className="text-xl font-semibold">Sports Equipments</h1>
         <div className="flex items-center gap-2">
           <Input
             className="w-full md:w-72"
