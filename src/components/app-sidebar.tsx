@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,28 +13,28 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { urls } from "@/routes";
-import { Separator } from "./ui/separator";
+import { ChevronRight, Crown, Shield } from "lucide-react";
+import * as React from "react";
 import {
-	FaTachometerAlt,
-	FaUsers,
-	FaCalendarAlt,
-	FaRegCalendar,
-	FaDollarSign,
-	FaFutbol,
-	FaChartLine,
-	FaCog,
-	FaUserAlt,
-	FaList,
-	FaSignOutAlt,
+  FaCalendarAlt,
+  FaCog,
+  FaDollarSign,
+  FaFutbol,
+  FaList,
+  FaRegCalendar,
+  FaSignOutAlt,
+  FaTachometerAlt,
+  FaUserAlt,
+  FaUsers,
 } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "./ui/collapsible";
-import { ChevronRight, Crown, Shield } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Link } from "react-router-dom";
+import { Separator } from "./ui/separator";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [activeItem, setActiveItem] = React.useState("Dashboard");
@@ -47,58 +46,54 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Dashboard",
         url: urls.superadmindashboard,
         icon: <FaTachometerAlt className="w-5 h-5" />,
-        badge: "3",
       },
       {
         title: "Sports",
         icon: <FaFutbol className="w-5 h-5" />,
         submenu: [
-          { title: "List of Sports", url: urls.sports, icon: <FaList className="w-4 h-4" /> },
-          { title: "Courts/Fields", url: urls.courtsFields, icon: <FaRegCalendar className="w-4 h-4" /> },
+          {
+            title: "List of Sports",
+            url: urls.sports,
+            icon: <FaList className="w-4 h-4" />,
+          },
+          {
+            title: "Courts/Fields",
+            url: urls.courtsFields,
+            icon: <FaRegCalendar className="w-4 h-4" />,
+          },
         ],
       },
       {
         title: "Members",
         url: urls.members,
         icon: <FaUsers className="w-5 h-5" />,
-        badge: "124",
       },
       {
         title: "Membership Plans",
         url: urls.plans,
         icon: <FaDollarSign className="w-5 h-5" />,
-        badge: "5",
       },
       {
         title: "Bookings",
         icon: <FaCalendarAlt className="w-5 h-5" />,
-        badge: "12",
+
         submenu: [
-          { title: "Calendar", url: urls.bookingsCalendar, icon: <FaCalendarAlt className="w-4 h-4" /> },
-          { title: "Manage", url: urls.bookingsAdmin, icon: <FaList className="w-4 h-4" /> },
+          {
+            title: "Calendar",
+            url: urls.bookingsCalendar,
+            icon: <FaCalendarAlt className="w-4 h-4" />,
+          },
+          {
+            title: "Manage",
+            url: urls.bookingsAdmin,
+            icon: <FaList className="w-4 h-4" />,
+          },
         ],
       },
       {
         title: "Events",
         url: urls.events,
         icon: <FaRegCalendar className="w-5 h-5" />,
-        badge: "8",
-      },
-      {
-        title: "Payments",
-        url: "#",
-        icon: <FaDollarSign className="w-5 h-5" />,
-        badge: "New",
-      },
-      {
-        title: "Activities",
-        url: "#",
-        icon: <FaFutbol className="w-5 h-5" />,
-      },
-      {
-        title: "Reports",
-        url: "#",
-        icon: <FaChartLine className="w-5 h-5" />,
       },
     ],
   };
@@ -236,17 +231,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <span className="text-white font-medium">
                           {item.title}
                         </span>
-                        {item.badge && (
-                          <span
-                            className={`ml-auto px-2 py-1 text-xs font-bold rounded-full ${
-                              item.badge === "New"
-                                ? "bg-green-500 text-white"
-                                : "bg-white/20 text-white"
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        )}
                       </Link>
                     </SidebarMenuButton>
                   )}
