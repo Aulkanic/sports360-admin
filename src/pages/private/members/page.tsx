@@ -24,7 +24,24 @@ const MembersPage: React.FC = () => {
 	const [open, setOpen] = useState(false);
 	const [editing, setEditing] = useState<MemberRow | null>(null);
 	const [form, setForm] = useState<typeof emptyForm>(emptyForm);
+	const [query, setQuery] = useState("");
 	const isEditing = useMemo(() => Boolean(editing), [editing]);
+
+	const stats = useMemo(() => {
+		const total = rows.length;
+		const active = rows.filter((r) => r.status === "Active").length;
+		const pending = rows.filter((r) => r.status === "Pending").length;
+		const inactive = rows.filter((r) => r.status === "Inactive").length;
+		return { total, active, pending, inactive };
+	}, [rows]);
+
+	const filteredRows = useMemo(() => {
+		if (!query.trim()) return rows;
+		const q = query.toLowerCase();
+		return rows.filter((r) =>
+			[r.name, r.email, r.phone, r.status].some((v) => v.toLowerCase().includes(q))
+		);
+	}, [rows, query]);
 
 	function handleAddClick() {
 		setEditing(null);
@@ -65,9 +82,41 @@ const MembersPage: React.FC = () => {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<h1 className="text-xl font-semibold">Members</h1>
-				<Button onClick={handleAddClick}>Add Member</Button>
+				<div className="flex items-center gap-2">
+					<Input
+						placeholder="Search name, email, phone, status"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						className="w-72"
+					/>
+					<Button onClick={handleAddClick}>Add Member</Button>
+				</div>
 			</div>
-			<MembersTable rows={rows} onRowDoubleClicked={(e) => handleEditOpen(e.data as MemberRow)} />
+
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+				<div className="rounded-lg bg-card p-3 border">
+					<p className="text-xs text-muted-foreground">Total</p>
+					<p className="text-lg font-semibold">{stats.total}</p>
+				</div>
+				<div className="rounded-lg bg-card p-3 border">
+					<p className="text-xs text-muted-foreground">Active</p>
+					<p className="text-lg font-semibold text-green-600">{stats.active}</p>
+				</div>
+				<div className="rounded-lg bg-card p-3 border">
+					<p className="text-xs text-muted-foreground">Pending</p>
+					<p className="text-lg font-semibold text-amber-600">{stats.pending}</p>
+				</div>
+				<div className="rounded-lg bg-card p-3 border">
+					<p className="text-xs text-muted-foreground">Inactive</p>
+					<p className="text-lg font-semibold text-gray-500">{stats.inactive}</p>
+				</div>
+			</div>
+
+			<MembersTable
+				rows={filteredRows}
+				onRowDoubleClicked={(e) => handleEditOpen(e.data as MemberRow)}
+				onEditClick={(row) => handleEditOpen(row)}
+			/>
 
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent side="right" className="sm:max-w-xl">
