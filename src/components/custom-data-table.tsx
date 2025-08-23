@@ -69,6 +69,7 @@ const CustomDataTable: React.FC<AgGridTableProps> = ({
 			rowVerticalPaddingScale: 1.4,
 			chromeBackgroundColor: { ref: "foregroundColor", mix: 0.05, onto: "backgroundColor" },
 			borderColor: input,
+            headerTextColor: '#F4EDED'
 		});
 		setComputedTheme(themed);
 	}, []);
