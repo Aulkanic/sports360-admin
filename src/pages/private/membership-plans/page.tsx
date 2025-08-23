@@ -2,103 +2,108 @@ import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
-import CustomDataTable from "@/components/custom-data-table";
-import type { ColDef, GridOptions } from "ag-grid-community";
+import { Badge } from "@/components/ui/badge";
 
 interface PlanRow {
 	id: string;
 	name: string;
-	durationMonths: number;
+	description: string;
+	duration: "Monthly" | "Yearly";
 	price: number;
 	status: "Active" | "Inactive";
+	members?: number;
 }
 
 const initialPlans: PlanRow[] = [
-	{ id: "p1", name: "Monthly", durationMonths: 1, price: 49, status: "Active" },
-	{ id: "p2", name: "Quarterly", durationMonths: 3, price: 129, status: "Active" },
-	{ id: "p3", name: "Annual", durationMonths: 12, price: 449, status: "Inactive" },
+	{ id: "p1", name: "Basic", description: "Access to gym and pool", duration: "Monthly", price: 29, status: "Active", members: 124 },
+	{ id: "p2", name: "Premium", description: "Gym, pool, classes included", duration: "Monthly", price: 59, status: "Active", members: 78 },
+	{ id: "p3", name: "Annual", description: "All-inclusive annual plan", duration: "Yearly", price: 499, status: "Inactive", members: 22 },
 ];
 
-const baseColumns: ColDef[] = [
-	{ field: "name", headerName: "Name", flex: 1, minWidth: 160 },
-	{ field: "durationMonths", headerName: "Duration (mo)", minWidth: 140 },
-	{ field: "price", headerName: "Price ($)", minWidth: 120, valueFormatter: (p) => `$${p.value}` },
-	{ field: "status", headerName: "Status", minWidth: 120 },
-];
-
-const gridBase: GridOptions = {
-	defaultColDef: { sortable: true, filter: true, resizable: true, floatingFilter: true },
-	rowSelection: "single",
-	animateRows: true,
-};
+const pageSizeDefault = 6;
 
 const MembershipPlansPage: React.FC = () => {
-	const [rows, setRows] = useState<PlanRow[]>(initialPlans);
+	const [plans, setPlans] = useState<PlanRow[]>(initialPlans);
 	const [query, setQuery] = useState("");
 	const [open, setOpen] = useState(false);
 	const [editing, setEditing] = useState<PlanRow | null>(null);
-	const [form, setForm] = useState<Omit<PlanRow, "id">>({ name: "", durationMonths: 1, price: 0, status: "Active" });
+	const [form, setForm] = useState<Omit<PlanRow, "id">>({ name: "", description: "", duration: "Monthly", price: 0, status: "Active", members: 0 });
+	const [confirmId, setConfirmId] = useState<string | null>(null);
+	const [page, setPage] = useState(1);
+	const [pageSize] = useState(pageSizeDefault);
+
+	const filtered = useMemo(() => {
+		if (!query.trim()) return plans;
+		const q = query.toLowerCase();
+		return plans.filter((p) => [p.name, p.description, p.duration, p.status].some((v) => v.toLowerCase().includes(q)));
+	}, [plans, query]);
+
+	const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+	const pageItems = useMemo(() => {
+		const start = (page - 1) * pageSize;
+		return filtered.slice(start, start + pageSize);
+	}, [filtered, page, pageSize]);
 
 	const stats = useMemo(() => {
-		const total = rows.length;
-		const active = rows.filter((p) => p.status === "Active").length;
-		const inactive = rows.filter((p) => p.status === "Inactive").length;
+		const total = plans.length;
+		const active = plans.filter((p) => p.status === "Active").length;
+		const inactive = plans.filter((p) => p.status === "Inactive").length;
 		return { total, active, inactive };
-	}, [rows]);
+	}, [plans]);
 
-	const filteredRows = useMemo(() => {
-		if (!query.trim()) return rows;
-		const q = query.toLowerCase();
-		return rows.filter((r) => [r.name, String(r.durationMonths), String(r.price), r.status].some((v) => v.toLowerCase().includes(q)));
-	}, [rows, query]);
-
-	function handleAdd() {
+	function openCreate() {
 		setEditing(null);
-		setForm({ name: "", durationMonths: 1, price: 0, status: "Active" });
+		setForm({ name: "", description: "", duration: "Monthly", price: 0, status: "Active", members: 0 });
 		setOpen(true);
 	}
 
-	function handleEditOpen(row: PlanRow) {
-		setEditing(row);
-		setForm({ name: row.name, durationMonths: row.durationMonths, price: row.price, status: row.status });
+	function openEdit(plan: PlanRow) {
+		setEditing(plan);
+		setForm({ name: plan.name, description: plan.description, duration: plan.duration, price: plan.price, status: plan.status, members: plan.members ?? 0 });
 		setOpen(true);
+	}
+
+	function validateForm(): string | null {
+		if (!form.name.trim()) return "Plan name is required";
+		if (!form.description.trim()) return "Description is required";
+		if (isNaN(Number(form.price)) || Number(form.price) < 0) return "Price must be a valid number";
+		if (form.duration !== "Monthly" && form.duration !== "Yearly") return "Duration must be Monthly or Yearly";
+		if (form.status !== "Active" && form.status !== "Inactive") return "Status must be Active or Inactive";
+		return null;
 	}
 
 	function handleSave(e: React.FormEvent) {
 		e.preventDefault();
+		const error = validateForm();
+		if (error) {
+			alert(error);
+			return;
+		}
 		if (editing) {
-			setRows((prev) => prev.map((r) => (r.id === editing.id ? { ...editing, ...form } : r)));
+			setPlans((prev) => prev.map((p) => (p.id === editing.id ? { ...editing, ...form } : p)));
 		} else {
-			setRows((prev) => [{ id: `p${Date.now()}`, ...form }, ...prev]);
+			setPlans((prev) => [{ id: `p${Date.now()}`, ...form }, ...prev]);
 		}
 		setOpen(false);
 	}
 
-	const columns: ColDef[] = useMemo(() => {
-		const actionsCol: ColDef = {
-			headerName: "Actions",
-			field: "actions",
-			pinned: "right",
-			minWidth: 140,
-			cellRenderer: (p: any) => (
-				<div className="flex items-center gap-2">
-					<Button size="sm" onClick={() => handleEditOpen(p.data as PlanRow)}>Edit</Button>
-				</div>
-			),
-			sortable: false,
-			filter: false,
-			suppressHeaderMenuButton: true,
-		};
-		return [...baseColumns, actionsCol];
-	}, []);
+	function confirmDelete(id: string) {
+		setConfirmId(id);
+	}
+
+	function doDelete() {
+		if (confirmId) setPlans((prev) => prev.filter((p) => p.id !== confirmId));
+		setConfirmId(null);
+	}
 
 	return (
 		<div className="space-y-4">
+			{/* Header: Search + Stats */}
 			<div className="flex items-center justify-between">
 				<h1 className="text-xl font-semibold">Membership Plans</h1>
 				<div className="flex items-center gap-2">
-					<Input className="w-72" placeholder="Search plans" value={query} onChange={(e) => setQuery(e.target.value)} />
-					<Button onClick={handleAdd}>Add Plan</Button>
+					<Input className="w-72" placeholder="Search by name, description, status" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
+					<Button onClick={openCreate}>Add New Plan</Button>
 				</div>
 			</div>
 
@@ -117,15 +122,49 @@ const MembershipPlansPage: React.FC = () => {
 				</div>
 			</div>
 
-			<CustomDataTable
-				columnDefs={columns}
-				rowData={filteredRows}
-				paginationPageSize={10}
-				gridOptions={gridBase}
-				className="rounded-lg"
-				loading={false}
-			/>
+			{/* Cards List */}
+			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+				{pageItems.map((plan) => (
+					<div key={plan.id} className="rounded-xl border bg-card p-4 shadow-sm flex flex-col gap-3">
+						<div className="flex items-start justify-between gap-2">
+							<div>
+								<h3 className="text-base font-semibold">{plan.name}</h3>
+								<p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>
+							</div>
+							<Badge variant={plan.status === "Active" ? "success" : "muted"}>{plan.status}</Badge>
+						</div>
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-2">
+								<span className="text-xl font-bold">${plan.price}</span>
+								<span className="text-sm text-muted-foreground">{plan.duration}</span>
+							</div>
+							{typeof plan.members === "number" && (
+								<span className="text-xs text-muted-foreground">{plan.members} members</span>
+							)}
+						</div>
+						<div className="flex items-center gap-2">
+							<Button size="sm" onClick={() => openEdit(plan)}>Edit</Button>
+							<Button size="sm" variant="outline" onClick={() => confirmDelete(plan.id)}>Delete</Button>
+						</div>
+					</div>
+				))}
+			</div>
 
+			{/* Pagination Controls */}
+			<div className="flex items-center justify-between">
+				<div className="text-sm text-muted-foreground">Page {page} of {totalPages}</div>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+					<Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+				</div>
+			</div>
+
+			{/* Sticky Add Button for Mobile */}
+			<div className="fixed bottom-4 right-4 md:hidden">
+				<Button className="shadow-lg" onClick={openCreate}>Add New Plan</Button>
+			</div>
+
+			{/* Edit/Create Sheet */}
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent side="right" className="sm:max-w-xl">
 					<SheetHeader>
@@ -134,34 +173,38 @@ const MembershipPlansPage: React.FC = () => {
 					<form onSubmit={handleSave} className="p-4 space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<label className="space-y-1">
-								<span className="text-sm">Name</span>
-								<Input name="name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required />
+								<span className="text-sm">Plan Name</span>
+								<Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required />
 							</label>
-							<label className="space-y-1">
-								<span className="text-sm">Duration (months)</span>
-								<Input
-									type="number"
-									name="durationMonths"
-									value={form.durationMonths}
-									onChange={(e) => setForm((p) => ({ ...p, durationMonths: Number(e.target.value) }))}
-									min={1}
-									required
-								/>
+							<label className="space-y-1 md:col-span-2">
+								<span className="text-sm">Description</span>
+								<Input value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} required />
 							</label>
 							<label className="space-y-1">
 								<span className="text-sm">Price ($)</span>
-								<Input
-									type="number"
-									name="price"
-									value={form.price}
-									onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))}
-									min={0}
-									required
-								/>
+								<Input type="number" min={0} value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))} required />
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Duration</span>
+								<select
+									className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+									value={form.duration}
+									onChange={(e) => setForm((p) => ({ ...p, duration: e.target.value as PlanRow["duration"] }))}
+								>
+									<option value="Monthly">Monthly</option>
+									<option value="Yearly">Yearly</option>
+								</select>
 							</label>
 							<label className="space-y-1">
 								<span className="text-sm">Status</span>
-								<Input name="status" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as PlanRow["status"] }))} />
+								<select
+									className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+									value={form.status}
+									onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as PlanRow["status"] }))}
+								>
+									<option value="Active">Active</option>
+									<option value="Inactive">Inactive</option>
+								</select>
 							</label>
 						</div>
 						<SheetFooter>
@@ -173,6 +216,20 @@ const MembershipPlansPage: React.FC = () => {
 					</form>
 				</SheetContent>
 			</Sheet>
+
+			{/* Delete Confirmation */}
+			{confirmId && (
+				<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+					<div className="bg-card rounded-lg border w-full max-w-sm p-4 space-y-3">
+						<h3 className="text-base font-semibold">Delete Plan</h3>
+						<p className="text-sm text-muted-foreground">Are you sure you want to delete this plan? This action cannot be undone.</p>
+						<div className="flex items-center justify-end gap-2">
+							<Button variant="outline" onClick={() => setConfirmId(null)}>Cancel</Button>
+							<Button variant="destructive" onClick={doDelete}>Delete</Button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
