@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import CustomDataTable from "@/components/custom-data-table";
-import { memberColumnDefs } from "./columns-def";
+import { getMemberColumns } from "./columns-def";
 import type { GridOptions, RowDoubleClickedEvent } from "ag-grid-community";
 
 export interface MemberRow {
@@ -27,17 +27,20 @@ interface MembersTableProps {
 	rows: MemberRow[];
 	loading?: boolean;
 	onRowDoubleClicked?: (event: RowDoubleClickedEvent<MemberRow>) => void;
+	onEditClick?: (row: MemberRow) => void;
 }
 
-const MembersTable: React.FC<MembersTableProps> = ({ rows, loading, onRowDoubleClicked }) => {
-	const gridOptions: GridOptions = {
+const MembersTable: React.FC<MembersTableProps> = ({ rows, loading, onRowDoubleClicked, onEditClick }) => {
+	const gridOptions: GridOptions = useMemo(() => ({
 		...baseGridOptions,
 		onRowDoubleClicked,
-	};
+	}), [onRowDoubleClicked]);
+
+	const columns = useMemo(() => getMemberColumns((row) => onEditClick?.(row)), [onEditClick]);
 
 	return (
 		<CustomDataTable
-			columnDefs={memberColumnDefs}
+			columnDefs={columns}
 			rowData={rows}
 			paginationPageSize={10}
 			gridOptions={gridOptions}
