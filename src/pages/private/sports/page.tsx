@@ -43,7 +43,7 @@ const initialSports: SportItem[] = [
     positions: ["Guard", "Forward", "Center"],
     status: "Active",
     participants: 58,
-    bannerUrl: "/bglogin.webp",
+    bannerUrl: "https://tse1.mm.bing.net/th/id/OIP.ozynK9kTsvFKljgxloY4DwHaEK?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3",
   },
   {
     id: "s2",
@@ -59,11 +59,11 @@ const initialSports: SportItem[] = [
     positions: ["Player"],
     status: "Active",
     participants: 32,
-    bannerUrl: "/bglogin.webp",
+    bannerUrl: "https://tse3.mm.bing.net/th/id/OIP.AFq_kvbJ_RaOs4aMPZPX6gHaH2?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3",
   },
   {
     id: "s3",
-    name: "Soccer",
+    name: "Pickleball",
     description: "Outdoor team sport.",
     type: "Team",
     category: "Outdoor",
@@ -75,7 +75,7 @@ const initialSports: SportItem[] = [
     positions: ["Goalkeeper", "Defender", "Midfielder", "Forward"],
     status: "Inactive",
     participants: 76,
-    bannerUrl: "/bglogin.webp",
+    bannerUrl: "https://beehiiv-images-production.s3.amazonaws.com/uploads/publication/logo/ef1d9f55-de65-4f01-896e-c576ed8ce8e6/pickleball.jpg",
   },
 ];
 
