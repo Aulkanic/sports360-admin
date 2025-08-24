@@ -113,24 +113,40 @@ const BookingsAdminPage: React.FC = () => {
 				{filtered.map((b) => {
 					const accent = typeAccent(b.type);
 					return (
-						<div key={b.id} className={`relative rounded-xl border bg-card p-3 flex flex-col gap-3 overflow-hidden`}> 
+						<div key={b.id} className={`relative group rounded-xl border bg-card p-4 flex flex-col gap-3 overflow-hidden transition hover:shadow-md hover:-translate-y-0.5`}> 
 							{/* Colored stripe */}
 							<div className={`absolute inset-y-0 left-0 w-1 bg-${accent}-500`} />
 							{b.notice && (
 								<div className="rounded-md border p-2 text-xs bg-muted/30">{b.notice}</div>
 							)}
-							<div className="flex items-start justify-between gap-2">
-								<div>
-									<p className="text-sm font-semibold">{b.eventTitle}</p>
-									<div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-										<Badge variant="outline">{b.type}</Badge>
-										<span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {b.when}</span>
-										<span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {b.location}</span>
-										<span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {b.players} players</span>
+							<div className="flex items-start justify-between gap-3">
+								<div className="min-w-0">
+									<div className="flex items-center gap-2 mb-1">
+										<span className="inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold bg-background">
+											{b.name.charAt(0)}
+										</span>
+										<p className="text-sm font-semibold truncate">{b.eventTitle}</p>
 									</div>
-									<div className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {b.name} • {b.email}</div>
+									<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+										<Badge variant="outline">{b.type}</Badge>
+										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border">
+											<CalendarDays className="h-3.5 w-3.5" /> {b.when}
+										</span>
+										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border">
+											<MapPin className="h-3.5 w-3.5" /> {b.location}
+										</span>
+										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border">
+											<Users className="h-3.5 w-3.5" /> {b.players} players
+										</span>
+									</div>
+									<div className="mt-1 text-xs text-muted-foreground inline-flex items-center gap-1">
+										<Mail className="h-3.5 w-3.5" /> {b.name} • {b.email}
+									</div>
 								</div>
-								<Badge variant={statusVariant(b.status)}>{b.status}</Badge>
+								<div className="flex flex-col items-end gap-2">
+									<Badge variant={statusVariant(b.status)}>{b.status}</Badge>
+									<Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition">Details</Button>
+								</div>
 							</div>
 							<div className="flex items-center gap-2">
 								<Button size="sm" asChild>
