@@ -10,6 +10,7 @@ export interface MemberRow {
 	phone: string;
 	status: "Active" | "Inactive" | "Pending";
 	joinedAt: string;
+	role: "User" | "Player" | "Coach" | "Staff" | "Manager";
 }
 
 const baseGridOptions: GridOptions = {

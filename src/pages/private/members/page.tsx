@@ -6,9 +6,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/com
 import { Input } from "@/components/ui/input";
 
 const initialRows: MemberRow[] = [
-	{ id: "1", name: "Alice Johnson", email: "alice@example.com", phone: "+1 555-1234", status: "Active", joinedAt: "2024-05-10" },
-	{ id: "2", name: "Bob Smith", email: "bob@example.com", phone: "+1 555-5678", status: "Inactive", joinedAt: "2024-02-18" },
-	{ id: "3", name: "Carol Davis", email: "carol@example.com", phone: "+1 555-9012", status: "Pending", joinedAt: "2025-01-03" },
+	{ id: "1", name: "Alice Johnson", email: "alice@example.com", phone: "+1 555-1234", status: "Active", joinedAt: "2024-05-10", role: "Player" },
+	{ id: "2", name: "Bob Smith", email: "bob@example.com", phone: "+1 555-5678", status: "Inactive", joinedAt: "2024-02-18", role: "Coach" },
+	{ id: "3", name: "Carol Davis", email: "carol@example.com", phone: "+1 555-9012", status: "Pending", joinedAt: "2025-01-03", role: "Staff" },
 ];
 
 const emptyForm: Omit<MemberRow, "id" | "joinedAt"> & { joinedAt?: string } = {
@@ -17,7 +17,12 @@ const emptyForm: Omit<MemberRow, "id" | "joinedAt"> & { joinedAt?: string } = {
 	phone: "",
 	status: "Active",
 	joinedAt: "",
+	role: "User",
 };
+
+const roleOptions: MemberRow["role"][] = ["User", "Player", "Coach", "Staff", "Manager"];
+
+type RoleFilter = "All" | MemberRow["role"];
 
 const MembersPage: React.FC = () => {
 	const [rows, setRows] = useState<MemberRow[]>(initialRows);
@@ -25,6 +30,7 @@ const MembersPage: React.FC = () => {
 	const [editing, setEditing] = useState<MemberRow | null>(null);
 	const [form, setForm] = useState<typeof emptyForm>(emptyForm);
 	const [query, setQuery] = useState("");
+	const [roleFilter, setRoleFilter] = useState<RoleFilter>("All");
 	const isEditing = useMemo(() => Boolean(editing), [editing]);
 
 	const stats = useMemo(() => {
@@ -36,12 +42,14 @@ const MembersPage: React.FC = () => {
 	}, [rows]);
 
 	const filteredRows = useMemo(() => {
-		if (!query.trim()) return rows;
+		let list = rows;
+		if (roleFilter !== "All") list = list.filter((r) => r.role === roleFilter);
+		if (!query.trim()) return list;
 		const q = query.toLowerCase();
-		return rows.filter((r) =>
-			[r.name, r.email, r.phone, r.status].some((v) => v.toLowerCase().includes(q))
+		return list.filter((r) =>
+			[r.name, r.email, r.phone, r.status, r.role].some((v) => v.toLowerCase().includes(q))
 		);
-	}, [rows, query]);
+	}, [rows, query, roleFilter]);
 
 	function handleAddClick() {
 		setEditing(null);
@@ -51,11 +59,11 @@ const MembersPage: React.FC = () => {
 
 	function handleEditOpen(row: MemberRow) {
 		setEditing(row);
-		setForm({ name: row.name, email: row.email, phone: row.phone, status: row.status, joinedAt: row.joinedAt });
+		setForm({ name: row.name, email: row.email, phone: row.phone, status: row.status, joinedAt: row.joinedAt, role: row.role });
 		setOpen(true);
 	}
 
-	function handleFormChange(e: React.ChangeEvent<HTMLInputElement>) {
+	function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
 		const { name, value } = e.target;
 		setForm((prev) => ({ ...prev, [name]: value }));
 	}
@@ -72,6 +80,7 @@ const MembersPage: React.FC = () => {
 				phone: form.phone,
 				status: (form.status as MemberRow["status"]) || "Active",
 				joinedAt: form.joinedAt || new Date().toISOString().slice(0, 10),
+				role: (form.role as MemberRow["role"]) || "User",
 			};
 			setRows((prev) => [newRow, ...prev]);
 		}
@@ -84,13 +93,26 @@ const MembersPage: React.FC = () => {
 				<h1 className="text-xl font-semibold">Members</h1>
 				<div className="flex items-center gap-2">
 					<Input
-						placeholder="Search name, email, phone, status"
+						placeholder="Search name, email, phone, status, role"
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						className="w-72"
 					/>
 					<Button onClick={handleAddClick}>Add Member</Button>
 				</div>
+			</div>
+
+			{/* Role filter tabs */}
+			<div className="flex flex-wrap items-center gap-2">
+				{(["All" as const, ...roleOptions] as RoleFilter[]).map((role) => (
+					<button
+						key={role}
+						onClick={() => setRoleFilter(role)}
+						className={`h-8 px-3 rounded-md border text-sm transition-colors ${roleFilter === role ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+					>
+						{role}
+					</button>
+				))}
 			</div>
 
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -140,6 +162,14 @@ const MembersPage: React.FC = () => {
 							<label className="space-y-1">
 								<span className="text-sm">Status</span>
 								<Input name="status" value={form.status} onChange={handleFormChange} />
+							</label>
+							<label className="space-y-1">
+								<span className="text-sm">Role</span>
+								<select name="role" value={form.role} onChange={handleFormChange} className="h-9 rounded-md border bg-background px-3 text-sm">
+									{roleOptions.map((r) => (
+										<option key={r} value={r}>{r}</option>
+									))}
+								</select>
 							</label>
 						</div>
 						<SheetFooter>
