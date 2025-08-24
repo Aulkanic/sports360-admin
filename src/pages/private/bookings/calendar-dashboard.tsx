@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useRef, useState } from "react";
 import { Calendar as RBC, dateFnsLocalizer, Views, type Event as RBCEvent } from "react-big-calendar";
 import { addDays, addHours, format, getDay, parse, startOfWeek } from "date-fns";
