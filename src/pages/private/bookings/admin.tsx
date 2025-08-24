@@ -3,8 +3,9 @@ import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
 import { CalendarDays, MapPin, Users, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
+import { urls } from "@/routes";
 
 interface BookingItem {
 	id: string;
@@ -16,7 +17,7 @@ interface BookingItem {
 	email: string;
 	players: number;
 	status: "Pending" | "Approved" | "Rejected";
-	roster?: PlayerItem[];
+	roster?: { id: string; name: string; status: "In-Game" | "Resting" }[];
 	notice?: string;
 }
 
@@ -35,7 +36,6 @@ const BookingsAdminPage: React.FC = () => {
 	const [query, setQuery] = useState("");
 	const [status, setStatus] = useState<"All" | BookingItem["status"]>("All");
 	const [typeFilter, setTypeFilter] = useState<"All" | BookingItem["type"]>("All");
-	const [openRosterId, setOpenRosterId] = useState<string | null>(null);
 
 	const filtered = useMemo(() => {
 		return items.filter((b) => {
@@ -59,14 +59,6 @@ const BookingsAdminPage: React.FC = () => {
 
 	function setState(id: string, s: BookingItem["status"]) {
 		setItems((prev) => prev.map((b) => (b.id === id ? { ...b, status: s, notice: s === "Approved" ? undefined : b.notice } : b)));
-	}
-
-	function togglePlayerStatus(bookingId: string, playerId: string, to: PlayerItem["status"]) {
-		setItems((prev) => prev.map((b) => {
-			if (b.id !== bookingId) return b;
-			const roster = (b.roster ?? []).map((p) => p.id === playerId ? { ...p, status: to } : p);
-			return { ...b, roster, notice: `Player status updated: ${roster.find(p=>p.id===playerId)?.name} → ${to}` };
-		}));
 	}
 
 	return (
@@ -141,20 +133,12 @@ const BookingsAdminPage: React.FC = () => {
 								<Badge variant={statusVariant(b.status)}>{b.status}</Badge>
 							</div>
 							<div className="flex items-center gap-2">
-								<Button size="sm" onClick={() => setOpenRosterId(b.id)}>Players</Button>
+								<Button size="sm" asChild>
+									<Link to={urls.openPlay}>Players</Link>
+								</Button>
 								<Button size="sm" onClick={() => setState(b.id, "Approved")}>Approve</Button>
 								<Button size="sm" variant="outline" onClick={() => setState(b.id, "Rejected")}>Reject</Button>
 							</div>
-
-							<PlayerStatusPanel
-								open={openRosterId === b.id}
-								onOpenChange={(v) => !v && setOpenRosterId(null)}
-								title={`Players • ${b.eventTitle}`}
-								players={b.roster ?? []}
-								adminMode
-								notice={b.notice}
-								onToggleStatus={(pid, to) => togglePlayerStatus(b.id, pid, to)}
-							/>
 						</div>
 					);
 				})}
