@@ -30,7 +30,7 @@ export function getMemberColumns(
 		maxWidth: 200,
 		cellRenderer: (params: ICellRendererParams<MemberRow>) => {
 			return (
-				<div className="flex items-center gap-2">
+				<div className="flex items-center justify-center h-full gap-2">
 					<Button size="sm" onClick={() => onEdit(params.data!)}>Edit</Button>
 					<Button size="sm" variant="outline" onClick={() => onDelete?.(params.data!)}>Delete</Button>
 				</div>
