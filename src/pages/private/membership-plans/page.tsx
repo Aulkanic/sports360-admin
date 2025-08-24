@@ -96,6 +96,13 @@ const MembershipPlansPage: React.FC = () => {
 		setConfirmId(null);
 	}
 
+	function getFeatures(desc: string): string[] {
+		// naive split into features by comma or " and "
+		const byComma = desc.split(",").map((s) => s.trim()).filter(Boolean);
+		if (byComma.length > 1) return byComma;
+		return desc.split(" and ").map((s) => s.trim()).filter(Boolean);
+	}
+
 	return (
 		<div className="space-y-4">
 			{/* Header: Search + Stats */}
@@ -122,32 +129,47 @@ const MembershipPlansPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Cards List */}
+			{/* Pricing Cards */}
 			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-				{pageItems.map((plan) => (
-					<div key={plan.id} className="rounded-xl border bg-card p-4 shadow-sm flex flex-col gap-3">
-						<div className="flex items-start justify-between gap-2">
-							<div>
-								<h3 className="text-base font-semibold">{plan.name}</h3>
-								<p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>
+				{pageItems.map((plan) => {
+					const isPopular = /premium/i.test(plan.name) && plan.status === "Active";
+					const features = getFeatures(plan.description);
+					return (
+						<div key={plan.id} className={`relative group rounded-2xl border bg-card p-5 shadow-sm overflow-hidden ${isPopular ? "ring-2 ring-primary" : ""}`}>
+							{/* Popular ribbon */}
+							{isPopular && (
+								<div className="absolute -right-10 top-3 rotate-45 bg-primary text-primary-foreground text-xs px-10 py-1 shadow-sm">Most Popular</div>
+							)}
+							<div className="flex items-start justify-between gap-2">
+								<div>
+									<h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
+									<p className="text-sm text-muted-foreground mt-0.5">{plan.duration}</p>
+								</div>
+								<Badge variant={plan.status === "Active" ? "success" : "muted"}>{plan.status}</Badge>
 							</div>
-							<Badge variant={plan.status === "Active" ? "success" : "muted"}>{plan.status}</Badge>
-						</div>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-2">
-								<span className="text-xl font-bold">${plan.price}</span>
-								<span className="text-sm text-muted-foreground">{plan.duration}</span>
+							<div className="mt-4 flex items-end gap-2">
+								<span className="text-3xl font-bold leading-none">${plan.price}</span>
+								<span className="text-sm text-muted-foreground mb-0.5">/ {plan.duration === "Monthly" ? "month" : "year"}</span>
 							</div>
 							{typeof plan.members === "number" && (
-								<span className="text-xs text-muted-foreground">{plan.members} members</span>
+								<p className="mt-1 text-xs text-muted-foreground">{plan.members} members</p>
 							)}
+							<ul className="mt-4 space-y-2 text-sm">
+								{features.map((f, idx) => (
+									<li key={idx} className="flex items-start gap-2">
+										<span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+										<span className="text-foreground/90">{f}</span>
+									</li>
+								))}
+							</ul>
+							<div className="mt-5 flex items-center gap-2">
+								<Button className={`${isPopular ? "bg-primary text-primary-foreground" : ""}`}>Choose Plan</Button>
+								<Button variant="outline" onClick={() => openEdit(plan)}>Edit</Button>
+								<Button variant="destructive" onClick={() => confirmDelete(plan.id)}>Delete</Button>
+							</div>
 						</div>
-						<div className="flex items-center gap-2">
-							<Button size="sm" onClick={() => openEdit(plan)}>Edit</Button>
-							<Button size="sm" variant="outline" onClick={() => confirmDelete(plan.id)}>Delete</Button>
-						</div>
-					</div>
-				))}
+					);
+				})}
 			</div>
 
 			{/* Pagination Controls */}
