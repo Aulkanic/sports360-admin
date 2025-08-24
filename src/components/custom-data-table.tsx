@@ -90,8 +90,24 @@ const CustomDataTable: React.FC<AgGridTableProps> = ({
 
 	const themeToUse = customTheme || computedTheme;
 
+	const defaultGridOptions: GridOptions = useMemo(
+		() => ({
+			rowHeight: 44,
+			headerHeight: 44,
+			animateRows: true,
+		}),
+		[]
+	);
+
+	const mergedGridOptions: GridOptions = useMemo(() => ({
+		...defaultGridOptions,
+		...gridOptions,
+	}), [defaultGridOptions, gridOptions]);
+
+	const baseWrapperClasses = "rounded-lg border overflow-hidden";
+
 	return (
-		<div className={`ag-theme-quartz ${className}`}>
+		<div className={`ag-theme-quartz ${baseWrapperClasses} ${className}`}>
 			<AgGridReact
 				ref={activeRef}
 				columnDefs={columnDefs}
@@ -105,7 +121,7 @@ const CustomDataTable: React.FC<AgGridTableProps> = ({
 				enableFilterHandlers={true}
 				onGridReady={onGridReady}
 				loading={loading}
-				{...gridOptions}
+				{...mergedGridOptions}
 				theme={themeToUse}
 			/>
 		</div>
