@@ -38,34 +38,29 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 	const assignedIds = new Set(lanes.flatMap((l) => l.players.map((p) => p.id)));
 	const benchPlayers = filtered.filter((p) => !assignedIds.has(p.id));
 
-	const removeFromLanes = (playerId: string): void => {
-		setLanes((prev) => prev.map((l) => ({ ...l, players: l.players.filter((p) => p.id !== playerId) })));
-	};
-
 	const handleDropToLane = (laneId: string, player: PlayerItem) => {
-		setLanes((prev) => prev.map((l) => {
-			if (l.id !== laneId) return l;
-			if (l.players.find((p) => p.id === player.id)) return l;
-			if (l.players.length >= l.capacity) return l;
-			return { ...l, players: [...l.players, player] };
-		}));
+		setLanes((prev) => {
+			// Remove from all lanes first
+			const without = prev.map((l) => ({ ...l, players: l.players.filter((p) => p.id !== player.id) }));
+			// Then add to target lane if capacity allows
+			return without.map((l) =>
+				l.id === laneId
+					? (l.players.length < l.capacity ? { ...l, players: [...l.players, player] } : l)
+					: l
+			);
+		});
 		onToggleStatus?.(player.id, "In-Game");
 	};
 
 	const handleDropToBench = (player: PlayerItem) => {
-		removeFromLanes(player.id);
+		setLanes((prev) => prev.map((l) => ({ ...l, players: l.players.filter((p) => p.id !== player.id) })));
 		onToggleStatus?.(player.id, "Resting");
 	};
 
 	const DraggablePlayer: React.FC<{ player: PlayerItem }> = ({ player }) => {
 		const ref = useRef<HTMLDivElement>(null);
-		const [, dragRef] = useDrag(() => ({
-			type: "PLAYER",
-			item: { player },
-		}), [player]);
-		useEffect(() => {
-			if (ref.current) dragRef(ref);
-		}, [dragRef]);
+		const [, dragRef] = useDrag(() => ({ type: "PLAYER", item: { player } }), [player]);
+		useEffect(() => { if (ref.current) dragRef(ref); }, [dragRef]);
 		return (
 			<div ref={ref} className="flex items-center justify-between gap-2 rounded-md border p-2 bg-card">
 				<span className="text-sm font-medium">{player.name}</span>
@@ -79,12 +74,10 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 		const [{ canDrop, isOver }, dropRef] = useDrop(() => ({
 			accept: "PLAYER",
 			drop: (item: { player: PlayerItem }) => handleDropToLane(lane.id, item.player),
-			canDrop: (item: { player: PlayerItem }) => !lane.players.find((p) => p.id === item.player.id) && lane.players.length < lane.capacity,
+			canDrop: (item: { player: PlayerItem }) => !lane.players.find((p) => p.id === item.player.id) || true, // allow moving across lanes
 			collect: (monitor) => ({ canDrop: monitor.canDrop(), isOver: monitor.isOver() }),
 		}), [lane]);
-		useEffect(() => {
-			if (ref.current) dropRef(ref);
-		}, [dropRef]);
+		useEffect(() => { if (ref.current) dropRef(ref); }, [dropRef]);
 		return (
 			<div ref={ref} className={`rounded-md border p-2 min-h-[96px] ${isOver && canDrop ? "bg-muted/40" : "bg-card"}`}>
 				<div className="flex items-center justify-between mb-2">
@@ -94,7 +87,9 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 				<div className="space-y-2">
 					{lane.players.map((p) => (
 						<div key={p.id} className="flex items-center justify-between gap-2 rounded-md border p-2 bg-background">
-							<span className="text-sm font-medium">{p.name}</span>
+							<div className="flex-1">
+								<DraggablePlayer player={p} />
+							</div>
 							<Button size="sm" variant="outline" onClick={() => handleDropToBench(p)}>Remove</Button>
 						</div>
 					))}
@@ -113,9 +108,7 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 			drop: (item: { player: PlayerItem }) => handleDropToBench(item.player),
 			collect: (monitor) => ({ isOver: monitor.isOver() }),
 		}), []);
-		useEffect(() => {
-			if (ref.current) dropRef(ref);
-		}, [dropRef]);
+		useEffect(() => { if (ref.current) dropRef(ref); }, [dropRef]);
 		return (
 			<div ref={ref} className={`rounded-md border p-2 ${isOver ? "bg-muted/40" : "bg-card"}`}>
 				<p className="text-sm font-semibold mb-2">Bench</p>
