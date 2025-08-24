@@ -1,5 +1,5 @@
 import { PrivateLayout, PublicLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, CourtsFieldsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, CourtsFieldsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, CommunitiesClubsAdminPage } from "@/pages";
 
 export const urls = {
 	login: "/",
@@ -14,6 +14,7 @@ export const urls = {
 	equipment: '/super-admin/sports/equipment',
 	calendarDashboard: '/super-admin/bookings/calendar-dashboard',
 	openPlay: '/super-admin/bookings/open-play',
+	communities: '/super-admin/communities-clubs',
 };
 
 export const routeList = {
@@ -35,6 +36,7 @@ export const routeList = {
 			{ path: urls.equipment, element: <EquipmentPage /> },
 			{ path: urls.calendarDashboard, element: <CalendarDashboardPage /> },
 			{ path: urls.openPlay, element: <OpenPlayPage /> },
+			{ path: urls.communities, element: <CommunitiesClubsAdminPage /> },
 		]
 	}
 };
