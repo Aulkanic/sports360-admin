@@ -10,7 +10,7 @@ import { urls } from "@/routes";
 interface BookingItem {
 	id: string;
 	eventTitle: string;
-	type: "One-time" | "Tournament" | "Recurring" | "Open Play";
+	type: "One-time" | "Tournament" | "Recurring" | "Open Play" | "Court Rental";
 	when: string;
 	location: string;
 	name: string;
@@ -24,10 +24,11 @@ interface BookingItem {
 const initial: BookingItem[] = [
 	{ id: "bk1", eventTitle: "Open Play", type: "Open Play", when: "2025-08-25 18:00", location: "Court 1", name: "Alice", email: "alice@example.com", players: 2, status: "Pending", roster: [ { id: "p1", name: "Alice", status: "Resting" }, { id: "p2", name: "Bob", status: "In-Game" } ] },
 	{ id: "bk2", eventTitle: "Basketball Tournament", type: "Tournament", when: "2025-08-30 10:00", location: "Court A", name: "Team X", email: "x@example.com", players: 5, status: "Approved", roster: [ { id: "p3", name: "Team X - John", status: "In-Game" }, { id: "p4", name: "Team X - Max", status: "Resting" } ] },
+	{ id: "bk3", eventTitle: "Court Rental", type: "Court Rental", when: "2025-09-02 14:00", location: "Court 3", name: "Chris Parker", email: "chris@example.com", players: 4, status: "Pending", notice: "Customer requested 2-hour slot" },
 ];
 
 const typeAccent = (t: BookingItem["type"]) =>
-	t === "Open Play" ? "emerald" : t === "Tournament" ? "blue" : t === "Recurring" ? "violet" : "slate";
+	t === "Open Play" ? "emerald" : t === "Tournament" ? "blue" : t === "Recurring" ? "violet" : t === "Court Rental" ? "orange" : "slate";
 
 const statusVariant = (s: BookingItem["status"]) => (s === "Approved" ? "success" : s === "Pending" ? "warning" : "destructive");
 
@@ -78,7 +79,7 @@ const BookingsAdminPage: React.FC = () => {
 
 			{/* Type Tabs */}
 			<div className="flex flex-wrap items-center gap-2">
-				{(["All", "Open Play", "Tournament", "Recurring", "One-time"] as const).map((t) => (
+				{(["All", "Open Play", "Tournament", "Recurring", "One-time", "Court Rental"] as const).map((t) => (
 					<button
 						key={t}
 						onClick={() => setTypeFilter(t as any)}
