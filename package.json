@@ -27,6 +27,7 @@
     "lucide-react": "^0.540.0",
     "react": "^19.1.1",
     "react-big-calendar": "^1.19.4",
+    "react-day-picker": "^9.9.0",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
     "react-dom": "^19.1.1",
