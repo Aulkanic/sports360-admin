@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 
 export interface PlayerItem {
 	id: string;
@@ -23,102 +22,69 @@ interface PlayerStatusPanelProps {
 	notice?: string;
 }
 
+type MatchLane = { id: string; name: string; capacity: number };
+
+const lanesInitial: MatchLane[] = [
+	{ id: "lane-a", name: "Court A", capacity: 4 },
+	{ id: "lane-b", name: "Court B", capacity: 4 },
+];
+
 const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChange, title = "Players", players, adminMode = false, onToggleStatus, onRequestChange, notice }) => {
 	const [filter, setFilter] = useState("");
-	const filtered = players.filter((p) => p.name.toLowerCase().includes(filter.toLowerCase()));
+	const filtered = useMemo(() => players.filter((p) => p.name.toLowerCase().includes(filter.toLowerCase())), [players, filter]);
 
-	// --- Open Play Matchmaking (drag & drop) ---
 	const [showMatchmaking, setShowMatchmaking] = useState<boolean>(adminMode);
-	type MatchLane = { id: string; name: string; capacity: number; players: PlayerItem[] };
-	const [lanes, setLanes] = useState<MatchLane[]>([
-		{ id: "lane-a", name: "Court A", capacity: 4, players: [] },
-		{ id: "lane-b", name: "Court B", capacity: 4, players: [] },
-	]);
+	const [lanePlayers, setLanePlayers] = useState<Record<string, PlayerItem[]>>({ "lane-a": [], "lane-b": [] });
 
-	const assignedIds = new Set(lanes.flatMap((l) => l.players.map((p) => p.id)));
-	const benchPlayers = filtered.filter((p) => !assignedIds.has(p.id));
+	const benchPlayers = useMemo(() => {
+		const assigned = new Set(Object.values(lanePlayers).flat().map((p) => p.id));
+		return filtered.filter((p) => !assigned.has(p.id));
+	}, [filtered, lanePlayers]);
 
-	const handleDropToLane = (laneId: string, player: PlayerItem) => {
-		setLanes((prev) => {
-			// Remove from all lanes first
-			const without = prev.map((l) => ({ ...l, players: l.players.filter((p) => p.id !== player.id) }));
-			// Then add to target lane if capacity allows
-			return without.map((l) =>
-				l.id === laneId
-					? (l.players.length < l.capacity ? { ...l, players: [...l.players, player] } : l)
-					: l
-			);
+	function moveToLane(laneId: string, player: PlayerItem) {
+		setLanePlayers((prev) => {
+			const cleaned: Record<string, PlayerItem[]> = Object.fromEntries(Object.entries(prev).map(([k, arr]) => [k, arr.filter((p) => p.id !== player.id)]));
+			const curr = cleaned[laneId] ?? [];
+			if (curr.length >= (lanesInitial.find((l) => l.id === laneId)?.capacity ?? 4)) return cleaned;
+			return { ...cleaned, [laneId]: [...curr, player] };
 		});
 		onToggleStatus?.(player.id, "In-Game");
-	};
-
-	const handleDropToBench = (player: PlayerItem) => {
-		setLanes((prev) => prev.map((l) => ({ ...l, players: l.players.filter((p) => p.id !== player.id) })));
+	}
+	function moveToBench(player: PlayerItem) {
+		setLanePlayers((prev) => Object.fromEntries(Object.entries(prev).map(([k, arr]) => [k, arr.filter((p) => p.id !== player.id)])));
 		onToggleStatus?.(player.id, "Resting");
-	};
+	}
+
+	function onDragEnd(event: DragEndEvent) {
+		const { over, active } = event;
+		if (!over) return;
+		const player = (active.data.current as any)?.player as PlayerItem;
+		if (!player) return;
+		if (over.id === "bench") return moveToBench(player);
+		moveToLane(String(over.id), player);
+	}
 
 	const DraggablePlayer: React.FC<{ player: PlayerItem }> = ({ player }) => {
-		const ref = useRef<HTMLDivElement>(null);
-		const [, dragRef] = useDrag(() => ({ type: "PLAYER", item: { player } }), [player]);
-		useEffect(() => { if (ref.current) dragRef(ref); }, [dragRef]);
+		const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `player-${player.id}`, data: { player } });
+		const style = { opacity: isDragging ? 0.6 : 1, transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined } as React.CSSProperties;
 		return (
-			<div ref={ref} className="flex items-center justify-between gap-2 rounded-md border p-2 bg-card">
+			<div ref={setNodeRef} style={style} {...listeners} {...attributes} className="flex items-center justify-between gap-2 rounded-md border p-2 bg-card">
 				<span className="text-sm font-medium">{player.name}</span>
 				<Badge variant={player.status === "In-Game" ? "success" : "muted"}>{player.status}</Badge>
 			</div>
 		);
 	};
 
-	const DropLane: React.FC<{ lane: MatchLane }> = ({ lane }) => {
-		const ref = useRef<HTMLDivElement>(null);
-		const [{ canDrop, isOver }, dropRef] = useDrop(() => ({
-			accept: "PLAYER",
-			drop: (item: { player: PlayerItem }) => handleDropToLane(lane.id, item.player),
-			canDrop: (item: { player: PlayerItem }) => !lane.players.find((p) => p.id === item.player.id) || true, // allow moving across lanes
-			collect: (monitor) => ({ canDrop: monitor.canDrop(), isOver: monitor.isOver() }),
-		}), [lane]);
-		useEffect(() => { if (ref.current) dropRef(ref); }, [dropRef]);
+	const DroppableBox: React.FC<{ id: string; title: string; hint?: string; children?: React.ReactNode }> = ({ id, title, hint, children }) => {
+		const { isOver, setNodeRef } = useDroppable({ id });
 		return (
-			<div ref={ref} className={`rounded-md border p-2 min-h-[96px] ${isOver && canDrop ? "bg-muted/40" : "bg-card"}`}>
+			<div ref={setNodeRef} className={`rounded-md border p-2 min-h-[96px] ${isOver ? "bg-muted/40" : "bg-card"}`}>
 				<div className="flex items-center justify-between mb-2">
-					<p className="text-sm font-semibold">{lane.name}</p>
-					<p className="text-xs text-muted-foreground">{lane.players.length}/{lane.capacity}</p>
+					<p className="text-sm font-semibold">{title}</p>
 				</div>
 				<div className="space-y-2">
-					{lane.players.map((p) => (
-						<div key={p.id} className="flex items-center justify-between gap-2 rounded-md border p-2 bg-background">
-							<div className="flex-1">
-								<DraggablePlayer player={p} />
-							</div>
-							<Button size="sm" variant="outline" onClick={() => handleDropToBench(p)}>Remove</Button>
-						</div>
-					))}
-					{lane.players.length === 0 && (
-						<p className="text-xs text-muted-foreground">Drop players here</p>
-					)}
-				</div>
-			</div>
-		);
-	};
-
-	const BenchDrop: React.FC = () => {
-		const ref = useRef<HTMLDivElement>(null);
-		const [{ isOver }, dropRef] = useDrop(() => ({
-			accept: "PLAYER",
-			drop: (item: { player: PlayerItem }) => handleDropToBench(item.player),
-			collect: (monitor) => ({ isOver: monitor.isOver() }),
-		}), []);
-		useEffect(() => { if (ref.current) dropRef(ref); }, [dropRef]);
-		return (
-			<div ref={ref} className={`rounded-md border p-2 ${isOver ? "bg-muted/40" : "bg-card"}`}>
-				<p className="text-sm font-semibold mb-2">Bench</p>
-				<div className="space-y-2">
-					{benchPlayers.map((p) => (
-						<DraggablePlayer key={p.id} player={p} />
-					))}
-					{benchPlayers.length === 0 && (
-						<p className="text-xs text-muted-foreground">No players on bench</p>
-					)}
+					{children}
+					{!children && hint && <p className="text-xs text-muted-foreground">{hint}</p>}
 				</div>
 			</div>
 		);
@@ -131,9 +97,7 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 					<SheetTitle>{title}</SheetTitle>
 				</SheetHeader>
 				<div className="p-4 space-y-4">
-					{notice && (
-						<div className="rounded-md border p-3 text-sm bg-muted/30">{notice}</div>
-					)}
+					{notice && <div className="rounded-md border p-3 text-sm bg-muted/30">{notice}</div>}
 					<div className="flex items-center gap-2">
 						<Input placeholder="Search players" value={filter} onChange={(e) => setFilter(e.target.value)} />
 						{adminMode && (
@@ -144,16 +108,22 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 					</div>
 
 					{adminMode && showMatchmaking && (
-						<DndProvider backend={HTML5Backend}>
+						<DndContext onDragEnd={onDragEnd}>
 							<div className="space-y-3">
-								<BenchDrop />
+								<DroppableBox id="bench" title="Bench">
+									{benchPlayers.length > 0 ? benchPlayers.map((p) => <DraggablePlayer key={p.id} player={p} />) : <p className="text-xs text-muted-foreground">No players on bench</p>}
+								</DroppableBox>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-									{lanes.map((l) => (
-										<DropLane key={l.id} lane={l} />
+									{lanesInitial.map((lane) => (
+										<DroppableBox key={lane.id} id={lane.id} title={`${lane.name} (${(lanePlayers[lane.id] ?? []).length}/${lane.capacity})`} hint="Drop players here">
+											{(lanePlayers[lane.id] ?? []).map((p) => (
+												<DraggablePlayer key={p.id} player={p} />
+											))}
+										</DroppableBox>
 									))}
 								</div>
 							</div>
-						</DndProvider>
+						</DndContext>
 					)}
 
 					{/* Original list view */}
