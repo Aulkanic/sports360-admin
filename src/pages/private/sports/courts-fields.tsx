@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,10 +108,10 @@ const CourtsFieldsPage: React.FC = () => {
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 				{filtered.map((f) => (
 					<div key={f.id} className="rounded-xl border bg-card shadow-sm overflow-hidden">
-						<div className="relative h-28 bg-muted">
+						<div className="relative h-48 bg-muted">
 							{(f.images && f.images[0]) ? (
 								<img src={f.images[0]} alt="banner" className="absolute inset-0 h-full w-full object-cover" />
 							) : (
