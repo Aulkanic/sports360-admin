@@ -7,7 +7,6 @@ import {
   type Event as RBCEvent,
 } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays } from "date-fns";
-import { DayPicker } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ import {
 import PlayerStatusPanel, {
   type PlayerItem,
 } from "@/components/player-status-panel";
-import "react-day-picker/dist/style.css";
 
 import {
   ChevronLeft,
@@ -29,7 +27,6 @@ import {
   CalendarDays,
   Filter,
   BarChart3,
-  Settings,
   Plus,
 } from "lucide-react";
 import { MiniMonth } from "./mini-booking";

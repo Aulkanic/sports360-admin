@@ -10,7 +10,7 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-function buildMonthGrid(month: Date, weekStartsOn = 1) {
+function buildMonthGrid(month: Date, weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6 = 1) {
   const firstOfMonth = startOfMonth(month);
   const gridStart = startOfWeek(firstOfMonth, { weekStartsOn }); // Mon-start
   return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)); // 6 rows
@@ -29,10 +29,10 @@ export const MiniMonth: React.FC<MiniMonthProps> = ({
   weekStartsOn = 1,
   className,
 }) => {
-  const [month, setMonth] = React.useState(startOfMonth(value));
+  const [month, setMonth] = React.useState<Date>(startOfMonth(value));
   React.useEffect(() => setMonth(startOfMonth(value)), [value]);
 
-  const days = buildMonthGrid(month, weekStartsOn);
+  const days: Date[] = buildMonthGrid(month, weekStartsOn);
   const today = new Date();
 
   const dow = Array.from({ length: 7 }, (_, i) =>
