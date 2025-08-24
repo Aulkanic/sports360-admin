@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from "react-big-calendar";
+import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import ClubCalendar from "@/components/club-calendar";
 
 interface ClubEvent {
 	id: string;
@@ -145,30 +145,6 @@ const EventsPage: React.FC = () => {
 
 	const rbcEvents: RBCEvent[] = useMemo(() => filtered.map((e) => ({ id: e.id, title: e.name, start: new Date(e.start), end: new Date(e.end), resource: e })), [filtered]);
 
-	const CustomToolbar: React.FC<any> = (props) => {
-		const { label, onNavigate, onView, view } = props;
-		return (
-			<div className="flex items-center justify-between p-2 border-b">
-				<div className="flex items-center gap-2">
-					<Button size="sm" variant="outline" onClick={() => onNavigate("TODAY")}>Today</Button>
-					<Button size="icon" variant="outline" onClick={() => onNavigate("PREV")}>
-						<ChevronLeft className="h-4 w-4" />
-					</Button>
-					<Button size="icon" variant="outline" onClick={() => onNavigate("NEXT")}>
-						<ChevronRight className="h-4 w-4" />
-					</Button>
-					<span className="text-sm font-semibold ml-2">{label}</span>
-				</div>
-				<div className="flex items-center gap-1">
-					{[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
-						<button key={v} onClick={() => onView(v)} className={`h-8 px-3 rounded-md border text-sm ${view === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
-							{v.charAt(0) + v.slice(1).toLowerCase()}
-						</button>
-					))}
-				</div>
-			</div>
-		);
-	};
 
 	const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
 		const data = (event as any).resource as ClubEvent;
@@ -216,15 +192,14 @@ const EventsPage: React.FC = () => {
 
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 				<div className="lg:col-span-2 rounded-xl border bg-card">
-					<Calendar
+					<ClubCalendar
 						localizer={localizer}
 						events={rbcEvents}
 						startAccessor="start"
 						endAccessor="end"
-						style={{ height: 560 }}
 						selectable
 						popup
-						components={{ toolbar: CustomToolbar, event: EventContent }}
+						components={{ event: EventContent }}
 						onSelectSlot={(slot: SlotInfo) => openCreate(slot)}
 						onSelectEvent={(event: RBCEvent) => openEdit((event as any).resource as ClubEvent)}
 						views={[Views.MONTH, Views.WEEK, Views.DAY]}
