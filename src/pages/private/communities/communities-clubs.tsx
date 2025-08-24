@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
-import { Building2, MapPin, Globe2, Link2, Plus, Pencil, Trash2, Search, Filter as FilterIcon, Upload, Download, GripVertical, MoreHorizontal } from "lucide-react";
+import { Building2, MapPin, Globe2, Link2, Plus, Pencil, Trash2, Search, Filter as FilterIcon, Upload, Download, GripVertical, MoreHorizontal, Users, Calendar } from "lucide-react";
 
 // -------------------- Types --------------------
 export type CommunityVisibility = "public" | "private" | "hidden";
@@ -18,7 +18,13 @@ export type Community = {
 	sports: string[];
 	visibility: CommunityVisibility;
 	joinPolicy: JoinPolicy;
-	location: { city: string; country: string; lat?: number; lng?: number };
+	location: { city: string; country: string; address?: string; lat?: number; lng?: number };
+	timezone?: string;
+	memberCount?: number;
+	upcomingEventsCount?: number;
+	tags?: string[];
+	socials?: { website?: string; instagram?: string; facebook?: string; whatsapp?: string };
+	meetingInfo?: { typicalDays?: string[]; typicalTimes?: string; venue?: string };
 	coverImageUrl?: string;
 	description?: string;
 	rules?: string;
@@ -35,6 +41,9 @@ export type Club = {
 	logoUrl?: string;
 	contactEmail?: string;
 	status: ClubStatus;
+	memberCount?: number;
+	location?: { city: string; country: string; address?: string; lat?: number; lng?: number };
+	socials?: { website?: string; instagram?: string; facebook?: string };
 	createdAt: string; // ISO
 };
 
@@ -88,23 +97,23 @@ export const uniqueSlugGuard = (existingSlugs: string[], candidate: string) => {
 
 // -------------------- Seeds --------------------
 const seedCommunities: Community[] = [
-	{ id: "cm-1", name: "Pickleball Social Hub", slug: "pickleball-social", sports: ["Pickleball"], visibility: "public", joinPolicy: "auto", location: { city: "Austin", country: "USA" }, description: "Weekly socials and clinics", createdAt: nowIso(), updatedAt: nowIso() },
-	{ id: "cm-2", name: "Badminton League", slug: "badminton-league", sports: ["Badminton"], visibility: "private", joinPolicy: "approval", location: { city: "Toronto", country: "Canada" }, createdAt: nowIso(), updatedAt: nowIso() },
-	{ id: "cm-3", name: "City Tennis Network", slug: "city-tennis", sports: ["Tennis"], visibility: "public", joinPolicy: "auto", location: { city: "London", country: "UK" }, createdAt: nowIso(), updatedAt: nowIso() },
-	{ id: "cm-4", name: "Hoops Club", slug: "hoops-club", sports: ["Basketball"], visibility: "hidden", joinPolicy: "approval", location: { city: "Sydney", country: "Australia" }, createdAt: nowIso(), updatedAt: nowIso() },
-	{ id: "cm-5", name: "Racquet Collective", slug: "racquet-collective", sports: ["Tennis", "Badminton"], visibility: "public", joinPolicy: "approval", location: { city: "Seattle", country: "USA" }, createdAt: nowIso(), updatedAt: nowIso() },
+	{ id: "cm-1", name: "Pickleball Social Hub", slug: "pickleball-social", sports: ["Pickleball"], visibility: "public", joinPolicy: "auto", timezone: "America/Chicago", memberCount: 324, upcomingEventsCount: 3, tags: ["social","clinic"], socials: { instagram: "@pickle_social" }, meetingInfo: { typicalDays: ["Tue","Thu"], typicalTimes: "6–8 PM", venue: "City Rec Center" }, location: { city: "Austin", country: "USA", address: "123 Main St" }, description: "Weekly socials and clinics", createdAt: nowIso(), updatedAt: nowIso() },
+	{ id: "cm-2", name: "Badminton League", slug: "badminton-league", sports: ["Badminton"], visibility: "private", joinPolicy: "approval", timezone: "America/Toronto", memberCount: 198, upcomingEventsCount: 2, tags: ["league","ladder"], socials: { website: "https://badminton-league.example" }, location: { city: "Toronto", country: "Canada" }, createdAt: nowIso(), updatedAt: nowIso() },
+	{ id: "cm-3", name: "City Tennis Network", slug: "city-tennis", sports: ["Tennis"], visibility: "public", joinPolicy: "auto", timezone: "Europe/London", memberCount: 542, upcomingEventsCount: 5, tags: ["network","teams"], location: { city: "London", country: "UK" }, createdAt: nowIso(), updatedAt: nowIso() },
+	{ id: "cm-4", name: "Hoops Club", slug: "hoops-club", sports: ["Basketball"], visibility: "hidden", joinPolicy: "approval", timezone: "Australia/Sydney", memberCount: 120, upcomingEventsCount: 1, tags: ["pickup"], location: { city: "Sydney", country: "Australia" }, createdAt: nowIso(), updatedAt: nowIso() },
+	{ id: "cm-5", name: "Racquet Collective", slug: "racquet-collective", sports: ["Tennis", "Badminton"], visibility: "public", joinPolicy: "approval", timezone: "America/Los_Angeles", memberCount: 271, upcomingEventsCount: 2, tags: ["multi-sport"], location: { city: "Seattle", country: "USA" }, createdAt: nowIso(), updatedAt: nowIso() },
 ];
 
 const seedClubs: Club[] = [
-	{ id: "cl-1", name: "Downtown Picklers", slug: "downtown-picklers", sports: ["Pickleball"], timezone: "America/Chicago", status: "active", createdAt: nowIso(), logoUrl: "" },
-	{ id: "cl-2", name: "Shuttle Masters", slug: "shuttle-masters", sports: ["Badminton"], timezone: "America/Toronto", status: "active", createdAt: nowIso() },
-	{ id: "cl-3", name: "Tennis Pros", slug: "tennis-pros", sports: ["Tennis"], timezone: "Europe/London", status: "active", createdAt: nowIso() },
-	{ id: "cl-4", name: "City Hoopers", slug: "city-hoopers", sports: ["Basketball"], timezone: "Australia/Sydney", status: "archived", createdAt: nowIso() },
-	{ id: "cl-5", name: "Court Ninjas", slug: "court-ninjas", sports: ["Tennis", "Badminton"], timezone: "America/Los_Angeles", status: "active", createdAt: nowIso() },
-	{ id: "cl-6", name: "Spin Doctors", slug: "spin-doctors", sports: ["Pickleball"], timezone: "America/Chicago", status: "active", createdAt: nowIso() },
-	{ id: "cl-7", name: "Baseline United", slug: "baseline-united", sports: ["Tennis"], timezone: "America/New_York", status: "active", createdAt: nowIso() },
-	{ id: "cl-8", name: "Rim Runners", slug: "rim-runners", sports: ["Basketball"], timezone: "America/Los_Angeles", status: "active", createdAt: nowIso() },
-	{ id: "cl-9", name: "Feather Flyers", slug: "feather-flyers", sports: ["Badminton"], timezone: "Asia/Singapore", status: "active", createdAt: nowIso() },
+	{ id: "cl-1", name: "Downtown Picklers", slug: "downtown-picklers", sports: ["Pickleball"], timezone: "America/Chicago", status: "active", memberCount: 120, location: { city: "Austin", country: "USA" }, socials: { instagram: "@downtown.picklers" }, createdAt: nowIso(), logoUrl: "" },
+	{ id: "cl-2", name: "Shuttle Masters", slug: "shuttle-masters", sports: ["Badminton"], timezone: "America/Toronto", status: "active", memberCount: 85, location: { city: "Toronto", country: "Canada" }, createdAt: nowIso() },
+	{ id: "cl-3", name: "Tennis Pros", slug: "tennis-pros", sports: ["Tennis"], timezone: "Europe/London", status: "active", memberCount: 210, location: { city: "London", country: "UK" }, createdAt: nowIso() },
+	{ id: "cl-4", name: "City Hoopers", slug: "city-hoopers", sports: ["Basketball"], timezone: "Australia/Sydney", status: "archived", memberCount: 40, location: { city: "Sydney", country: "Australia" }, createdAt: nowIso() },
+	{ id: "cl-5", name: "Court Ninjas", slug: "court-ninjas", sports: ["Tennis", "Badminton"], timezone: "America/Los_Angeles", status: "active", memberCount: 150, location: { city: "Seattle", country: "USA" }, createdAt: nowIso() },
+	{ id: "cl-6", name: "Spin Doctors", slug: "spin-doctors", sports: ["Pickleball"], timezone: "America/Chicago", status: "active", memberCount: 90, location: { city: "Austin", country: "USA" }, createdAt: nowIso() },
+	{ id: "cl-7", name: "Baseline United", slug: "baseline-united", sports: ["Tennis"], timezone: "America/New_York", status: "active", memberCount: 175, location: { city: "New York", country: "USA" }, createdAt: nowIso() },
+	{ id: "cl-8", name: "Rim Runners", slug: "rim-runners", sports: ["Basketball"], timezone: "America/Los_Angeles", status: "active", memberCount: 65, location: { city: "Los Angeles", country: "USA" }, createdAt: nowIso() },
+	{ id: "cl-9", name: "Feather Flyers", slug: "feather-flyers", sports: ["Badminton"], timezone: "Asia/Singapore", status: "active", memberCount: 95, location: { city: "Singapore", country: "Singapore" }, createdAt: nowIso() },
 ];
 
 const seedLinks: CommunityClubLink[] = [
@@ -345,7 +354,15 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 							<tr key={c.id} className="border-t hover:bg-muted/20">
 								<td className="p-3 align-top"><input type="checkbox" aria-label={`Select ${c.name}`} checked={selectedIds.has(c.id)} onChange={() => toggleSelect(c.id)} /></td>
 								<td className="p-3 align-top">
-									<div className="font-medium leading-tight">{c.name}</div>
+									<div className="font-medium leading-tight flex items-center gap-2">
+										<span>{c.name}</span>
+										{typeof c.memberCount === 'number' && (
+											<span className="inline-flex items-center text-xs text-muted-foreground gap-1"><Users className="h-3.5 w-3.5" />{c.memberCount}</span>
+										)}
+										{typeof c.upcomingEventsCount === 'number' && (
+											<span className="inline-flex items-center text-xs text-muted-foreground gap-1"><Calendar className="h-3.5 w-3.5" />{c.upcomingEventsCount}</span>
+										)}
+									</div>
 									<div className="text-xs text-muted-foreground">{c.slug}</div>
 								</td>
 								<td className="p-3 align-top">
@@ -354,7 +371,11 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 									</div>
 								</td>
 								<td className="p-3 align-top"><VisibilityBadge v={c.visibility} /></td>
-								<td className="p-3 align-top"><span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{c.location.city}, {c.location.country}</span></td>
+								<td className="p-3 align-top"><span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{c.location.city}, {c.location.country}</span>
+									{c.tags?.length ? (
+										<div className="mt-1 flex flex-wrap gap-1">{c.tags!.slice(0,3).map((t) => <span key={t} className="text-[10px] px-2 py-0.5 rounded-full border bg-muted text-muted-foreground">#{t}</span>)}</div>
+									) : null}
+								</td>
 								<td className="p-3 align-top">{countClubs(c.id)}</td>
 								<td className="p-3 align-top">{new Date(c.updatedAt).toLocaleDateString()}</td>
 								<td className="p-3 align-top">
@@ -406,8 +427,16 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 								<div className="flex items-center gap-2">
 									<Globe2 className="h-4 w-4" />
 									<p className="text-sm font-medium">{manageFor.location.city}, {manageFor.location.country}</p>
-									<div className="flex flex-wrap gap-1 ml-auto">
-										{manageFor.sports.map((s) => <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full border ${sportColor(s)}`}>{s}</span>)}
+									<div className="flex items-center gap-3 ml-auto">
+										{typeof manageFor.memberCount === 'number' && (
+											<span className="inline-flex items-center text-xs text-muted-foreground gap-1"><Users className="h-3.5 w-3.5" />{manageFor.memberCount}</span>
+										)}
+										{typeof manageFor.upcomingEventsCount === 'number' && (
+											<span className="inline-flex items-center text-xs text-muted-foreground gap-1"><Calendar className="h-3.5 w-3.5" />{manageFor.upcomingEventsCount}</span>
+										)}
+										<div className="flex flex-wrap gap-1">
+											{manageFor.sports.map((s) => <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full border ${sportColor(s)}`}>{s}</span>)}
+										</div>
 									</div>
 								</div>
 							</div>
@@ -504,10 +533,14 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 							<span className="text-sm">Name</span>
 							<Input defaultValue={editingCommunity?.name || ""} id="cm-name" />
 						</label>
-						<label className="space-y-1 block">
-							<span className="text-sm">Slug</span>
-							<Input defaultValue={editingCommunity?.slug || ""} id="cm-slug" />
-						</label>
+															<label className="space-y-1 block">
+										<span className="text-sm">Slug</span>
+										<Input defaultValue={editingCommunity?.slug || ""} id="cm-slug" />
+									</label>
+									<div className="grid grid-cols-2 gap-2">
+										<label className="space-y-1 block"><span className="text-sm">Timezone</span><Input defaultValue={editingCommunity?.timezone || ""} id="cm-tz" /></label>
+										<label className="space-y-1 block"><span className="text-sm">Tags (comma-separated)</span><Input defaultValue={editingCommunity?.tags?.join(", ") || ""} id="cm-tags" /></label>
+									</div>
 						<label className="space-y-1 block">
 							<span className="text-sm">Sports (comma-separated)</span>
 							<Input defaultValue={editingCommunity?.sports.join(", ") || "Pickleball"} id="cm-sports" />
