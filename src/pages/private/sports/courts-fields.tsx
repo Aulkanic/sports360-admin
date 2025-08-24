@@ -20,9 +20,9 @@ interface Facility {
 }
 
 const initialFacilities: Facility[] = [
-	{ id: "f1", name: "Court A", type: "Court", location: "Building 1", status: "Available", images: ["https://tse4.mm.bing.net/th/id/OIP.uNvD4-Mwm18Y7mqk0WkUcgHaDT?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"], capacity: 10, openingHours: "08:00 - 22:00", reservations: 2, amenities: ["Lighting", "Benches"] },
-	{ id: "f2", name: "Field 1", type: "Field", location: "North Wing", status: "Booked", images: ["https://tse1.mm.bing.net/th/id/OIP.wdqEdSlnuBW1zqsBGrNrSgHaE8?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"], capacity: 22, openingHours: "06:00 - 21:00", reservations: 1, amenities: ["Locker Rooms", "Shower"] },
-	{ id: "f3", name: "Court 2", type: "Court", location: "Building 2", status: "Maintenance", images: ["https://www.urbansoccerpark.com/hs-fs/hubfs/Imported%20images/DJI_0039-1.jpeg?width=2000&height=1167&name=DJI_0039-1.jpeg"], capacity: 8, openingHours: "09:00 - 18:00", reservations: 0, amenities: ["Water Station"] },
+	{ id: "f1", name: "Court 1", type: "Court", location: "Building 1", status: "Available", images: ["https://tse4.mm.bing.net/th/id/OIP.uNvD4-Mwm18Y7mqk0WkUcgHaDT?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"], capacity: 10, openingHours: "08:00 - 22:00", reservations: 2, amenities: ["Lighting", "Benches"] },
+	{ id: "f2", name: "Court 2", type: "Field", location: "North Wing", status: "Booked", images: ["https://tse1.mm.bing.net/th/id/OIP.wdqEdSlnuBW1zqsBGrNrSgHaE8?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"], capacity: 22, openingHours: "06:00 - 21:00", reservations: 1, amenities: ["Locker Rooms", "Shower"] },
+	{ id: "f3", name: "Court 3", type: "Court", location: "Building 2", status: "Maintenance", images: ["https://www.urbansoccerpark.com/hs-fs/hubfs/Imported%20images/DJI_0039-1.jpeg?width=2000&height=1167&name=DJI_0039-1.jpeg"], capacity: 8, openingHours: "09:00 - 18:00", reservations: 0, amenities: ["Water Station"] },
 ];
 
 const CourtsFieldsPage: React.FC = () => {
