@@ -35,8 +35,8 @@ const PrivateLayout = () => {
           {/* Right section: Common UI Elements */}
           <div className="flex items-center gap-4">
             <MdNotificationsActive size={28} color="gray" />
-            <Avatar>
-              <AvatarImage src="https://github.com/shadcn.png" />
+            <Avatar className="w-8">
+              <AvatarImage sizes="10" src="https://github.com/shadcn.png" />
             </Avatar>
           </div>
         </header>
