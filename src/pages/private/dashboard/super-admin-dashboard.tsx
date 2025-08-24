@@ -21,9 +21,8 @@ import {
 import {
   Calendar,
   dateFnsLocalizer,
-  View,
-  Event as RBCEvent, // type from react-big-calendar
 } from "react-big-calendar";
+import type { Event as RBCEvent } from "react-big-calendar";
 import {
   format,
   parse,
@@ -33,7 +32,7 @@ import {
   setHours,
   setMinutes,
 } from "date-fns";
-import enUS from "date-fns/locale/en-US";
+import { enUS } from "date-fns/locale/en-US";
 
 // ---------- Types ----------
 type EventType = "Event" | "Activity" | "Tournament";
@@ -51,7 +50,7 @@ const locales = { "en-US": enUS };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 0 }),
+  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 0 }),
   getDay,
   locales,
 });
@@ -345,21 +344,21 @@ const SuperAdminDashboardPage: React.FC = () => {
             <Calendar
               localizer={localizer}
               events={calendarEvents}
-              views={["month", "week", "day", "agenda"] as View[]}
-              defaultView={"month" as View}
+              views={["month", "week", "day", "agenda"]}
+              defaultView={"month"}
               popup
               startAccessor="start"
               endAccessor="end"
               style={{ height: "100%" }}
               eventPropGetter={eventPropGetter}
               components={{
-                event: (props) => <EventContent event={props.event as RBCEvent} />,
+                event: (props: { event: RBCEvent }) => <EventContent event={props.event} />,
               }}
-              onSelectEvent={(ev) => {
+              onSelectEvent={(ev: RBCEvent) => {
                 const e = ev as DashboardEvent;
                 if (e.href) window.open(e.href, "_blank");
               }}
-              tooltipAccessor={(ev) => {
+              tooltipAccessor={(ev: RBCEvent) => {
                 const e = ev as DashboardEvent;
                 return `${e.title} • ${e.type} • ${e.status}`;
               }}

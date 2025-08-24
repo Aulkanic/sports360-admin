@@ -264,61 +264,77 @@ const SportsPage: React.FC = () => {
             key={s.id}
             className="rounded-xl border bg-card shadow-sm overflow-hidden"
           >
-            <div className="relative h-28 bg-muted">
-              {s.bannerUrl ? (
+            {/* Header & thumbnail (banner removed) */}
+            <div className="p-4 flex items-start gap-3">
+              {s.imageUrl || s.bannerUrl ? (
                 <img
-                  src={s.bannerUrl}
-                  alt="banner"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  src={s.imageUrl || s.bannerUrl}
+                  alt={s.name}
+                  className="h-14 w-14 rounded-md object-cover border"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-r from-primary/20 to-accent/20" />
+                <div className="h-14 w-14 rounded-md border flex items-center justify-center text-xs text-muted-foreground">
+                  No Img
+                </div>
               )}
-              <div className="absolute top-2 right-2">
-                <Badge variant={s.status === "Active" ? "success" : "muted"}>
-                  {s.status}
-                </Badge>
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-base font-semibold leading-tight">{s.name}</h3>
+                  <Badge variant={s.status === "Active" ? "success" : "muted"}>{s.status}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                  {s.description}
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <Badge variant="secondary">{s.type}</Badge>
+                  <Badge variant="outline">{s.category}</Badge>
+                  <Badge variant="outline">Level: {s.level}</Badge>
+                  <Badge variant={s.coaching === "Available" ? "success" : "muted"}>
+                    {s.coaching === "Available" ? "Coaching available" : "No coaching"}
+                  </Badge>
+                </div>
               </div>
             </div>
-            <div className="p-4 flex flex-col gap-3">
-              <div className="flex items-start gap-3">
-                {s.imageUrl || s.bannerUrl ? (
-                  <img
-                    src={s.imageUrl || s.bannerUrl}
-                    alt={s.name}
-                    className="h-12 w-12 rounded-md object-cover border"
-                  />
-                ) : (
-                  <div className="h-12 w-12 rounded-md border flex items-center justify-center text-xs text-muted-foreground">
-                    No Img
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold">{s.name}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {s.description}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Facility: {s.facility}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Category: {s.category} • Level: {s.level} • Coaching:{" "}
-                    {s.coaching}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{s.type}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span>{s.numPlayers} players</span>
-                </div>
+
+            {/* Meta */}
+            <div className="px-4 pb-3 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>Facility: <span className="font-medium text-foreground">{s.facility}</span></span>
+                <span>Players: <span className="font-medium text-foreground">{s.numPlayers}</span></span>
                 {typeof s.participants === "number" && (
-                  <span className="text-muted-foreground">
-                    {s.participants} participants
-                  </span>
+                  <span>Participants: <span className="font-medium text-foreground">{s.participants}</span></span>
                 )}
               </div>
+            </div>
+
+            {/* Equipment & positions preview */}
+            <div className="px-4 pb-3">
+              <div className="flex flex-wrap gap-2">
+                {s.equipment.slice(0, 3).map((eq) => (
+                  <Badge key={eq} variant="ghost" className="border px-2 py-0.5 text-xs">
+                    {eq}
+                  </Badge>
+                ))}
+                {s.equipment.length > 3 && (
+                  <span className="text-xs text-muted-foreground">+{s.equipment.length - 3} more</span>
+                )}
+              </div>
+              {s.positions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {s.positions.slice(0, 3).map((p) => (
+                    <Badge key={p} variant="ghost" className="border px-2 py-0.5 text-xs">
+                      {p}
+                    </Badge>
+                  ))}
+                  {s.positions.length > 3 && (
+                    <span className="text-xs text-muted-foreground">+{s.positions.length - 3} more roles</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="px-4 pb-4">
               <div className="flex items-center gap-2">
                 <Button size="sm" onClick={() => openDetailsSheet(s)}>
                   View
@@ -393,7 +409,7 @@ const SportsPage: React.FC = () => {
                   ) : null}
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold">
-                      {detailItem.name}{" "}
+                      {detailItem.name} {" "}
                       <Badge
                         variant={
                           detailItem.status === "Active" ? "success" : "muted"
@@ -406,7 +422,7 @@ const SportsPage: React.FC = () => {
                       {detailItem.description}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Category: {detailItem.category} • Level:{" "}
+                      Category: {detailItem.category} • Level: {" "}
                       {detailItem.level} • Coaching: {detailItem.coaching}
                     </p>
                   </div>
