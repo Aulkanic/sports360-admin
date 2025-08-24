@@ -4,7 +4,6 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -36,6 +35,8 @@ const colorForType: Record<BookingEvent["type"], string> = {
 	"Open Play": "#8b5cf6",
 };
 
+const allTypes: BookingEvent["type"][] = ["One-time", "Tournament", "Recurring", "Open Play"];
+
 const BookingsCalendarPage: React.FC = () => {
 	const [events, setEvents] = useState<BookingEvent[]>(initial);
 	const [query, setQuery] = useState("");
@@ -45,17 +46,24 @@ const BookingsCalendarPage: React.FC = () => {
 	const [form, setForm] = useState({ name: "", email: "", players: 1 });
 	const [openPlayers, setOpenPlayers] = useState(false);
 	const [notice, setNotice] = useState<string>("");
+	const [typeFilters, setTypeFilters] = useState<Record<BookingEvent["type"], boolean>>({
+		"One-time": true,
+		"Tournament": true,
+		"Recurring": true,
+		"Open Play": true,
+	});
 
 	const filtered = useMemo(() => {
 		return events.filter((e) => {
 			if (type !== "All" && e.type !== type) return false;
+			if (!typeFilters[e.type]) return false;
 			if (query.trim()) {
 				const q = query.toLowerCase();
 				if (![e.title, e.description, e.location, e.type].some((v) => v.toLowerCase().includes(q))) return false;
 			}
 			return true;
 		});
-	}, [events, type, query]);
+	}, [events, type, typeFilters, query]);
 
 	const rbcEvents: RBCEvent[] = useMemo(() => filtered.map((e) => ({ id: e.id, title: e.title, start: e.start, end: e.end, resource: e })), [filtered]);
 
@@ -70,11 +78,6 @@ const BookingsCalendarPage: React.FC = () => {
 		if (!form.name.trim() || !form.email.trim() || form.players <= 0) return alert("Fill all required fields");
 		alert(`Booked ${selected?.title} for ${form.name}`);
 		setOpen(false);
-	}
-
-	function openPlayersPanel(ev: BookingEvent) {
-		setSelected(ev);
-		setOpenPlayers(true);
 	}
 
 	function requestChange(playerId: string, to: PlayerItem["status"]) {
@@ -101,7 +104,7 @@ const BookingsCalendarPage: React.FC = () => {
 					<span className="text-sm font-semibold ml-2">{label}</span>
 				</div>
 				<div className="flex items-center gap-1">
-					{[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
+					{[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA].map((v) => (
 						<button key={v} onClick={() => onView(v)} className={`h-8 px-3 rounded-md border text-sm ${view === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
 							{v.charAt(0) + v.slice(1).toLowerCase()}
 						</button>
@@ -138,18 +141,30 @@ const BookingsCalendarPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Legend */}
-			<div className="flex flex-wrap items-center gap-3 text-xs">
-				{(Object.keys(colorForType) as Array<keyof typeof colorForType>).map((k) => (
-					<span key={String(k)} className="inline-flex items-center gap-2">
-						<span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorForType[k] }} />
-						<span className="text-muted-foreground">{k}</span>
-					</span>
-				))}
-			</div>
+			<div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+				{/* Sidebar Filters */}
+				<div className="rounded-xl border bg-card p-3 h-fit">
+					<p className="text-sm font-semibold mb-2">Calendars</p>
+					<div className="space-y-2 text-sm">
+						{allTypes.map((t) => (
+							<label key={t} className="flex items-center justify-between gap-2 cursor-pointer">
+								<span className="inline-flex items-center gap-2">
+									<span className="h-3 w-3 rounded" style={{ backgroundColor: colorForType[t] }} />
+									<span>{t}</span>
+								</span>
+								<input
+									type="checkbox"
+									checked={typeFilters[t]}
+									onChange={(e) => setTypeFilters((p) => ({ ...p, [t]: e.target.checked }))}
+									className="h-4 w-4"
+								/>
+							</label>
+						))}
+					</div>
+				</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-				<div className="lg:col-span-2 rounded-xl border bg-card">
+				{/* Calendar */}
+				<div className="lg:col-span-3 rounded-xl border bg-card">
 					<Calendar
 						localizer={localizer}
 						events={rbcEvents}
@@ -164,28 +179,8 @@ const BookingsCalendarPage: React.FC = () => {
 							const bg = colorForType[data.type];
 							return { style: { backgroundColor: `${bg}22`, border: `1px solid ${bg}66`, color: "inherit", borderRadius: 8 } };
 						}}
-						views={[Views.MONTH, Views.WEEK, Views.DAY]}
+						views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
 					/>
-				</div>
-				<div className="space-y-2">
-					{filtered.map((e) => (
-						<div key={e.id} className="rounded-lg border bg-card p-3 flex flex-col gap-2">
-							<div className="flex items-center justify-between">
-								<div>
-									<h3 className="text-sm font-semibold">{e.title}</h3>
-									<p className="text-xs text-muted-foreground line-clamp-2">{e.description}</p>
-								</div>
-								<Badge variant="muted">{e.available} spots</Badge>
-							</div>
-							<p className="text-xs text-muted-foreground">{format(e.start, "PP p")} • {e.location} • {e.type}</p>
-							<div className="flex items-center gap-2">
-								<Button size="sm" onClick={() => openBooking(e)}>Book</Button>
-								{(e.type === "One-time" || e.type === "Open Play") && (
-									<Button size="sm" variant="outline" onClick={() => openPlayersPanel(e)}>Players</Button>
-								)}
-							</div>
-						</div>
-					))}
 				</div>
 			</div>
 
