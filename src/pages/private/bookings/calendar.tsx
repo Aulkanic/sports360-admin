@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface BookingEvent {
 	id: string;
@@ -85,6 +86,42 @@ const BookingsCalendarPage: React.FC = () => {
 		setNotice(`Request sent: set to ${to}`);
 	}
 
+	const CustomToolbar: React.FC<any> = (props) => {
+		const { label, onNavigate, onView, view } = props;
+		return (
+			<div className="flex items-center justify-between p-2 border-b">
+				<div className="flex items-center gap-2">
+					<Button size="sm" variant="outline" onClick={() => onNavigate("TODAY")}>Today</Button>
+					<Button size="icon" variant="outline" onClick={() => onNavigate("PREV")}>
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<Button size="icon" variant="outline" onClick={() => onNavigate("NEXT")}>
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+					<span className="text-sm font-semibold ml-2">{label}</span>
+				</div>
+				<div className="flex items-center gap-1">
+					{[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
+						<button key={v} onClick={() => onView(v)} className={`h-8 px-3 rounded-md border text-sm ${view === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
+							{v.charAt(0) + v.slice(1).toLowerCase()}
+						</button>
+					))}
+				</div>
+			</div>
+		);
+	};
+
+	const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
+		const data = (event as any).resource as BookingEvent;
+		const bg = colorForType[data.type];
+		return (
+			<div className="flex items-center gap-2 px-1 py-0.5">
+				<span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: bg }} />
+				<span className="text-xs font-medium">{data.title}</span>
+			</div>
+		);
+	};
+
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -101,17 +138,32 @@ const BookingsCalendarPage: React.FC = () => {
 				</div>
 			</div>
 
+			{/* Legend */}
+			<div className="flex flex-wrap items-center gap-3 text-xs">
+				{(Object.keys(colorForType) as Array<keyof typeof colorForType>).map((k) => (
+					<span key={String(k)} className="inline-flex items-center gap-2">
+						<span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorForType[k] }} />
+						<span className="text-muted-foreground">{k}</span>
+					</span>
+				))}
+			</div>
+
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-				<div className="lg:col-span-2 rounded-xl border bg-card p-2">
+				<div className="lg:col-span-2 rounded-xl border bg-card">
 					<Calendar
 						localizer={localizer}
 						events={rbcEvents}
 						startAccessor="start"
 						endAccessor="end"
-						style={{ height: 520 }}
+						style={{ height: 560 }}
 						popup
+						components={{ toolbar: CustomToolbar, event: EventContent }}
 						onSelectEvent={(event: RBCEvent) => openBooking((event as any).resource as BookingEvent)}
-						eventPropGetter={(event: RBCEvent) => ({ style: { backgroundColor: colorForType[((event as any).resource as BookingEvent).type] } })}
+						eventPropGetter={(event: RBCEvent) => {
+							const data = (event as any).resource as BookingEvent;
+							const bg = colorForType[data.type];
+							return { style: { backgroundColor: `${bg}22`, border: `1px solid ${bg}66`, color: "inherit", borderRadius: 8 } };
+						}}
 						views={[Views.MONTH, Views.WEEK, Views.DAY]}
 					/>
 				</div>
