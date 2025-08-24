@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import {
-  Calendar as RBCalendar,
   dateFnsLocalizer,
   Views,
   type Event as RBCEvent,
@@ -21,15 +20,8 @@ import PlayerStatusPanel, {
   type PlayerItem,
 } from "@/components/player-status-panel";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-  Filter,
-  BarChart3,
-  Plus,
-} from "lucide-react";
 import { MiniMonth } from "./mini-booking";
+import ClubCalendar from "@/components/club-calendar";
 
 // ---------------- Types & data ----------------
 interface BookingEvent {
@@ -245,92 +237,7 @@ const BookingsCalendarPage: React.FC = () => {
     setNotice(`Request sent: set to ${to}`);
   }
 
-  // ---------- Custom Toolbar to match screenshot ----------
-  const CustomToolbar: React.FC<any> = (props) => {
-    const { label, onNavigate, onView, view, date } = props;
-    return (
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-3 border-b">
-        {/* Left: nav */}
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold mr-2">Calendar</h2>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => onNavigate("TODAY")}
-            className="gap-1"
-          >
-            <CalendarDays className="h-4 w-4" />
-            Today
-          </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => onNavigate("PREV")}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => onNavigate("NEXT")}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold ml-2">{label}</span>
-        </div>
 
-        {/* Right: view tabs + date range + tools + create */}
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border bg-background p-0.5">
-            {[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
-              <button
-                key={v}
-                onClick={() => {
-                  onView(v);
-                  setCalView(v);
-                }}
-                className={`h-8 px-3 text-sm rounded-[6px] ${
-                  view === v
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
-                }`}
-              >
-                {v === Views.MONTH
-                  ? "Month"
-                  : v === Views.WEEK
-                  ? "Week"
-                  : "Day"}
-              </button>
-            ))}
-          </div>
-
-          <div className="hidden md:flex items-center gap-2">
-            <div className="relative">
-              <Input
-                className="h-8 pl-8 w-[210px]"
-                defaultValue={`${format(date, "MM/dd/yyyy")} - ${format(
-                  date,
-                  "MM/dd/yyyy"
-                )}`}
-              />
-              <CalendarDays className="absolute left-2 top-1.5 h-5 w-5 text-muted-foreground" />
-            </div>
-            <Button size="icon" variant="outline" title="Reports">
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="outline" title="Filters">
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Button className="bg-orange-500 hover:bg-orange-600">
-            <Plus className="h-4 w-4 mr-1" />
-            Create
-          </Button>
-        </div>
-      </div>
-    );
-  };
 
   const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
     const data = (event as any).resource as BookingEvent;
@@ -461,14 +368,13 @@ const BookingsCalendarPage: React.FC = () => {
 
         {/* Calendar (right card) */}
         <div className="lg:col-span-3 rounded-xl border bg-card relative">
-          <RBCalendar
+          <ClubCalendar
             localizer={localizer}
             events={rbcEvents}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 720 }}
             popup
-            components={{ toolbar: CustomToolbar, event: EventContent }}
+            components={{ event: EventContent }}
             date={calDate}
             view={calView as any}
             onNavigate={(d: any) => setCalDate(d)}
