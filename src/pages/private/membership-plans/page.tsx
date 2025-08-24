@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Check, X } from "lucide-react";
 
 interface PlanRow {
 	id: string;
@@ -21,6 +22,14 @@ const initialPlans: PlanRow[] = [
 ];
 
 const pageSizeDefault = 6;
+
+const tierAccent = (name: string) => {
+	const n = name.toLowerCase();
+	if (n.includes("premium")) return "from-primary/10 to-primary/20 text-primary";
+	if (n.includes("basic")) return "from-muted to-muted text-foreground/70";
+	if (n.includes("annual")) return "from-violet-100/40 to-violet-200/40 text-violet-700";
+	return "from-muted to-muted text-foreground/70";
+};
 
 const MembershipPlansPage: React.FC = () => {
 	const [plans, setPlans] = useState<PlanRow[]>(initialPlans);
@@ -103,6 +112,12 @@ const MembershipPlansPage: React.FC = () => {
 		return desc.split(" and ").map((s) => s.trim()).filter(Boolean);
 	}
 
+	const allFeatures = useMemo(() => {
+		const set = new Set<string>();
+		pageItems.forEach((p) => getFeatures(p.description).forEach((f) => set.add(f)));
+		return Array.from(set);
+	}, [pageItems]);
+
 	return (
 		<div className="space-y-4">
 			{/* Header: Search + Stats */}
@@ -134,6 +149,7 @@ const MembershipPlansPage: React.FC = () => {
 				{pageItems.map((plan) => {
 					const isPopular = /premium/i.test(plan.name) && plan.status === "Active";
 					const features = getFeatures(plan.description);
+					const accent = tierAccent(plan.name);
 					return (
 						<div key={plan.id} className={`relative group rounded-2xl border bg-card p-5 shadow-sm overflow-hidden ${isPopular ? "ring-2 ring-primary" : ""}`}>
 							{/* Popular ribbon */}
@@ -143,9 +159,14 @@ const MembershipPlansPage: React.FC = () => {
 							<div className="flex items-start justify-between gap-2">
 								<div>
 									<h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
-									<p className="text-sm text-muted-foreground mt-0.5">{plan.duration}</p>
+									<p className={`text-[11px] inline-flex items-center gap-1 rounded-md bg-gradient-to-r ${accent} px-2 py-0.5 mt-1`}>{plan.duration} plan</p>
 								</div>
-								<Badge variant={plan.status === "Active" ? "success" : "muted"}>{plan.status}</Badge>
+								<div className="flex items-center gap-2">
+									{plan.duration === "Yearly" && plan.status === "Active" && (
+										<Badge variant="secondary">Save 15%</Badge>
+									)}
+									<Badge variant={plan.status === "Active" ? "success" : "muted"}>{plan.status}</Badge>
+								</div>
 							</div>
 							<div className="mt-4 flex items-end gap-2">
 								<span className="text-3xl font-bold leading-none">${plan.price}</span>
@@ -170,6 +191,38 @@ const MembershipPlansPage: React.FC = () => {
 						</div>
 					);
 				})}
+			</div>
+
+			{/* Compare Plans Table */}
+			<div className="mt-4">
+				<h2 className="text-sm font-semibold mb-2">Compare plans</h2>
+				<div className="overflow-x-auto">
+					<table className="min-w-[720px] w-full text-sm border rounded-lg">
+						<thead>
+							<tr className="bg-muted/40">
+								<th className="text-left p-2 border-r">Feature</th>
+								{pageItems.map((p) => (
+									<th key={p.id} className="text-left p-2 border-r last:border-r-0">{p.name}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{allFeatures.map((feat, idx) => (
+								<tr key={idx} className="odd:bg-background even:bg-muted/20">
+									<td className="p-2 border-r align-top">{feat}</td>
+									{pageItems.map((p) => {
+										const has = getFeatures(p.description).some((f) => f.toLowerCase() === feat.toLowerCase());
+										return (
+											<td key={p.id} className="p-2 text-center border-r last:border-r-0">
+												{has ? <Check className="inline h-4 w-4 text-emerald-600" /> : <X className="inline h-4 w-4 text-muted-foreground" />}
+											</td>
+										);
+									})}
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
 			</div>
 
 			{/* Pagination Controls */}
