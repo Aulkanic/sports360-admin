@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ClubEvent {
 	id: string;
@@ -45,6 +46,12 @@ const initialEvents: ClubEvent[] = [
 	{ id: "e1", name: "Weekly Tennis", description: "Club tennis night", type: "Recurring", status: "Active", location: "Court 2", maxParticipants: 16, start: new Date(), end: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), recurring: { frequency: "Weekly", timeSlot: "18:00-20:00" } },
 	{ id: "e2", name: "Basketball Tournament", description: "3v3 open tournament", type: "Tournament", status: "Upcoming", location: "Court A", maxParticipants: 24, start: new Date(), end: new Date(new Date().getTime() + 3 * 60 * 60 * 1000), tournament: { tournamentType: "Knockout", prizes: "Trophies + Vouchers", participants: ["Team A", "Team B"], rounds: 3, matchSchedule: "Quarter -> Semi -> Final" } },
 ];
+
+const colorForType: Record<ClubEvent["type"], string> = {
+	"One-time": "#3b82f6",
+	"Tournament": "#22c55e",
+	"Recurring": "#f59e0b",
+};
 
 const EventsPage: React.FC = () => {
 	const [events, setEvents] = useState<ClubEvent[]>(initialEvents);
@@ -101,7 +108,7 @@ const EventsPage: React.FC = () => {
 
 	function openEdit(ev: ClubEvent) {
 		setEditing(ev);
-		setForm({ ...ev, // shallow copy, fine for primitives and simple structures
+		setForm({ ...ev, // shallow copy
 			start: new Date(ev.start),
 			end: new Date(ev.end),
 		});
@@ -138,6 +145,42 @@ const EventsPage: React.FC = () => {
 
 	const rbcEvents: RBCEvent[] = useMemo(() => filtered.map((e) => ({ id: e.id, title: e.name, start: new Date(e.start), end: new Date(e.end), resource: e })), [filtered]);
 
+	const CustomToolbar: React.FC<any> = (props) => {
+		const { label, onNavigate, onView, view } = props;
+		return (
+			<div className="flex items-center justify-between p-2 border-b">
+				<div className="flex items-center gap-2">
+					<Button size="sm" variant="outline" onClick={() => onNavigate("TODAY")}>Today</Button>
+					<Button size="icon" variant="outline" onClick={() => onNavigate("PREV")}>
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<Button size="icon" variant="outline" onClick={() => onNavigate("NEXT")}>
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+					<span className="text-sm font-semibold ml-2">{label}</span>
+				</div>
+				<div className="flex items-center gap-1">
+					{[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
+						<button key={v} onClick={() => onView(v)} className={`h-8 px-3 rounded-md border text-sm ${view === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>
+							{v.charAt(0) + v.slice(1).toLowerCase()}
+						</button>
+					))}
+				</div>
+			</div>
+		);
+	};
+
+	const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
+		const data = (event as any).resource as ClubEvent;
+		const bg = colorForType[data.type];
+		return (
+			<div className="flex items-center gap-2 px-1 py-0.5">
+				<span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: bg }} />
+				<span className="text-xs font-medium">{data.name}</span>
+			</div>
+		);
+	};
+
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -161,19 +204,35 @@ const EventsPage: React.FC = () => {
 				</div>
 			</div>
 
+			{/* Legend */}
+			<div className="flex flex-wrap items-center gap-3 text-xs">
+				{(Object.keys(colorForType) as Array<keyof typeof colorForType>).map((k) => (
+					<span key={String(k)} className="inline-flex items-center gap-2">
+						<span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorForType[k] }} />
+						<span className="text-muted-foreground">{k}</span>
+					</span>
+				))}
+			</div>
+
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-				<div className="lg:col-span-2 rounded-xl border bg-card p-2">
+				<div className="lg:col-span-2 rounded-xl border bg-card">
 					<Calendar
 						localizer={localizer}
 						events={rbcEvents}
 						startAccessor="start"
 						endAccessor="end"
-						style={{ height: 520 }}
+						style={{ height: 560 }}
 						selectable
 						popup
+						components={{ toolbar: CustomToolbar, event: EventContent }}
 						onSelectSlot={(slot: SlotInfo) => openCreate(slot)}
 						onSelectEvent={(event: RBCEvent) => openEdit((event as any).resource as ClubEvent)}
 						views={[Views.MONTH, Views.WEEK, Views.DAY]}
+						eventPropGetter={(event: RBCEvent) => {
+							const data = (event as any).resource as ClubEvent;
+							const bg = colorForType[data.type];
+							return { style: { backgroundColor: `${bg}22`, border: `1px solid ${bg}66`, color: "inherit", borderRadius: 8 } };
+						}}
 					/>
 				</div>
 				<div className="space-y-2">
@@ -215,17 +274,17 @@ const EventsPage: React.FC = () => {
 							<label className="space-y-1">
 								<span className="text-sm">Event Type</span>
 								<select className="w-full h-9 rounded-md border bg-background px-3 text-sm" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as ClubEvent["type"], recurring: e.target.value === "Recurring" ? { frequency: "Weekly" } : undefined, tournament: e.target.value === "Tournament" ? { tournamentType: "Knockout", rounds: 1 } : undefined }))}>
-									<option value="One-time">One-time</option>
-									<option value="Recurring">Recurring</option>
-									<option value="Tournament">Tournament</option>
+								<option value="One-time">One-time</option>
+								<option value="Recurring">Recurring</option>
+								<option value="Tournament">Tournament</option>
 								</select>
 							</label>
 							<label className="space-y-1">
 								<span className="text-sm">Status</span>
 								<select className="w-full h-9 rounded-md border bg-background px-3 text-sm" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as ClubEvent["status"] }))}>
-									<option value="Upcoming">Upcoming</option>
-									<option value="Active">Active</option>
-									<option value="Completed">Completed</option>
+								<option value="Upcoming">Upcoming</option>
+								<option value="Active">Active</option>
+								<option value="Completed">Completed</option>
 								</select>
 							</label>
 							<label className="space-y-1">
@@ -266,7 +325,7 @@ const EventsPage: React.FC = () => {
 						{form.type === "Tournament" && (
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<label className="space-y-1">
-									<span className="text-sm">Tournament Type</span>
+									<span className="textsm">Tournament Type</span>
 									<select className="w-full h-9 rounded-md border bg-background px-3 text-sm" value={form.tournament?.tournamentType} onChange={(e) => setForm((p) => ({ ...p, tournament: { ...(p.tournament ?? { tournamentType: "Knockout", rounds: 1 }), tournamentType: e.target.value as any } }))}>
 										<option value="Knockout">Knockout</option>
 										<option value="Round-robin">Round-robin</option>
