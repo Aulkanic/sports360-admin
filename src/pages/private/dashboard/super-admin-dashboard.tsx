@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { urls } from "@/routes";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Legend } from "recharts";
 
 const SuperAdminDashboardPage: React.FC  = () => {
 	const metrics = useMemo(() => ({
@@ -21,6 +22,22 @@ const SuperAdminDashboardPage: React.FC  = () => {
 	const recentBookings = [
 		{ id: "bk1", title: "Open Play", who: "Alice", when: "Today 7:00 PM", status: "Pending" },
 		{ id: "bk2", title: "Basketball Tournament", who: "Team X", when: "Sat 10:00 AM", status: "Approved" },
+	];
+
+	const membersTrend = useMemo(() => ([
+		{ month: "Jan", members: 120 },
+		{ month: "Feb", members: 140 },
+		{ month: "Mar", members: 155 },
+		{ month: "Apr", members: 170 },
+		{ month: "May", members: 188 },
+		{ month: "Jun", members: 202 },
+	]), []);
+
+	const bookingsBySport = [
+		{ sport: "Tennis", bookings: 42 },
+		{ sport: "Basketball", bookings: 58 },
+		{ sport: "Soccer", bookings: 36 },
+		{ sport: "Badminton", bookings: 24 },
 	];
 
 	return (
@@ -48,6 +65,51 @@ const SuperAdminDashboardPage: React.FC  = () => {
 				<div className="rounded-lg bg-card p-4 border">
 					<p className="text-xs text-muted-foreground">Pending Bookings</p>
 					<p className="text-2xl font-bold">{metrics.bookingsPending}</p>
+				</div>
+			</div>
+
+			{/* Insights */}
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+				<div className="md:col-span-2 rounded-lg bg-card border">
+					<div className="flex items-center justify-between p-3 border-b">
+						<h2 className="text-sm font-semibold">Members Growth</h2>
+						<Badge variant="outline">Last 6 months</Badge>
+					</div>
+					<div className="p-3 h-64">
+						<ResponsiveContainer width="100%" height="100%">
+							<AreaChart data={membersTrend} margin={{ top: 10, right: 16, left: -20, bottom: 0 }}>
+								<defs>
+									<linearGradient id="colorMembers" x1="0" y1="0" x2="0" y2="1">
+										<stop offset="5%" stopColor="#22c55e" stopOpacity={0.35}/>
+										<stop offset="95%" stopColor="#22c55e" stopOpacity={0.05}/>
+									</linearGradient>
+								</defs>
+								<CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))"/>
+								<XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false}/>
+								<YAxis stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false}/>
+								<Tooltip />
+								<Area type="monotone" dataKey="members" stroke="#16a34a" strokeWidth={2} fill="url(#colorMembers)"/>
+							</AreaChart>
+						</ResponsiveContainer>
+					</div>
+				</div>
+				<div className="rounded-lg bg-card border">
+					<div className="flex items-center justify-between p-3 border-b">
+						<h2 className="text-sm font-semibold">Bookings by Sport</h2>
+						<Badge variant="outline">This month</Badge>
+					</div>
+					<div className="p-3 h-64">
+						<ResponsiveContainer width="100%" height="100%">
+							<BarChart data={bookingsBySport} margin={{ top: 10, right: 16, left: -20, bottom: 0 }}>
+								<CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))"/>
+								<XAxis dataKey="sport" stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false}/>
+								<YAxis stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false}/>
+								<Tooltip />
+								<Legend />
+								<Bar dataKey="bookings" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+							</BarChart>
+						</ResponsiveContainer>
+					</div>
 				</div>
 			</div>
 
