@@ -11,6 +11,8 @@ import EquipmentPage from "./private/sports/equipment";
 import CalendarDashboardPage from "./private/bookings/calendar-dashboard";
 import OpenPlayPage from "./private/bookings/open-play";
 import CommunitiesClubsAdminPage from "./private/communities/communities-clubs";
+import ProfilePage from "./private/profile/page";
+import SettingsPage from "./private/settings/page";
 
 export {
 	LoginPage,
@@ -26,4 +28,6 @@ export {
 	CalendarDashboardPage,
 	OpenPlayPage,
 	CommunitiesClubsAdminPage,
+	ProfilePage,
+	SettingsPage,
 }
