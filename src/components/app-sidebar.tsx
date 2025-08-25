@@ -106,12 +106,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const settingsItems = [
     {
       title: "Settings",
-      url: "#",
+      url: urls.settings,
       icon: <FaCog className="w-5 h-5" />,
     },
     {
       title: "Profile",
-      url: "#",
+      url: urls.profile,
       icon: <FaUserAlt className="w-5 h-5" />,
     },
   ];
@@ -257,6 +257,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {settingsItems.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
+                  asChild
                   tooltip={item.title}
                   className={`text-base h-12 px-4 rounded-xl transition-all duration-200 hover:bg-white/10 hover:shadow-md ${
                     activeItem === item.title
@@ -265,10 +266,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   }`}
                   onClick={() => setActiveItem(item.title)}
                 >
-                  <span className="text-white/90 group-hover:text-white transition-colors">
-                    {item.icon}
-                  </span>
-                  <span className="text-white font-medium">{item.title}</span>
+                  <Link to={item.url} className="flex items-center gap-3 flex-1">
+                    <span className="text-white/90 group-hover:text-white transition-colors">
+                      {item.icon}
+                    </span>
+                    <span className="text-white font-medium">{item.title}</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
