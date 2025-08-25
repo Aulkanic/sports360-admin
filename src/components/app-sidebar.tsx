@@ -79,6 +79,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: <FaDollarSign className="w-5 h-5" />,
       },
       {
+        title: "Events",
+        url: urls.events,
+        icon: <FaRegCalendar className="w-5 h-5" />,
+      },
+      {
         title: "Bookings",
         icon: <FaCalendarAlt className="w-5 h-5" />,
 
@@ -94,11 +99,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             icon: <FaList className="w-4 h-4" />,
           },
         ],
-      },
-      {
-        title: "Events",
-        url: urls.events,
-        icon: <FaRegCalendar className="w-5 h-5" />,
       },
     ],
   };
@@ -266,7 +266,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   }`}
                   onClick={() => setActiveItem(item.title)}
                 >
-                  <Link to={item.url} className="flex items-center gap-3 flex-1">
+                  <Link
+                    to={item.url}
+                    className="flex items-center gap-3 flex-1"
+                  >
                     <span className="text-white/90 group-hover:text-white transition-colors">
                       {item.icon}
                     </span>
