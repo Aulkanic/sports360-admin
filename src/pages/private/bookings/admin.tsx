@@ -55,7 +55,15 @@ const BookingsAdminPage: React.FC = () => {
 		const approved = filtered.filter((b) => b.status === "Approved").length;
 		const pending = filtered.filter((b) => b.status === "Pending").length;
 		const rejected = filtered.filter((b) => b.status === "Rejected").length;
-		return { total, approved, pending, rejected };
+		const byType: Record<BookingItem["type"], number> = {
+			"Open Play": 0,
+			"Tournament": 0,
+			"Recurring": 0,
+			"One-time": 0,
+			"Court Rental": 0,
+		};
+		filtered.forEach((b) => { byType[b.type]++; });
+		return { total, approved, pending, rejected, byType } as const;
 	}, [filtered]);
 
 	function setState(id: string, s: BookingItem["status"]) {
@@ -110,11 +118,27 @@ const BookingsAdminPage: React.FC = () => {
 				</div>
 			</div>
 
+			{/* Breakdown by Type */}
+			<div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+				{(([
+					{ label: "Open Play", key: "Open Play" },
+					{ label: "Tournament", key: "Tournament" },
+					{ label: "Recurring", key: "Recurring" },
+					{ label: "One-time", key: "One-time" },
+					{ label: "Court Rental", key: "Court Rental" },
+				]) as const).map(({ label, key }) => (
+					<div key={key} className="rounded-lg bg-card p-3 border">
+						<p className="text-xs text-muted-foreground">{label}</p>
+						<p className="text-lg font-semibold">{stats.byType[key]}</p>
+					</div>
+				))}
+			</div>
+
 			<div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
 				{filtered.map((b) => {
 					const accent = typeAccent(b.type);
 					return (
-						<div key={b.id} className={`relative group rounded-xl border bg-card p-4 flex flex-col gap-3 overflow-hidden transition hover:shadow-md hover:-translate-y-0.5`}> 
+						<div key={b.id} className={`relative group rounded-xl border bg-card p-4 flex flex-col gap-3 overflow-hidden transition hover:shadow-md hover:-translate-y-0.5`}>
 							{/* Colored stripe */}
 							<div className={`absolute inset-y-0 left-0 w-1 bg-${accent}-500`} />
 							{b.notice && (

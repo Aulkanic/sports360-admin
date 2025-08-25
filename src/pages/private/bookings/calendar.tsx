@@ -28,7 +28,7 @@ interface BookingEvent {
   id: string;
   title: string;
   description: string;
-  type: "One-time" | "Tournament" | "Recurring" | "Open Play";
+  type: "One-time" | "Tournament" | "Recurring" | "Open Play" | "Court Rental";
   location: string;
   available: number;
   start: Date;
@@ -109,6 +109,16 @@ const initial: BookingEvent[] = [
     start: addDays(new Date(), 2),
     end: addDays(new Date(), 2),
   },
+  {
+    id: "b7",
+    title: "Court Rental – Tennis Court 4",
+    description: "Private court booking",
+    type: "Court Rental",
+    location: "Court 4",
+    available: 4,
+    start: addDays(new Date(), 4),
+    end: addDays(new Date(), 4),
+  },
 ];
 
 const colorForType: Record<BookingEvent["type"], string> = {
@@ -116,6 +126,7 @@ const colorForType: Record<BookingEvent["type"], string> = {
   Tournament: "#a78bfa", // violet (pale in UI)
   Recurring: "#f59e0b", // amber
   "Open Play": "#93c5fd", // light blue
+  "Court Rental": "#fb923c", // orange-400
 };
 
 const typePastel: Record<BookingEvent["type"], { bg: string; border: string }> =
@@ -136,6 +147,10 @@ const typePastel: Record<BookingEvent["type"], { bg: string; border: string }> =
       bg: "rgba(147,197,253,.24)",
       border: "1px solid rgba(147,197,253,.50)",
     },
+    "Court Rental": {
+      bg: "rgba(251,146,60,.18)",
+      border: "1px solid rgba(251,146,60,.45)",
+    },
   };
 
 const allTypes: BookingEvent["type"][] = [
@@ -143,6 +158,7 @@ const allTypes: BookingEvent["type"][] = [
   "Tournament",
   "Recurring",
   "Open Play",
+  "Court Rental",
 ];
 
 // ---------------- Component ----------------
@@ -163,6 +179,7 @@ const BookingsCalendarPage: React.FC = () => {
     Tournament: true,
     Recurring: true,
     "Open Play": true,
+    "Court Rental": true,
   });
 
   // control calendar date + view for toolbar + mini-month
