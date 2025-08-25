@@ -15,6 +15,17 @@ type Player = {
 
 type Court = { id: string; name: string; capacity: number };
 
+type Match = {
+  id: string;
+  courtId: string;
+  courtName: string;
+  teamA: Player[];
+  teamB: Player[];
+  status: "Scheduled" | "Completed";
+  winner?: "A" | "B";
+  score?: string;
+};
+
 const courts: Court[] = [
 	{ id: "court-a", name: "Court A", capacity: 4 },
 	{ id: "court-b", name: "Court B", capacity: 4 },
@@ -73,6 +84,8 @@ const OpenPlayPage: React.FC = () => {
 	const [query, setQuery] = useState("");
 	const [players, setPlayers] = useState<Player[]>(samplePlayers);
 	const [courtPlayers, setCourtPlayers] = useState<Record<string, Player[]>>({ "court-a": [], "court-b": [] });
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [scoreEntry, setScoreEntry] = useState<Record<string, string>>({});
 
 	const bench = useMemo(() => {
 		const assigned = new Set(Object.values(courtPlayers).flat().map((p) => p.id));
@@ -104,6 +117,45 @@ const OpenPlayPage: React.FC = () => {
 		moveToCourt(String(over.id), player);
 	}
 
+  function confirmMatches() {
+    const newMatches: Match[] = [];
+    Object.entries(courtPlayers).forEach(([courtId, playersOnCourt]) => {
+      if (!playersOnCourt || playersOnCourt.length < 2) return;
+      // chunk into groups of 4 when possible, else 2
+      let idx = 0;
+      while (idx < playersOnCourt.length - 1) {
+        const remaining = playersOnCourt.length - idx;
+        const take = remaining >= 4 ? 4 : 2;
+        const chunk = playersOnCourt.slice(idx, idx + take);
+        idx += take;
+        const half = Math.floor(chunk.length / 2);
+        const teamA = chunk.slice(0, half);
+        const teamB = chunk.slice(half);
+        if (teamA.length === 0 || teamB.length === 0) continue;
+        const courtName = courts.find((c) => c.id === courtId)?.name ?? courtId;
+        newMatches.push({
+          id: `${courtId}-${Date.now()}-${newMatches.length + 1}`,
+          courtId,
+          courtName,
+          teamA,
+          teamB,
+          status: "Scheduled",
+        });
+      }
+    });
+    setMatches(newMatches);
+  }
+
+  function setResult(matchId: string, winner: "A" | "B") {
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === matchId
+          ? { ...m, winner, status: "Completed", score: scoreEntry[matchId] }
+          : m
+      )
+    );
+  }
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
@@ -114,7 +166,7 @@ const OpenPlayPage: React.FC = () => {
 				<div className="flex items-center gap-2">
 					<Input className="w-64" placeholder="Search players" value={query} onChange={(e) => setQuery(e.target.value)} />
 					<Button variant="outline">Shuffle Teams</Button>
-					<Button>Confirm Matches</Button>
+					<Button onClick={confirmMatches}>Confirm Matches</Button>
 				</div>
 			</div>
 
@@ -142,6 +194,63 @@ const OpenPlayPage: React.FC = () => {
 					</div>
 				</div>
 			</DndContext>
+
+      {/* Matches section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold">Matches</p>
+          <span className="text-xs text-muted-foreground">{matches.length} scheduled</span>
+        </div>
+        {matches.length === 0 && (
+          <div className="rounded-md border p-3 text-xs text-muted-foreground">No matches yet. Confirm matches to generate them from court assignments.</div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {matches.map((m) => (
+            <div key={m.id} className="rounded-xl border bg-card p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">{m.courtName}</p>
+                <Badge variant={m.status === "Completed" ? "secondary" : "outline"}>{m.status}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="font-medium">Team A</p>
+                  <p className="text-muted-foreground truncate">{m.teamA.map((p) => p.name).join(", ")}</p>
+                </div>
+                <div>
+                  <p className="font-medium">Team B</p>
+                  <p className="text-muted-foreground truncate">{m.teamB.map((p) => p.name).join(", ")}</p>
+                </div>
+              </div>
+              {m.status === "Scheduled" ? (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="h-8 w-28"
+                      placeholder="Score"
+                      value={scoreEntry[m.id] ?? ""}
+                      onChange={(e) => setScoreEntry((s) => ({ ...s, [m.id]: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setResult(m.id, "A")}>Set A Win</Button>
+                    <Button size="sm" onClick={() => setResult(m.id, "B")}>Set B Win</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs">
+                  <p>
+                    Winner: <span className="font-medium">{m.winner === "A" ? m.teamA.map((p) => p.name).join(", ") : m.teamB.map((p) => p.name).join(", ")}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    Loser: {m.winner === "A" ? m.teamB.map((p) => p.name).join(", ") : m.teamA.map((p) => p.name).join(", ")}
+                    {m.score ? ` • Score: ${m.score}` : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
 		</div>
 	);
 };
