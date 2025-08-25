@@ -1,5 +1,5 @@
 import { PrivateLayout, PublicLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, CourtsFieldsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, CourtsFieldsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, BookingsExplorePage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
 
 export const urls = {
 	login: "/",
@@ -11,6 +11,7 @@ export const urls = {
 	events: '/super-admin/events',
 	bookingsCalendar: '/super-admin/bookings/calendar',
 	bookingsAdmin: '/super-admin/bookings/manage',
+	bookingsExplore: '/super-admin/bookings/explore',
 	equipment: '/super-admin/sports/equipment',
 	calendarDashboard: '/super-admin/bookings/calendar-dashboard',
 	openPlay: '/super-admin/bookings/open-play',
@@ -35,6 +36,7 @@ export const routeList = {
 			{ path: urls.events, element: <EventsPage /> },
 			{ path: urls.bookingsCalendar, element: <BookingsCalendarPage /> },
 			{ path: urls.bookingsAdmin, element: <BookingsAdminPage /> },
+			{ path: urls.bookingsExplore, element: <BookingsExplorePage /> },
 			{ path: urls.equipment, element: <EquipmentPage /> },
 			{ path: urls.calendarDashboard, element: <CalendarDashboardPage /> },
 			{ path: urls.openPlay, element: <OpenPlayPage /> },
