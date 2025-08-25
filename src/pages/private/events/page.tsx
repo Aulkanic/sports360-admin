@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import ClubCalendar from "@/components/club-calendar";
 
@@ -143,8 +143,34 @@ const EventsPage: React.FC = () => {
 	function remove(id: string) { setConfirmId(id); }
 	function doDelete() { if (confirmId) setEvents((prev) => prev.filter((e) => e.id !== confirmId)); setConfirmId(null); }
 
-	const rbcEvents: RBCEvent[] = useMemo(() => filtered.map((e) => ({ id: e.id, title: e.name, start: new Date(e.start), end: new Date(e.end), resource: e })), [filtered]);
+	const rbcEvents: RBCEvent[] = useMemo(() => {
+		const expanded: ClubEvent[] = [];
+		filtered.forEach((e) => {
+			if (e.type === "Recurring" && e.recurring?.frequency) {
+				const occurrences = e.recurring.frequency === "Daily" ? 10 : e.recurring.frequency === "Weekly" ? 8 : 6; // dummy horizon
+				const baseStart = new Date(e.start);
+				const baseEnd = new Date(e.end);
 
+				for (let i = 0; i < occurrences; i++) {
+					let dateStart: Date;
+					if (e.recurring.frequency === "Daily") dateStart = addDays(baseStart, i);
+					else if (e.recurring.frequency === "Weekly") dateStart = addWeeks(baseStart, i);
+					else dateStart = addMonths(baseStart, i);
+
+					let dateEnd: Date;
+					if (e.recurring.frequency === "Daily") dateEnd = addDays(baseEnd, i);
+					else if (e.recurring.frequency === "Weekly") dateEnd = addWeeks(baseEnd, i);
+					else dateEnd = addMonths(baseEnd, i);
+
+					expanded.push({ ...e, id: `${e.id}-r${i + 1}` , start: dateStart, end: dateEnd });
+				}
+			} else {
+				expanded.push(e);
+			}
+		});
+
+		return expanded.map((ev) => ({ id: ev.id, title: ev.name, start: new Date(ev.start), end: new Date(ev.end), resource: ev }));
+	}, [filtered]);
 
 	const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
 		const data = (event as any).resource as ClubEvent;
