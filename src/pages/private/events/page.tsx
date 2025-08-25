@@ -59,6 +59,8 @@ const EventsPage: React.FC = () => {
 	const [type, setType] = useState<"All" | ClubEvent["type"]>("All");
 	const [status, setStatus] = useState<"All" | ClubEvent["status"]>("All");
 	const [location, setLocation] = useState("");
+	const [calDate, setCalDate] = useState<Date>(new Date());
+	const [calView, setCalView] = useState<string>(Views.MONTH);
 
 	const [open, setOpen] = useState(false);
 	const [editing, setEditing] = useState<ClubEvent | null>(null);
@@ -218,6 +220,23 @@ const EventsPage: React.FC = () => {
 
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 				<div className="lg:col-span-2 rounded-xl border bg-card">
+					{/* Calendar toolbar */}
+					<div className="flex items-center justify-between p-2 border-b">
+						<div className="flex items-center gap-2">
+							<Button size="sm" variant="outline" onClick={() => setCalDate(new Date())}>Today</Button>
+							<Button size="icon" variant="outline" onClick={() => setCalDate(addDays(calDate, calView === Views.MONTH ? -30 : calView === Views.WEEK ? -7 : -1))}>{"<"}</Button>
+							<Button size="icon" variant="outline" onClick={() => setCalDate(addDays(calDate, calView === Views.MONTH ? 30 : calView === Views.WEEK ? 7 : 1))}>{">"}</Button>
+							<span className="text-sm font-medium">{format(calDate, calView === Views.MONTH ? "LLLL yyyy" : "PP")}</span>
+						</div>
+						<div className="flex items-center gap-2">
+							<div className="flex rounded-md border overflow-hidden">
+								{[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
+									<button key={v} onClick={() => setCalView(v)} className={`h-8 px-3 text-sm ${calView === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>{v[0] + v.slice(1).toLowerCase()}</button>
+								))}
+							</div>
+							<input type="date" className="h-8 w-[160px] rounded-md border bg-background px-2 text-sm" value={format(calDate, "yyyy-MM-dd")} onChange={(e) => setCalDate(new Date(e.target.value))} />
+						</div>
+					</div>
 					<ClubCalendar
 						localizer={localizer}
 						events={rbcEvents}
@@ -229,6 +248,10 @@ const EventsPage: React.FC = () => {
 						onSelectSlot={(slot: SlotInfo) => openCreate(slot)}
 						onSelectEvent={(event: RBCEvent) => openEdit((event as any).resource as ClubEvent)}
 						views={[Views.MONTH, Views.WEEK, Views.DAY]}
+						date={calDate}
+						view={calView as any}
+						onNavigate={(d: any) => setCalDate(d)}
+						onView={(v: any) => setCalView(v)}
 						eventPropGetter={(event: RBCEvent) => {
 							const data = (event as any).resource as ClubEvent;
 							const bg = colorForType[data.type];
