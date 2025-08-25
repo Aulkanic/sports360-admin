@@ -93,11 +93,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: urls.bookingsAdmin,
             icon: <FaList className="w-4 h-4" />,
           },
-          {
-            title: "Explore",
-            url: urls.bookingsExplore,
-            icon: <FaCalendarAlt className="w-4 h-4" />,
-          },
         ],
       },
       {
