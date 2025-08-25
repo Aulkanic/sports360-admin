@@ -43,7 +43,26 @@ const BookingsAdminPage: React.FC = () => {
 	const [items] = useState<BookingItem[]>(initial);
 	const [query, setQuery] = useState("");
 	const [status, setStatus] = useState<"All" | BookingItem["status"]>("All");
-	const [activeTab, setActiveTab] = useState<"open-play" | "tournament">("open-play");
+	const [activeTab, setActiveTab] = useState<"open-play" | "tournament" | "recurring" | "one-time" | "court-rental">("open-play");
+
+	// Recurring filters
+	const [recurrenceType, setRecurrenceType] = useState("All");
+	const [recDate, setRecDate] = useState<string>("");
+	const [recVenue, setRecVenue] = useState("All");
+	const [recStatus, setRecStatus] = useState("All");
+
+	// One-time filters
+	const [otDate, setOtDate] = useState<string>("");
+	const [otVenue, setOtVenue] = useState("All");
+	const [otSport, setOtSport] = useState("All");
+	const [otStatus, setOtStatus] = useState("All");
+
+	// Court rental filters
+	const [courtType, setCourtType] = useState<"Tennis" | "Pickleball" | "Badminton">("Pickleball");
+	const [courtDate, setCourtDate] = useState<string>(new Date().toISOString().slice(0,10));
+	const [selectedBooking, setSelectedBooking] = useState<null | {
+		id: string; ref: string; datetime: string; courtType: string; court: string; renter: string; userId: string; duration: string; total: string; status: "Confirmed" | "Pending" | "Cancelled";
+	}>(null);
 
 	const filtered = useMemo(() => {
 		return items.filter((b) => {
@@ -152,6 +171,42 @@ const BookingsAdminPage: React.FC = () => {
 		},
 	]), []);
 
+	// Dummy Recurring Series
+	type RecurrenceOcc = { id: string; date: string; time: string; status: "Scheduled" | "Cancelled" };
+	type RecurringSeries = { id: string; title: string; pattern: string; range: string; time: string; venue: string; capacity: number; status: "Active" | "Paused" | "Ended"; occurrences: RecurrenceOcc[] };
+	const recurringSeries: RecurringSeries[] = useMemo(() => ([
+		{ id: "rs1", title: "Weekly Pickleball Mondays", pattern: "Every Monday", range: "Sep 2 – Nov 25", time: "7:00–9:00 PM", venue: "Court B", capacity: 16, status: "Active", occurrences: [
+			{ id: "o1", date: "Sep 2", time: "7:00 PM", status: "Scheduled" },
+			{ id: "o2", date: "Sep 9", time: "7:00 PM", status: "Scheduled" },
+		] },
+		{ id: "rs2", title: "Biweekly Tennis Drills", pattern: "Every 2 weeks", range: "Sep 10 – Dec 19", time: "6:00–8:00 PM", venue: "Court 2", capacity: 12, status: "Paused", occurrences: [
+			{ id: "o3", date: "Sep 10", time: "6:00 PM", status: "Scheduled" },
+		] },
+	]), []);
+
+	// Dummy One-Time events
+	type OneTimeAdmin = { id: string; title: string; when: string; location: string; price: "Free" | "$" | "$$"; registered: number; status: "Upcoming" | "Completed" | "Cancelled" };
+	const oneTimes: OneTimeAdmin[] = useMemo(() => ([
+		{ id: "ot1", title: "Pickleball Skills Clinic", when: "Sun, Sep 8 • 10:00 AM", location: "Court C", price: "$", registered: 10, status: "Upcoming" },
+		{ id: "ot2", title: "Holiday Badminton Bash", when: "Dec 20 • 6:30 PM", location: "Court A", price: "Free", registered: 24, status: "Upcoming" },
+		{ id: "ot3", title: "Summer Tennis Showdown", when: "Jul 1 • 5:00 PM", location: "Court 4", price: "$$", registered: 32, status: "Completed" },
+	]), []);
+
+	// Dummy Court rentals
+	type CourtSlot = { time: string; available: boolean; bookedRef?: string; renter?: string };
+	type CourtDay = { id: string; courtType: "Tennis" | "Pickleball" | "Badminton"; court: string; date: string; slots: CourtSlot[] };
+	const courtDays: CourtDay[] = useMemo(() => ([
+		{ id: "cd1", courtType: "Pickleball", court: "Court 1", date: courtDate, slots: [
+			{ time: "08:00", available: true }, { time: "09:00", available: false, bookedRef: "BR-1001", renter: "Chris" }, { time: "10:00", available: true },
+		] },
+		{ id: "cd2", courtType: "Pickleball", court: "Court 2", date: courtDate, slots: [
+			{ time: "08:00", available: false, bookedRef: "BR-1002", renter: "Alice" }, { time: "09:00", available: true }, { time: "10:00", available: true },
+		] },
+		{ id: "cd3", courtType: "Tennis", court: "Court 4", date: courtDate, slots: [
+			{ time: "08:00", available: true }, { time: "09:00", available: true }, { time: "10:00", available: false, bookedRef: "BR-2001", renter: "Ben" },
+		] },
+	]), [courtDate]);
+
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -207,6 +262,9 @@ const BookingsAdminPage: React.FC = () => {
 			<div className="flex items-center gap-2 border-b">
 				<button onClick={() => setActiveTab("open-play")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "open-play" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Open Play</button>
 				<button onClick={() => setActiveTab("tournament")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "tournament" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Tournament</button>
+				<button onClick={() => setActiveTab("recurring")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "recurring" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Recurring</button>
+				<button onClick={() => setActiveTab("one-time")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "one-time" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>One-Time</button>
+				<button onClick={() => setActiveTab("court-rental")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "court-rental" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Court Rental</button>
 			</div>
 
 			{activeTab === "open-play" && (
@@ -278,63 +336,220 @@ const BookingsAdminPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* Teams Registered */}
-							<div>
-								<p className="text-xs font-semibold mb-2">Teams Registered ({t.teams.length})</p>
-								<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-									{t.teams.map((team) => (
-										<div key={team.id} className="rounded-md border p-2 text-xs">
-											<p className="font-medium">{team.name}</p>
-											<p className="text-muted-foreground">Captain: {team.captain}</p>
-										</div>
-									))}
-								</div>
-							</div>
-
-							{/* Standings */}
-							<div>
-								<p className="text-xs font-semibold mb-2">Standings</p>
-								<div className="rounded-md border overflow-hidden">
-									<div className="grid grid-cols-4 bg-muted/40 text-xs font-medium p-2">
-										<span>Team</span><span>W</span><span>L</span><span>Pts</span>
+						{/* Teams Registered */}
+						<div>
+							<p className="text-xs font-semibold mb-2">Teams Registered ({t.teams.length})</p>
+							<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+								{t.teams.map((team) => (
+									<div key={team.id} className="rounded-md border p-2 text-xs">
+										<p className="font-medium">{team.name}</p>
+										<p className="text-muted-foreground">Captain: {team.captain}</p>
 									</div>
-									{t.standings.map((s) => (
-										<div key={s.team} className="grid grid-cols-4 text-xs p-2 border-t">
-											<span>{s.team}</span><span>{s.wins}</span><span>{s.losses}</span><span>{s.points}</span>
-										</div>
-									))}
-								</div>
+								))}
 							</div>
-
-							{/* Matches */}
-							<div>
-								<p className="text-xs font-semibold mb-2">Matches</p>
-								<div className="space-y-1">
-									{t.matches.map((m) => (
-										<div key={m.id} className="text-xs rounded-md border p-2 flex items-center justify-between">
-											<span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> {m.round}</span>
-											<span className="truncate">{m.teamA} vs {m.teamB}</span>
-											<span className="inline-flex items-center gap-2">
-												<Badge variant={m.status === "Completed" ? "secondary" : m.status === "Live" ? "success" : "outline"}>{m.status}</Badge>
-												{m.score && <span className="font-medium">{m.score}</span>}
-											</span>
-										</div>
-									))}
-								</div>
-							</div>
-
-							{/* Playoffs */}
-							<div>
-								<p className="text-xs font-semibold mb-2">Playoffs</p>
-								<ul className="list-disc pl-5 text-xs space-y-1">
-									{t.playoffs.map((p, i) => (<li key={i}>{p}</li>))}
-								</ul>
-							</div>
-
-							{/* Details */}
-							<div className="text-xs text-muted-foreground">{t.details}</div>
 						</div>
+
+						{/* Standings */}
+						<div>
+							<p className="text-xs font-semibold mb-2">Standings</p>
+							<div className="rounded-md border overflow-hidden">
+								<div className="grid grid-cols-4 bg-muted/40 text-xs font-medium p-2">
+									<span>Team</span><span>W</span><span>L</span><span>Pts</span>
+								</div>
+								{t.standings.map((s) => (
+									<div key={s.team} className="grid grid-cols-4 text-xs p-2 border-t">
+										<span>{s.team}</span><span>{s.wins}</span><span>{s.losses}</span><span>{s.points}</span>
+									</div>
+								))}
+							</div>
+						</div>
+
+						{/* Matches */}
+						<div>
+							<p className="text-xs font-semibold mb-2">Matches</p>
+							<div className="space-y-1">
+								{t.matches.map((m) => (
+									<div key={m.id} className="text-xs rounded-md border p-2 flex items-center justify-between">
+										<span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> {m.round}</span>
+										<span className="truncate">{m.teamA} vs {m.teamB}</span>
+										<span className="inline-flex items-center gap-2">
+											<Badge variant={m.status === "Completed" ? "secondary" : m.status === "Live" ? "success" : "outline"}>{m.status}</Badge>
+											{m.score && <span className="font-medium">{m.score}</span>}
+										</span>
+									</div>
+								))}
+							</div>
+						</div>
+
+						{/* Playoffs */}
+						<div>
+							<p className="text-xs font-semibold mb-2">Playoffs</p>
+							<ul className="list-disc pl-5 text-xs space-y-1">
+								{t.playoffs.map((p, i) => (<li key={i}>{p}</li>))}
+							</ul>
+						</div>
+
+						{/* Details */}
+						<div className="text-xs text-muted-foreground">{t.details}</div>
+					</div>
 					))}
+				</div>
+			)}
+
+			{activeTab === "recurring" && (
+				<div className="space-y-4">
+					<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+						<div className="text-sm text-muted-foreground">Manage recurring sessions</div>
+						<div className="flex items-center gap-2">
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}>
+								<option>All</option><option>Weekly</option><option>Biweekly</option><option>Monthly</option>
+							</select>
+							<input type="date" className="h-9 rounded-md border bg-background px-3 text-sm" value={recDate} onChange={(e) => setRecDate(e.target.value)} />
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={recVenue} onChange={(e) => setRecVenue(e.target.value)}>
+								<option>All</option><option>Court A</option><option>Court B</option><option>Court 2</option>
+							</select>
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={recStatus} onChange={(e) => setRecStatus(e.target.value)}>
+								<option>All</option><option>Active</option><option>Paused</option><option>Ended</option>
+							</select>
+							<Button>Add Recurring Session</Button>
+						</div>
+					</div>
+
+					<div className="space-y-3">
+						{recurringSeries.map((r) => (
+							<div key={r.id} className="rounded-xl border bg-card p-3">
+								<div className="flex items-start justify-between gap-3">
+									<div>
+										<p className="text-sm font-semibold">{r.title}</p>
+										<div className="mt-1 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+											<Badge variant="outline">{r.pattern}</Badge>
+											<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border">{r.range}</span>
+											<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border">{r.time}</span>
+											<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border">{r.venue}</span>
+											<Badge variant="secondary">Cap {r.capacity}/session</Badge>
+										</div>
+									</div>
+									<Badge variant={r.status === "Active" ? "success" : r.status === "Paused" ? "warning" : "destructive"}>{r.status}</Badge>
+								</div>
+							<div className="mt-3 flex items-center gap-2 text-xs">
+								<Button size="sm" variant="outline">Edit Series</Button>
+								<Button size="sm">Manage Single Instance</Button>
+								<Button size="sm" variant="outline">Cancel Series</Button>
+							</div>
+							<div className="mt-3 rounded-md border">
+								<div className="grid grid-cols-3 bg-muted/40 text-xs font-medium p-2"><span>Date</span><span>Time</span><span>Status</span></div>
+								{r.occurrences.map((o) => (
+									<div key={o.id} className="grid grid-cols-3 text-xs p-2 border-t items-center">
+										<span>{o.date}</span><span>{o.time}</span>
+										<span className="flex items-center gap-2">
+											<Badge variant={o.status === "Cancelled" ? "destructive" : "secondary"}>{o.status}</Badge>
+											<Button size="sm" variant="outline">Modify</Button>
+											<Button size="sm" variant="outline">Cancel</Button>
+										</span>
+									</div>
+								))}
+							</div>
+						</div>
+						))}
+					</div>
+				</div>
+			)}
+
+			{activeTab === "one-time" && (
+				<div className="space-y-4">
+					<div className="flex items-center justify-between gap-2">
+						<div className="text-sm text-muted-foreground">Manage one-time events</div>
+						<div className="flex items-center gap-2">
+							<input type="date" className="h-9 rounded-md border bg-background px-3 text-sm" value={otDate} onChange={(e) => setOtDate(e.target.value)} />
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={otVenue} onChange={(e) => setOtVenue(e.target.value)}>
+								<option>All Venues</option><option>Court A</option><option>Court C</option>
+							</select>
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={otSport} onChange={(e) => setOtSport(e.target.value)}>
+								<option>All Sports</option><option>Pickleball</option><option>Tennis</option><option>Badminton</option>
+							</select>
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={otStatus} onChange={(e) => setOtStatus(e.target.value)}>
+								<option>All Status</option><option>Upcoming</option><option>Completed</option><option>Cancelled</option>
+							</select>
+							<Button>Create One-Time Event</Button>
+						</div>
+					</div>
+
+					<div className="rounded-xl border overflow-hidden">
+						<div className="grid grid-cols-7 bg-muted/40 text-xs font-medium p-2">
+							<span>Title</span><span>Date & Time</span><span>Location</span><span>Price</span><span>Registered</span><span>Status</span><span>Actions</span>
+						</div>
+						{oneTimes.map((e) => (
+							<div key={e.id} className="grid grid-cols-7 text-xs p-2 border-t items-center">
+								<span className="font-medium">{e.title}</span>
+								<span>{e.when}</span>
+								<span>{e.location}</span>
+								<span><Badge variant={e.price === "Free" ? "success" : "secondary"}>{e.price}</Badge></span>
+								<span>{e.registered}</span>
+								<span><Badge variant={e.status === "Upcoming" ? "secondary" : e.status === "Completed" ? "outline" : "destructive"}>{e.status}</Badge></span>
+								<span className="flex items-center gap-2">
+									<Button size="sm" variant="outline">Edit</Button>
+									<Button size="sm">View Registrations</Button>
+									<Button size="sm" variant="outline">Cancel</Button>
+									<Button size="sm" variant="outline">Duplicate</Button>
+								</span>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+
+			{activeTab === "court-rental" && (
+				<div className="space-y-4">
+					<div className="flex items-center justify-between gap-2">
+						<div className="text-sm text-muted-foreground">Court availability and bookings</div>
+						<div className="flex items-center gap-2">
+							<select className="h-9 rounded-md border bg-background px-3 text-sm" value={courtType} onChange={(e) => setCourtType(e.target.value as any)}>
+								<option>Pickleball</option><option>Tennis</option><option>Badminton</option>
+							</select>
+							<input type="date" className="h-9 rounded-md border bg-background px-3 text-sm" value={courtDate} onChange={(e) => setCourtDate(e.target.value)} />
+							<Button>Add Court Rental</Button>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+						{courtDays.filter(d => d.courtType === courtType).map((d) => (
+							<div key={d.id} className="rounded-xl border bg-card p-3 space-y-2">
+								<div className="flex items-center justify-between">
+									<p className="text-sm font-semibold">{d.court} • {d.courtType}</p>
+									<span className="text-xs text-muted-foreground">{d.date}</span>
+								</div>
+								<div className="grid grid-cols-3 gap-2">
+									{d.slots.map((s) => (
+										<button key={s.time} onClick={() => s.available ? setSelectedBooking({ id: d.id, ref: s.bookedRef ?? "BR-NEW", datetime: `${d.date} ${s.time}`, courtType: d.courtType, court: d.court, renter: s.renter ?? "-", userId: s.renter ? "U123" : "-", duration: "1h", total: s.renter ? "$15" : "$0", status: s.renter ? "Confirmed" : "Pending" }) : undefined} disabled={!s.available} className={`h-9 rounded-md border text-sm ${s.available ? "bg-background hover:bg-muted" : "bg-muted/50 text-muted-foreground cursor-not-allowed"}`}>
+											{s.time}
+										</button>
+									))}
+								</div>
+							</div>
+						))}
+					</div>
+
+					{selectedBooking && (
+						<div className="rounded-xl border bg-card p-3">
+							<p className="text-sm font-semibold">Booking Details</p>
+							<div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+								<span>Ref: {selectedBooking.ref}</span>
+								<span>Date & Time: {selectedBooking.datetime}</span>
+								<span>Court: {selectedBooking.courtType} • {selectedBooking.court}</span>
+								<span>Renter: {selectedBooking.renter}</span>
+								<span>User ID: {selectedBooking.userId}</span>
+								<span>Duration: {selectedBooking.duration}</span>
+								<span>Total: {selectedBooking.total}</span>
+								<span>Status: <Badge variant={selectedBooking.status === "Confirmed" ? "success" : selectedBooking.status === "Pending" ? "warning" : "destructive"}>{selectedBooking.status}</Badge></span>
+							</div>
+							<div className="mt-2 flex items-center gap-2">
+								<Button size="sm" variant="outline">Edit</Button>
+								<Button size="sm" variant="outline">Reassign Court</Button>
+								<Button size="sm" variant="outline">Cancel</Button>
+								<Button size="sm">Mark Paid</Button>
+							</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
