@@ -19,24 +19,13 @@ const people = [
   ["Tara Singh", "Intermediate", 16],
 ] as const;
 
-// 16 athlete-themed photos (square-cropped); swap any links as you like.
 const ATHLETE_PHOTOS = [
-  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=240&h=240&q=60", // tennis
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=240&h=240&q=60", // basketball
-  "https://images.unsplash.com/photo-1521417531735-1fdf5b0c9cde?auto=format&fit=crop&w=240&h=240&q=60", // running
-  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=240&h=240&q=60", // tennis (repeat okay)
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1521417531735-1fdf5b0c9cde?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1521417531735-1fdf5b0c9cde?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1521417531735-1fdf5b0c9cde?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1521417531735-1fdf5b0c9cde?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=240&h=240&q=60",
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=240&h=240&q=60",
+  "https://img.freepik.com/premium-psd/smiling-athlete-with-arms-crossed-against-black-isolated-background_176841-89124.jpg?w=2000", // tennis
+  "https://png.pngtree.com/png-vector/20240913/ourlarge/pngtree-fitness-coach-png-image_12910594.png", // basketball
+  "https://img.freepik.com/premium-psd/close-up-portrait-attractive-cheerful-content-powerful-guy-demonstrating-biceps-protein-isolated-light-grey-color-isolated-background_176841-89689.jpg?w=996", // running
+  "https://st2.depositphotos.com/3258807/7831/i/950/depositphotos_78312054-stock-photo-solid-man-with-crossed-arms.jpg", // tennis (repeat okay)
+  "https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX6437105.jpg",
+  "https://images.freeimages.com/images/premium/previews/1657/16575334-portrait-of-businesswoman-with-crossed-arms.jpg",
 ];
 
 function makePlayers(status: ParticipantStatus[] = ["Ready", "Resting", "Reserve"]) {
@@ -61,7 +50,7 @@ export const SAMPLE_SESSIONS: OpenPlaySession[] = [
     level: ["Beginner", "Intermediate"],
     rules: "Games to 11, win by 2.",
     format: "Rolling queue, doubles preferred.",
-    participants: makePlayers(["Ready", "Resting", "Reserve"]).slice(0, 12),
+    participants: makePlayers(["Ready", "Resting", "Reserve"]),
   },
   {
     id: "op-2",
@@ -71,6 +60,6 @@ export const SAMPLE_SESSIONS: OpenPlaySession[] = [
     level: ["Intermediate", "Advanced"],
     rules: "First to 4 games, no-ad.",
     format: "Singles or doubles based on turnout.",
-    participants: makePlayers(["Ready", "Resting"]).slice(6, 16),
+    participants: makePlayers(["Ready", "Resting"]).slice(2, 16),
   },
 ];

@@ -8,17 +8,33 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { urls } from "@/routes";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronLeft, ListFilter, Search } from "lucide-react";
 import CourtMatchmakingCard from "@/components/features/open-play/components/court-matching-card";
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
 import { SAMPLE_SESSIONS } from "@/components/features/open-play/data/sample-sessions";
-import type { OpenPlaySession, Participant, Court, ParticipantStatus, Match } from "@/components/features/open-play/types";
-import { buildBalancedTeams, initials } from "@/components/features/open-play/utils";
+import type {
+	Court,
+	Match,
+	OpenPlaySession,
+	Participant,
+	ParticipantStatus,
+} from "@/components/features/open-play/types";
+import {
+	buildBalancedTeams,
+	initials,
+} from "@/components/features/open-play/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { urls } from "@/routes";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import React, { useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 const Tag: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+  <span className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-white border text-xs">
     {children}
   </span>
 );
@@ -36,11 +52,10 @@ const OpenPlayDetailPage: React.FC = () => {
     () => stateSession ?? SAMPLE_SESSIONS.find((s) => s.id === id),
     [stateSession, id]
   );
-
   const [participants, setParticipants] = useState<Participant[]>(
     () => (sessionById?.participants ?? []) as Participant[]
   );
-
+  console.log(participants);
   const [courts, setCourts] = useState<Court[]>([
     { id: "court-1", name: "Court 1", capacity: 4, status: "Open" },
   ]);
@@ -53,20 +68,32 @@ const OpenPlayDetailPage: React.FC = () => {
   const [scoreEntry, setScoreEntry] = useState<Record<string, string>>({});
 
   const inAnyTeam = useMemo(
-    () => new Set(Object.values(courtTeams).flatMap((t) => [...t.A, ...t.B]).map((p) => p.id)),
+    () =>
+      new Set(
+        Object.values(courtTeams)
+          .flatMap((t) => [...t.A, ...t.B])
+          .map((p) => p.id)
+      ),
     [courtTeams]
   );
 
   const readyList = useMemo(
-    () => participants.filter((p) => p.status === "Ready" && !inAnyTeam.has(p.id)),
+    () =>
+      participants.filter((p) => p.status === "Ready" && !inAnyTeam.has(p.id)),
     [participants, inAnyTeam]
   );
   const restingList = useMemo(
-    () => participants.filter((p) => p.status === "Resting" && !inAnyTeam.has(p.id)),
+    () =>
+      participants.filter(
+        (p) => p.status === "Resting" && !inAnyTeam.has(p.id)
+      ),
     [participants, inAnyTeam]
   );
   const reserveList = useMemo(
-    () => participants.filter((p) => p.status === "Reserve" && !inAnyTeam.has(p.id)),
+    () =>
+      participants.filter(
+        (p) => p.status === "Reserve" && !inAnyTeam.has(p.id)
+      ),
     [participants, inAnyTeam]
   );
 
@@ -89,7 +116,9 @@ const OpenPlayDetailPage: React.FC = () => {
   }, [sessionById, participants]);
 
   function updateStatus(participantId: string, status: ParticipantStatus) {
-    setParticipants((prev) => prev.map((p) => (p.id === participantId ? { ...p, status } : p)));
+    setParticipants((prev) =>
+      prev.map((p) => (p.id === participantId ? { ...p, status } : p))
+    );
   }
 
   function removeFromAllTeams(participantId: string) {
@@ -97,13 +126,20 @@ const OpenPlayDetailPage: React.FC = () => {
       Object.fromEntries(
         Object.entries(prev).map(([cid, t]) => [
           cid,
-          { A: t.A.filter((p) => p.id !== participantId), B: t.B.filter((p) => p.id !== participantId) },
+          {
+            A: t.A.filter((p) => p.id !== participantId),
+            B: t.B.filter((p) => p.id !== participantId),
+          },
         ])
       )
     );
   }
 
-  function moveToCourtTeam(courtId: string, teamKey: "A" | "B", participant: Participant) {
+  function moveToCourtTeam(
+    courtId: string,
+    teamKey: "A" | "B",
+    participant: Participant
+  ) {
     setCourtTeams((prev) => {
       const next: typeof prev = JSON.parse(JSON.stringify(prev));
       if (!next[courtId]) next[courtId] = { A: [], B: [] };
@@ -111,7 +147,9 @@ const OpenPlayDetailPage: React.FC = () => {
         next[k].A = next[k].A.filter((p) => p.id !== participant.id);
         next[k].B = next[k].B.filter((p) => p.id !== participant.id);
       }
-      const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
+      const perTeam = Math.floor(
+        (courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2
+      );
       if (next[courtId][teamKey].length >= perTeam) return prev;
       next[courtId][teamKey].push({ ...participant, status: "In-Game" });
       return next;
@@ -122,7 +160,8 @@ const OpenPlayDetailPage: React.FC = () => {
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over) return;
-    const participant = (active.data.current as any)?.participant as Participant;
+    const participant = (active.data.current as any)
+      ?.participant as Participant;
     if (!participant) return;
 
     const overId = String(over.id);
@@ -154,7 +193,10 @@ const OpenPlayDetailPage: React.FC = () => {
   function addCourt() {
     const idx = courts.length + 1;
     const id = `court-${idx}`;
-    setCourts((prev) => [...prev, { id, name: `Court ${idx}`, capacity: 4, status: "Open" }]);
+    setCourts((prev) => [
+      ...prev,
+      { id, name: `Court ${idx}`, capacity: 4, status: "Open" },
+    ]);
     setCourtTeams((prev) => ({ ...prev, [id]: { A: [], B: [] } }));
   }
 
@@ -164,23 +206,33 @@ const OpenPlayDetailPage: React.FC = () => {
       courts.find((c) => c.id === courtId)?.name ?? "Court"
     );
     if (!newName) return;
-    setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, name: newName } : c)));
+    setCourts((prev) =>
+      prev.map((c) => (c.id === courtId ? { ...c, name: newName } : c))
+    );
   }
 
   function toggleCourtOpen(courtId: string) {
     setCourts((prev) =>
-      prev.map((c) => (c.id === courtId ? { ...c, status: c.status === "Closed" ? "Open" : "Closed" } : c))
+      prev.map((c) =>
+        c.id === courtId
+          ? { ...c, status: c.status === "Closed" ? "Open" : "Closed" }
+          : c
+      )
     );
   }
 
   function startGame(courtId: string) {
-    setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "In-Game" } : c)));
+    setCourts((prev) =>
+      prev.map((c) => (c.id === courtId ? { ...c, status: "In-Game" } : c))
+    );
     const t = courtTeams[courtId];
     [...t.A, ...t.B].forEach((p) => updateStatus(p.id, "In-Game"));
   }
 
   function endGame(courtId: string) {
-    setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
+    setCourts((prev) =>
+      prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c))
+    );
     const t = courtTeams[courtId];
     [...t.A, ...t.B].forEach((p) => updateStatus(p.id, "Resting"));
     setCourtTeams((prev) => ({ ...prev, [courtId]: { A: [], B: [] } }));
@@ -205,7 +257,9 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   function matchMakeCourt(courtId: string) {
-    const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
+    const perTeam = Math.floor(
+      (courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2
+    );
     const need = perTeam * 2;
     const pool = [...readyList].slice(0, need);
     if (pool.length < 2) return;
@@ -222,8 +276,10 @@ const OpenPlayDetailPage: React.FC = () => {
     for (const court of courts) {
       const perTeam = Math.floor(court.capacity / 2);
       next[court.id] = { A: [], B: [] };
-      for (let i = 0; i < perTeam && idx < shuffled.length; i++) next[court.id].A.push(shuffled[idx++]);
-      for (let i = 0; i < perTeam && idx < shuffled.length; i++) next[court.id].B.push(shuffled[idx++]);
+      for (let i = 0; i < perTeam && idx < shuffled.length; i++)
+        next[court.id].A.push(shuffled[idx++]);
+      for (let i = 0; i < perTeam && idx < shuffled.length; i++)
+        next[court.id].B.push(shuffled[idx++]);
     }
     setCourtTeams(next);
   }
@@ -248,7 +304,9 @@ const OpenPlayDetailPage: React.FC = () => {
   function setResult(matchId: string, winner: "A" | "B") {
     setMatches((prev) =>
       prev.map((m) =>
-        m.id === matchId ? { ...m, winner, status: "Completed", score: scoreEntry[matchId] } : m
+        m.id === matchId
+          ? { ...m, winner, status: "Completed", score: scoreEntry[matchId] }
+          : m
       )
     );
   }
@@ -259,59 +317,49 @@ const OpenPlayDetailPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Session not found</h1>
-            <p className="text-sm text-muted-foreground">The Open Play session you are looking for does not exist.</p>
+            <p className="text-sm text-muted-foreground">
+              The Open Play session you are looking for does not exist.
+            </p>
           </div>
-          <Button onClick={() => navigate(urls.openPlay)}>Back to Open Play</Button>
+          <Button onClick={() => navigate(urls.openPlay)}>
+            Back to Open Play
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-h-screen overflow-y-scroll">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-4 bg-primary text-white">
         <div>
           <h1 className="text-xl font-semibold">{session.title}</h1>
           <div className="mt-1 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{session.level.join(" / ")}</Badge>
+            <Badge variant="outline" className="text-white px-3 py-2">
+              {session.level.join(" / ")}
+            </Badge>
             <Tag>{session.when}</Tag>
             <Tag>{session.location}</Tag>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" onClick={() => navigate(-1)}>
-                <ChevronLeft className="h-4 w-4 mr-2" /> Back
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent sideOffset={6}>Return to Open Play</TooltipContent>
-          </Tooltip>
+          <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b">
+      <div className="flex items-center bg-primary gap-2 border-b">
         <button
           onClick={() => setTab("details")}
           className={cn("h-10 px-3 text-sm -mb-px border-b-2",
             tab === "details" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
-        >
-          <span>Details</span>
-        </button>
+        >Details</button>
         <button
           onClick={() => setTab("game")}
           className={cn("h-10 px-3 text-sm -mb-px border-b-2",
             tab === "game" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
-        >
-          <span className="inline-flex items-center gap-2">
-            <span>Game</span>
-            <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-muted px-1 text-[11px] text-muted-foreground">
-              {readyCount}
-            </span>
-          </span>
-        </button>
+        >Game</button>
       </div>
 
       {tab === "details" && (
@@ -320,8 +368,14 @@ const OpenPlayDetailPage: React.FC = () => {
             <div className="rounded-xl border bg-card p-4">
               <p className="text-sm font-semibold">Session Info</p>
               <div className="mt-2 text-sm">
-                <p><span className="text-muted-foreground">Rules:</span> {session.rules ?? "Standard club rules."}</p>
-                <p><span className="text-muted-foreground">Format:</span> {session.format ?? "Open queue and court rotation."}</p>
+                <p>
+                  <span className="text-muted-foreground">Rules:</span>{" "}
+                  {session.rules ?? "Standard club rules."}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Format:</span>{" "}
+                  {session.format ?? "Open queue and court rotation."}
+                </p>
               </div>
             </div>
             <div className="rounded-xl border bg-card p-4">
@@ -370,27 +424,58 @@ const OpenPlayDetailPage: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                {filteredParticipants.map((p) => (
+                {participants.map((p) => (
                   <div key={p.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <Avatar className="h-9 w-9"><AvatarImage src={p.avatarUrl} /><AvatarFallback>{initials(p.name)}</AvatarFallback></Avatar>
-                      <span className="text-sm font-medium truncate">{p.name}</span>
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={p.avatar} />
+                        <AvatarFallback>{initials(p.name)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium truncate">
+                        {p.name}
+                      </span>
                       <Badge variant="outline">{p.level}</Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={p.status === "In-Game" ? "secondary" : p.status === "Ready" ? "success" : "outline"}>{p.status}</Badge>
+                      <Badge
+                        variant={
+                          p.status === "In-Game"
+                            ? "secondary"
+                            : p.status === "Ready"
+                            ? "success"
+                            : "outline"
+                        }
+                      >
+                        {p.status}
+                      </Badge>
                       {p.status !== "Ready" && (
-                        <Button size="sm" variant="outline" onClick={() => { removeFromAllTeams(p.id); updateStatus(p.id, "Ready"); }}>Set Ready</Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            removeFromAllTeams(p.id);
+                            updateStatus(p.id, "Ready");
+                          }}
+                        >
+                          Set Ready
+                        </Button>
                       )}
                       {p.status !== "Reserve" && (
-                        <Button size="sm" variant="outline" onClick={() => { removeFromAllTeams(p.id); updateStatus(p.id, "Reserve"); }}>Reserve</Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            removeFromAllTeams(p.id);
+                            updateStatus(p.id, "Reserve");
+                          }}
+                        >
+                          Reserve
+                        </Button>
                       )}
                     </div>
                   </div>
                 ))}
-                {filteredParticipants.length === 0 && (
-                  <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">No participants match your filters.</div>
-                )}
+                {participants.length === 0 && <p className="text-sm text-muted-foreground">No participants yet.</p>}
               </div>
             </div>
           </div>
@@ -399,48 +484,10 @@ const OpenPlayDetailPage: React.FC = () => {
               <p className="text-sm font-semibold">Stats</p>
               <div className="mt-2 text-xs text-muted-foreground space-y-1">
                 <p>Total: {participants.length}</p>
-                <div className="mt-2 space-y-1">
-                  <div className="h-2 w-full rounded bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500"
-                      style={{ width: `${participants.length ? (readyCount / participants.length) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Ready</span>
-                    <span>{readyCount}</span>
-                  </div>
-                  <div className="h-2 w-full rounded bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500"
-                      style={{ width: `${participants.length ? (inGameCount / participants.length) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">In-Game</span>
-                    <span>{inGameCount}</span>
-                  </div>
-                  <div className="h-2 w-full rounded bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-amber-500"
-                      style={{ width: `${participants.length ? (restingCount / participants.length) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Resting</span>
-                    <span>{restingCount}</span>
-                  </div>
-                  <div className="h-2 w-full rounded bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-slate-400"
-                      style={{ width: `${participants.length ? (reserveCount / participants.length) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Reserve</span>
-                    <span>{reserveCount}</span>
-                  </div>
-                </div>
+                <p>Ready: {participants.filter((p) => p.status === "Ready").length}</p>
+                <p>In-Game: {participants.filter((p) => p.status === "In-Game").length}</p>
+                <p>Resting: {participants.filter((p) => p.status === "Resting").length}</p>
+                <p>Reserve: {participants.filter((p) => p.status === "Reserve").length}</p>
               </div>
             </div>
           </div>
@@ -449,124 +496,228 @@ const OpenPlayDetailPage: React.FC = () => {
 
       {tab === "game" && (
         <DndContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {/* Queues */}
-            <div className="space-y-3">
-              <DroppablePanel id="ready" title="Ready" subtitle="Players ready to play">
-                {readyList.map((p) => <DraggablePill key={p.id} participant={p} />)}
-                {readyList.length === 0 && <p className="text-xs text-muted-foreground">No players ready</p>}
-              </DroppablePanel>
-              <DroppablePanel id="resting" title="Resting" subtitle="Players taking a break">
-                {restingList.map((p) => <DraggablePill key={p.id} participant={p} />)}
-                {restingList.length === 0 && <p className="text-xs text-muted-foreground">No players resting</p>}
-              </DroppablePanel>
-              <DroppablePanel id="reserve" title="Reserve" subtitle="Overflow or RSVP later">
-                {reserveList.map((p) => <DraggablePill key={p.id} participant={p} />)}
-                {reserveList.length === 0 && <p className="text-xs text-muted-foreground">No players in reserve</p>}
-              </DroppablePanel>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 p-4">
+            {/* ===== Left: Bench / Queues ===== */}
+            <aside className="space-y-3 lg:sticky lg:top-4 h-max">
+              <div className="rounded-xl border bg-card p-3">
+                <p className="text-sm font-semibold">Bench</p>
+                <p className="text-xs text-muted-foreground">
+                  Drag players from here onto courts
+                </p>
+              </div>
 
-            {/* Courts */}
-            <div className="lg:col-span-3 space-y-3">
+              {/* Ready */}
+              <DroppablePanel
+                id="ready"
+                title="Ready"
+                subtitle="Players ready to play"
+                childrenClassName="grid grid-cols-1"
+              >
+                {readyList.map((p) => (
+                  <DraggablePill key={p.id} participant={p} />
+                ))}
+                {readyList.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No players ready
+                  </p>
+                )}
+              </DroppablePanel>
+
+              {/* Resting */}
+              <DroppablePanel
+                id="resting"
+                title="Resting"
+                subtitle="Players taking a break"
+                childrenClassName="grid grid-cols-1"
+              >
+                {restingList.map((p) => (
+                  <DraggablePill key={p.id} participant={p} />
+                ))}
+                {restingList.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No players resting
+                  </p>
+                )}
+              </DroppablePanel>
+
+              {/* Reserve */}
+              <DroppablePanel
+                id="reserve"
+                title="Reserve"
+                subtitle="Overflow or RSVP later"
+                childrenClassName="grid grid-cols-1"
+              >
+                {reserveList.map((p) => (
+                  <DraggablePill key={p.id} participant={p} />
+                ))}
+                {reserveList.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No players in reserve
+                  </p>
+                )}
+              </DroppablePanel>
+            </aside>
+
+            {/* ===== Right: Courts ===== */}
+            <section className="space-y-3">
+              {/* Controls */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={addCourt}>Add Court</Button>
-                  <Button variant="outline" onClick={randomPickBalanced}>Random Pick (Balanced)</Button>
-                  <Button variant="outline" onClick={shuffleTeamsAll}>Shuffle Teams</Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" onClick={addCourt}>
+                    Add Court
+                  </Button>
+                  <Button variant="outline" onClick={randomPickBalanced}>
+                    Random Pick (Balanced)
+                  </Button>
+                  <Button variant="outline" onClick={shuffleTeamsAll}>
+                    Shuffle Teams
+                  </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button onClick={confirmMatches}>Confirm Match</Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {courts.map((c) => {
-                  const teams = courtTeams[c.id] ?? { A: [], B: [] };
-                  const perTeam = Math.floor(c.capacity / 2);
-                  return (
-                    <div key={c.id} className="space-y-2">
-                      <div className="flex items-center justify-end">
-                        <Button size="sm" variant="outline" onClick={() => matchMakeCourt(c.id)}>
-                          Matchmake This Court
-                        </Button>
+              {/* Court canvas (green surface w/ lines) */}
+              <CourtCanvas>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {courts.map((c) => {
+                    const teams = courtTeams[c.id] ?? { A: [], B: [] };
+                    const perTeam = Math.floor(c.capacity / 2);
+
+                    return (
+                      <div  key={c.id}>
+                        <div className="flex items-center px-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => matchMakeCourt(c.id)}
+                          >
+                            Matchmake This Court
+                          </Button>
+                        </div>
+
+                        <div className="p-2">
+                          <CourtMatchmakingCard
+                            court={c}
+                            teamA={teams.A}
+                            teamB={teams.B}
+                            capacity={c.capacity}
+                            onStart={() => startGame(c.id)}
+                            onEnd={() => endGame(c.id)}
+                            onRename={() => renameCourt(c.id)}
+                            onToggleOpen={() => toggleCourtOpen(c.id)}
+                          />
+                          <p className="text-[11px] text-muted-foreground text-center mt-2">
+                            Team size: {perTeam} • Drag players onto A/B or use
+                            “Matchmake This Court”
+                          </p>
+                        </div>
                       </div>
-                      <CourtMatchmakingCard
-                        court={c}
-                        teamA={teams.A}
-                        teamB={teams.B}
-                        capacity={c.capacity}
-                        onStart={() => startGame(c.id)}
-                        onEnd={() => endGame(c.id)}
-                        onRename={() => renameCourt(c.id)}
-                        onToggleOpen={() => toggleCourtOpen(c.id)}
-                      />
-                      <p className="text-[11px] text-muted-foreground text-center">
-                        Team size: {perTeam} • Drag players onto A/B or use “Matchmake This Court”
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </CourtCanvas>
 
               {/* Matches */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">Matches</p>
-                  <span className="text-xs text-muted-foreground">{matches.length} scheduled</span>
+                  <span className="text-xs text-muted-foreground">
+                    {matches.length} scheduled
+                  </span>
                 </div>
-                {matches.length === 0 && (
+
+                {matches.length === 0 ? (
                   <div className="rounded-md border p-3 text-xs text-muted-foreground">
-                    No matches yet. Confirm matches to generate them from court assignments.
+                    No matches yet. Confirm matches to generate them from court
+                    assignments.
                   </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {matches.map((m) => (
-                    <div key={m.id} className="rounded-2xl border bg-card p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold">{m.courtName}</p>
-                        <Badge variant={m.status === "Completed" ? "secondary" : "outline"}>{m.status}</Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <p className="font-medium">Team A</p>
-                          <p className="text-muted-foreground truncate">{m.teamA.map((p) => p.name).join(", ")}</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {matches.map((m) => (
+                      <div
+                        key={m.id}
+                        className="rounded-2xl border bg-card p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold">{m.courtName}</p>
+                          <Badge
+                            variant={
+                              m.status === "Completed" ? "secondary" : "outline"
+                            }
+                          >
+                            {m.status}
+                          </Badge>
                         </div>
-                        <div>
-                          <p className="font-medium">Team B</p>
-                          <p className="text-muted-foreground truncate">{m.teamB.map((p) => p.name).join(", ")}</p>
-                        </div>
-                      </div>
-                      {m.status === "Scheduled" ? (
-                        <div className="flex items-center justify-between gap-2">
-                          <Input
-                            className="h-8 w-28"
-                            placeholder="Score"
-                            value={scoreEntry[m.id] ?? ""}
-                            onChange={(e) => setScoreEntry((s) => ({ ...s, [m.id]: e.target.value }))}
-                          />
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline" onClick={() => setResult(m.id, "A")}>Set A Win</Button>
-                            <Button size="sm" onClick={() => setResult(m.id, "B")}>Set B Win</Button>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="font-medium">Team A</p>
+                            <p className="text-muted-foreground truncate">
+                              {m.teamA.map((p) => p.name).join(", ")}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-medium">Team B</p>
+                            <p className="text-muted-foreground truncate">
+                              {m.teamB.map((p) => p.name).join(", ")}
+                            </p>
                           </div>
                         </div>
-                      ) : (
-                        <div className="text-xs">
-                          <p>
-                            Winner: <span className="font-medium">
-                              {m.winner === "A" ? m.teamA.map((p) => p.name).join(", ") : m.teamB.map((p) => p.name).join(", ")}
-                            </span>
-                          </p>
-                          <p className="text-muted-foreground">
-                            Loser: {m.winner === "A" ? m.teamB.map((p) => p.name).join(", ") : m.teamA.map((p) => p.name).join(", ")}
-                            {m.score ? ` • Score: ${m.score}` : ""}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                        {m.status === "Scheduled" ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <Input
+                              className="h-8 w-28"
+                              placeholder="Score"
+                              value={scoreEntry[m.id] ?? ""}
+                              onChange={(e) =>
+                                setScoreEntry((s) => ({
+                                  ...s,
+                                  [m.id]: e.target.value,
+                                }))
+                              }
+                            />
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setResult(m.id, "A")}
+                              >
+                                Set A Win
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => setResult(m.id, "B")}
+                              >
+                                Set B Win
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs">
+                            <p>
+                              Winner:{" "}
+                              <span className="font-medium">
+                                {m.winner === "A"
+                                  ? m.teamA.map((p) => p.name).join(", ")
+                                  : m.teamB.map((p) => p.name).join(", ")}
+                              </span>
+                            </p>
+                            <p className="text-muted-foreground">
+                              Loser:{" "}
+                              {m.winner === "A"
+                                ? m.teamB.map((p) => p.name).join(", ")
+                                : m.teamA.map((p) => p.name).join(", ")}
+                              {m.score ? ` • Score: ${m.score}` : ""}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            </section>
           </div>
         </DndContext>
       )}
