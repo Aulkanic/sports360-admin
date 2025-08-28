@@ -4,12 +4,15 @@ import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 
 export interface PlayerItem {
 	id: string;
 	name: string;
 	status: "In-Game" | "Resting";
+	avatar?: string;
+	skill?: "Beginner" | "Intermediate" | "Advanced" | "Pro";
 }
 
 interface PlayerStatusPanelProps {
@@ -70,7 +73,16 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 		const style = { opacity: isDragging ? 0.6 : 1, transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined } as React.CSSProperties;
 		return (
 			<div ref={setNodeRef} style={style} {...listeners} {...attributes} className="flex items-center justify-between gap-2 rounded-md border p-2 bg-card">
-				<span className="text-sm font-medium">{player.name}</span>
+				<div className="flex items-center gap-2 min-w-0">
+					<Avatar className="h-7 w-7">
+						<AvatarImage src={player.avatar} />
+						<AvatarFallback>{player.name.split(" ").map((s) => s[0]).slice(0,2).join("")}</AvatarFallback>
+					</Avatar>
+					<div className="min-w-0">
+						<p className="text-sm font-medium truncate">{player.name}</p>
+						{player.skill && <Badge variant="outline" className="text-[10px] mt-0.5">{player.skill}</Badge>}
+					</div>
+				</div>
 				<Badge variant={player.status === "In-Game" ? "success" : "muted"}>{player.status}</Badge>
 			</div>
 		);
@@ -127,9 +139,18 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 					<div className="space-y-3">
 						{filtered.map((pl) => (
 							<div key={pl.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
-								<div className="flex items-center gap-2">
-									<span className="text-sm font-medium">{pl.name}</span>
-									<Badge variant={pl.status === "In-Game" ? "success" : "muted"}>{pl.status}</Badge>
+								<div className="flex items-center gap-3 min-w-0">
+									<Avatar className="h-8 w-8">
+										<AvatarImage src={pl.avatar} />
+										<AvatarFallback>{pl.name.split(" ").map((s) => s[0]).slice(0,2).join("")}</AvatarFallback>
+									</Avatar>
+									<div className="min-w-0">
+										<div className="flex items-center gap-2">
+											<span className="text-sm font-medium truncate max-w-[180px] md:max-w-[260px]">{pl.name}</span>
+											<Badge variant={pl.status === "In-Game" ? "success" : "muted"}>{pl.status}</Badge>
+										</div>
+										{pl.skill && <div className="mt-1"><Badge variant="outline" className="text-[10px]">{pl.skill}</Badge></div>}
+									</div>
 								</div>
 								<div className="flex items-center gap-2">
 									{adminMode ? (
