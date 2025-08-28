@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import type { Court, Participant } from "../types";
 import DroppablePanel from "./draggable-panel";
 import DraggablePill from "./draggable-pill";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const CourtMatchmakingCard: React.FC<{
   court: Court;
@@ -18,12 +20,28 @@ const CourtMatchmakingCard: React.FC<{
   const perTeam = Math.floor(capacity / 2);
 
   return (
-    <div className="rounded-2xl border p-0 overflow-hidden bg-white shadow-sm">
+    <div className="rounded-2xl border p-0 overflow-hidden bg-card shadow-sm">
       <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
         <p className="font-semibold uppercase tracking-wide">{court.name}</p>
-        <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-          {court.status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={cn(
+                "h-2 w-28 rounded-full bg-white/30 overflow-hidden",
+                court.status === "Closed" && "opacity-50"
+              )} aria-label="Capacity meter">
+                <div
+                  className={cn("h-full bg-white/90 transition-all", court.status === "In-Game" ? "bg-emerald-300" : "")}
+                  style={{ width: `${(teamA.length + teamB.length) / capacity * 100}%` }}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={6}>Capacity {teamA.length + teamB.length}/{capacity}</TooltipContent>
+          </Tooltip>
+          <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+            {court.status}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-0 p-3 md:p-4">
