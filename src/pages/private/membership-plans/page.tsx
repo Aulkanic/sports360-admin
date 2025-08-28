@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
@@ -239,13 +239,20 @@ const MembershipPlansPage: React.FC = () => {
 				<Button className="shadow-lg" onClick={openCreate}>Add New Plan</Button>
 			</div>
 
-			{/* Edit/Create Sheet */}
-			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent side="right" className="sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>{editing ? "Edit Plan" : "Add Plan"}</SheetTitle>
-					</SheetHeader>
-					<form onSubmit={handleSave} className="p-4 space-y-4">
+			{/* Edit/Create Overlay (consider full-page if plans become complex) */}
+			<ResponsiveOverlay
+				open={open}
+				onOpenChange={setOpen}
+				title={editing ? "Edit Plan" : "Add Plan"}
+				ariaLabel={editing ? "Edit Plan" : "Add Plan"}
+				footer={(
+					<div className="flex gap-2">
+						<Button type="submit" form="plan-form">Save</Button>
+						<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+					</div>
+				)}
+			>
+				<form id="plan-form" onSubmit={handleSave} className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<label className="space-y-1">
 								<span className="text-sm">Plan Name</span>
@@ -282,15 +289,8 @@ const MembershipPlansPage: React.FC = () => {
 								</select>
 							</label>
 						</div>
-						<SheetFooter>
-							<div className="flex gap-2">
-								<Button type="submit">Save</Button>
-								<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-							</div>
-						</SheetFooter>
-					</form>
-				</SheetContent>
-			</Sheet>
+				</form>
+			</ResponsiveOverlay>
 
 			{/* Delete Confirmation */}
 			{confirmId && (

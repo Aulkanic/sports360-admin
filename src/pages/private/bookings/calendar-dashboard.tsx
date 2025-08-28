@@ -6,7 +6,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar as CalendarIcon, Plus, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 
 // Colors
 const COLORS = {
@@ -196,26 +196,26 @@ const CalendarDashboardPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Create Sheet */}
-			<Sheet open={openCreate} onOpenChange={setOpenCreate}>
-				<SheetContent side="right" className="sm:max-w-md">
-					<SheetHeader>
-						<SheetTitle>Create Event</SheetTitle>
-					</SheetHeader>
-					<form className="p-4 space-y-4">
-						<label className="space-y-1 block">
-							<span className="text-sm">Title</span>
-							<Input placeholder="Event title" />
-						</label>
-						<SheetFooter>
-							<div className="flex gap-2">
-								<Button type="button" className="bg-orange-500 hover:bg-orange-600">Create</Button>
-								<Button type="button" variant="outline" onClick={() => setOpenCreate(false)}>Cancel</Button>
-							</div>
-						</SheetFooter>
-					</form>
-				</SheetContent>
-			</Sheet>
+			{/* Create overlay */}
+			<ResponsiveOverlay
+				open={openCreate}
+				onOpenChange={setOpenCreate}
+				title="Create Event"
+				ariaLabel="Create Event"
+				footer={(
+					<div className="flex gap-2">
+						<Button type="button" className="bg-orange-500 hover:bg-orange-600" form="cdp-create-form">Create</Button>
+						<Button type="button" variant="outline" onClick={() => setOpenCreate(false)}>Cancel</Button>
+					</div>
+				)}
+			>
+				<form id="cdp-create-form" className="space-y-4">
+					<label className="space-y-1 block">
+						<span className="text-sm">Title</span>
+						<Input placeholder="Event title" />
+					</label>
+				</form>
+			</ResponsiveOverlay>
 		</div>
 	);
 };

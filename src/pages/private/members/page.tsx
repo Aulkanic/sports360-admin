@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import MembersTable from "./table";
 import type { MemberRow } from "./table";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Input } from "@/components/ui/input";
 
 const initialRows: MemberRow[] = [
@@ -140,12 +140,19 @@ const MembersPage: React.FC = () => {
 				onEditClick={(row) => handleEditOpen(row)}
 			/>
 
-			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent side="right" className="sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>{isEditing ? "Edit Member" : "Add Member"}</SheetTitle>
-					</SheetHeader>
-					<form onSubmit={handleSave} className="p-4 space-y-4">
+			<ResponsiveOverlay
+				open={open}
+				onOpenChange={setOpen}
+				title={isEditing ? "Edit Member" : "Add Member"}
+				ariaLabel={isEditing ? "Edit Member" : "Add Member"}
+				footer={(
+					<div className="flex gap-2">
+						<Button type="submit" form="member-form">Save</Button>
+						<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+					</div>
+				)}
+			>
+				<form id="member-form" onSubmit={handleSave} className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<label className="space-y-1">
 								<span className="text-sm">Full Name</span>
@@ -172,15 +179,8 @@ const MembersPage: React.FC = () => {
 								</select>
 							</label>
 						</div>
-						<SheetFooter>
-							<div className="flex gap-2">
-								<Button type="submit">Save</Button>
-								<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-							</div>
-						</SheetFooter>
-					</form>
-				</SheetContent>
-			</Sheet>
+				</form>
+			</ResponsiveOverlay>
 		</div>
 	);
 };

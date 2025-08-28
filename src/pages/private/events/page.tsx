@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Badge } from "@/components/ui/badge";
 import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, addWeeks, addMonths } from "date-fns";
@@ -279,13 +279,20 @@ const EventsPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Add/Edit Event Sheet */}
-			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent side="right" className="sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>{editing ? "Edit Event" : "Add Event"}</SheetTitle>
-					</SheetHeader>
-					<form onSubmit={save} className="p-4 space-y-4">
+			{/* Add/Edit Event Overlay (temporary; consider full-page for complex flows) */}
+			<ResponsiveOverlay
+				open={open}
+				onOpenChange={setOpen}
+				title={editing ? "Edit Event" : "Add Event"}
+				ariaLabel={editing ? "Edit Event" : "Add Event"}
+				footer={(
+					<div className="flex gap-2">
+						<Button type="submit" form="event-form">Save</Button>
+						<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+					</div>
+				)}
+			>
+				<form id="event-form" onSubmit={save} className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<label className="space-y-1">
 								<span className="text-sm">Event Name</span>
@@ -375,15 +382,8 @@ const EventsPage: React.FC = () => {
 							</div>
 						)}
 
-						<SheetFooter>
-							<div className="flex gap-2">
-								<Button type="submit">Save</Button>
-								<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-							</div>
-						</SheetFooter>
-					</form>
-				</SheetContent>
-			</Sheet>
+				</form>
+			</ResponsiveOverlay>
 
 			{/* Delete Confirmation */}
 			{confirmId && (
