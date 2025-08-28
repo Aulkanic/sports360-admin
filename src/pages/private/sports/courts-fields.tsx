@@ -445,6 +445,21 @@ const CourtsFieldsPage: React.FC = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Amenities</span>
+              <Button type="button" size="sm" variant="outline" onClick={addAmenityField}>Add Amenity</Button>
+            </div>
+            <div className="space-y-2">
+              {(form.amenities ?? []).map((a, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Input className="flex-1" placeholder="e.g., Lighting" value={a} onChange={(e) => updateAmenity(idx, e.target.value)} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => removeAmenityField(idx)}>Remove</Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Images</span>
               <Button
                 type="button"

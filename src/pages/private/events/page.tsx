@@ -61,6 +61,7 @@ const EventsPage: React.FC = () => {
 	const [location, setLocation] = useState("");
 	const [calDate, setCalDate] = useState<Date>(new Date());
 	const [calView, setCalView] = useState<string>(Views.MONTH);
+	const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
 
 	const [open, setOpen] = useState(false);
 	const [editing, setEditing] = useState<ClubEvent | null>(null);
@@ -205,6 +206,10 @@ const EventsPage: React.FC = () => {
 					</select>
 					<Input className="w-full md:w-48" placeholder="Filter location" value={location} onChange={(e) => setLocation(e.target.value)} />
 					<Button onClick={() => openCreate()}>Add New Event</Button>
+					<div className="ml-auto inline-flex rounded-md border overflow-hidden">
+						<button onClick={() => setViewMode("list")} className={`h-9 px-3 text-sm ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>List</button>
+						<button onClick={() => setViewMode("calendar")} className={`h-9 px-3 text-sm ${viewMode === "calendar" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>Calendar</button>
+					</div>
 				</div>
 			</div>
 
@@ -218,6 +223,7 @@ const EventsPage: React.FC = () => {
 				))}
 			</div>
 
+			{viewMode === "calendar" && (
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 				<div className="lg:col-span-2 rounded-xl border bg-card">
 					{/* Calendar toolbar */}
@@ -278,6 +284,35 @@ const EventsPage: React.FC = () => {
 					))}
 				</div>
 			</div>
+			)}
+
+			{viewMode === "list" && (
+				<div className="rounded-xl border overflow-hidden">
+					<div className="grid grid-cols-7 bg-muted/40 text-xs font-medium p-2">
+						<span>Name</span>
+						<span>Type</span>
+						<span>Status</span>
+						<span>Location</span>
+						<span>Start</span>
+						<span>End</span>
+						<span>Actions</span>
+					</div>
+					{filtered.map((e) => (
+						<div key={e.id} className="grid grid-cols-7 text-xs p-2 border-t items-center">
+							<span className="font-medium truncate">{e.name}</span>
+							<span>{e.type}</span>
+							<span><Badge variant={e.status === "Active" ? "success" : e.status === "Upcoming" ? "warning" : "muted"}>{e.status}</Badge></span>
+							<span className="truncate">{e.location}</span>
+							<span>{format(e.start, "PP p")}</span>
+							<span>{format(e.end, "PP p")}</span>
+							<span className="flex items-center gap-2">
+								<Button size="sm" variant="outline" onClick={() => openEdit(e)}>Edit</Button>
+								<Button size="sm" variant="destructive" onClick={() => remove(e.id)}>Delete</Button>
+							</span>
+						</div>
+					))}
+				</div>
+			)}
 
 			{/* Add/Edit Event Overlay (temporary; consider full-page for complex flows) */}
 			<ResponsiveOverlay
