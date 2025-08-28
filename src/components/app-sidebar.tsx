@@ -62,6 +62,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             icon: <FaRegCalendar className="w-4 h-4" />,
           },
           {
+            title: "Open Play",
+            url: urls.openPlay,
+            icon: <FaRegCalendar className="w-4 h-4" />,
+          },
+          {
             title: "Add-ons",
             url: urls.equipment,
             icon: <FaList className="w-4 h-4" />,

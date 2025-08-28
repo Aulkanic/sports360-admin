@@ -1,13 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import React, { useState } from "react";
 import { useDropzone, type Accept } from "react-dropzone";
 import type { SportItem } from "../page";
@@ -66,12 +60,25 @@ const EditCreateSheet: React.FC<EditCreateSheetProps> = ({
     }));
   };
   return (
-    <Sheet open={openEdit} onOpenChange={setOpenEdit}>
-      <SheetContent side="right" className="sm:max-w-xl pb-0">
-        <SheetHeader className="pb-0">
-          <SheetTitle>{editing ? "Edit Sport" : "Add Sport"}</SheetTitle>
-        </SheetHeader>
-        <form onSubmit={save} className="p-4 pt-0 space-y-4">
+    <ResponsiveOverlay
+      open={openEdit}
+      onOpenChange={setOpenEdit}
+      title={editing ? "Edit Sport" : "Add Sport"}
+      ariaLabel={editing ? "Edit Sport" : "Add Sport"}
+      footer={(
+        <div className="flex gap-2">
+          <Button type="submit" form="sport-form">Save</Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpenEdit(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+    >
+        <form id="sport-form" onSubmit={save} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="space-y-1">
               <span className="text-sm">Sport Name</span>
@@ -283,21 +290,8 @@ const EditCreateSheet: React.FC<EditCreateSheetProps> = ({
               )}
             </label>
           </div>
-          <SheetFooter>
-            <div className="flex gap-2">
-              <Button type="submit">Save</Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpenEdit(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </SheetFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+    </ResponsiveOverlay>
   );
 };
 

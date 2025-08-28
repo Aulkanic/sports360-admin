@@ -3,13 +3,7 @@ import CustomDataTable from "@/components/custom-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
 import React, { useMemo, useState } from "react";
 
@@ -389,20 +383,33 @@ const EquipmentPage: React.FC = () => {
         className="rounded-lg"
       />
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="sm:max-w-xl">
-          <SheetHeader className="pb-0">
-            <SheetTitle className="text-2xl font-semibold text-gray-900">
-              {editing ? "Edit Equipment" : "Add Equipment"}
-            </SheetTitle>
-            <p className="text-sm text-muted-foreground">
-              {editing
-                ? "Edit the details of the equipment"
-                : "Fill in the details to add new equipment"}
-            </p>
-          </SheetHeader>
-
-          <form onSubmit={save} className="p-6 pt-0 space-y-6">
+      <ResponsiveOverlay
+        open={open}
+        onOpenChange={setOpen}
+        title={<span className="text-2xl font-semibold text-gray-900">{editing ? "Edit Equipment" : "Add Equipment"}</span>}
+        description={editing ? "Edit the details of the equipment" : "Fill in the details to add new equipment"}
+        ariaLabel={editing ? "Edit Equipment" : "Add Equipment"}
+        footer={(
+          <div className="flex items-center justify-end gap-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="px-6 py-3 rounded-md text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-primary"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="equipment-form"
+              className="bg-primary text-white px-6 py-3 rounded-md hover:bg-orange-600 focus:ring-2 focus:ring-primary"
+            >
+              Save
+            </Button>
+          </div>
+        )}
+      >
+          <form id="equipment-form" onSubmit={save} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Name Input */}
               <label className="space-y-2">
@@ -597,27 +604,8 @@ const EquipmentPage: React.FC = () => {
            
             </div>
 
-            <SheetFooter>
-              <div className="flex items-center justify-end gap-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  className="px-6 py-3 rounded-md text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-primary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-primary text-white px-6 py-3 rounded-md hover:bg-orange-600 focus:ring-2 focus:ring-primary"
-                >
-                  Save
-                </Button>
-              </div>
-            </SheetFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+      </ResponsiveOverlay>
 
       {/* Delete Confirmation */}
       {confirmId && (

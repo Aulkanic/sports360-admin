@@ -9,16 +9,8 @@ import { format, parse, startOfWeek, getDay, addDays } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import PlayerStatusPanel, {
-  type PlayerItem,
-} from "@/components/player-status-panel";
+import ResponsiveOverlay from "@/components/responsive-overlay";
+import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
 
 import { MiniMonth } from "./mini-booking";
 import ClubCalendar from "@/components/club-calendar";
@@ -416,13 +408,20 @@ const BookingsCalendarPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Booking sheet */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Book Event</SheetTitle>
-          </SheetHeader>
-          <form onSubmit={saveBooking} className="p-4 space-y-4">
+      {/* Booking overlay */}
+      <ResponsiveOverlay
+        open={open}
+        onOpenChange={setOpen}
+        title="Book Event"
+        ariaLabel="Book Event"
+        footer={(
+          <div className="flex gap-2">
+            <Button type="submit" form="booking-form">Confirm Booking</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          </div>
+        )}
+      >
+          <form id="booking-form" onSubmit={saveBooking} className="space-y-4">
             {selected && (
               <div className="rounded-md border p-3 text-sm">
                 <p className="font-medium">{selected.title}</p>
@@ -467,21 +466,8 @@ const BookingsCalendarPage: React.FC = () => {
                 required
               />
             </label>
-            <SheetFooter>
-              <div className="flex gap-2">
-                <Button type="submit">Confirm Booking</Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </SheetFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+      </ResponsiveOverlay>
 
       <PlayerStatusPanel
         open={openPlayers}

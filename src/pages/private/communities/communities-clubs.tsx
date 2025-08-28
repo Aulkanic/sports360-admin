@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { Building2, MapPin, Globe2, Link2, Plus, Pencil, Trash2, Search, Filter as FilterIcon, Upload, Download, GripVertical, MoreHorizontal, Users, Calendar } from "lucide-react";
 
@@ -414,13 +414,19 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Manage clubs Drawer */}
-			<Sheet open={!!manageFor} onOpenChange={(v) => !v && setManageFor(null)}>
-				<SheetContent side="right" className="sm:max-w-2xl">
-					<SheetHeader>
-						<SheetTitle>Manage clubs • {manageFor?.name}</SheetTitle>
-					</SheetHeader>
-					<div className="p-4 space-y-4">
+			{/* Manage clubs overlay */}
+			<ResponsiveOverlay
+				open={!!manageFor}
+				onOpenChange={(v) => !v && setManageFor(null)}
+				title={`Manage clubs • ${manageFor?.name ?? ""}`}
+				ariaLabel="Manage clubs"
+				footer={(
+					<div className="flex items-center justify-end gap-2">
+						<Button variant="outline" onClick={() => setManageFor(null)}>Close</Button>
+					</div>
+				)}
+			>
+				<div className="space-y-4">
 						{/* Community summary */}
 						{manageFor && (
 							<div className="rounded-lg border p-3 bg-card">
@@ -513,22 +519,33 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 								</div>
 							</div>
 						)}
-					</div>
-					<SheetFooter>
-						<div className="flex items-center justify-end gap-2">
-							<Button variant="outline" onClick={() => setManageFor(null)}>Close</Button>
-						</div>
-					</SheetFooter>
-				</SheetContent>
-			</Sheet>
+				</div>
+			</ResponsiveOverlay>
 
-			{/* Create/Edit Community Dialog (simple sheet) */}
-			<Sheet open={openCommunityDialog} onOpenChange={setOpenCommunityDialog}>
-				<SheetContent side="right" className="sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>{editingCommunity ? "Edit Community" : "Create Community"}</SheetTitle>
-					</SheetHeader>
-					<div className="p-4 space-y-3">
+			{/* Create/Edit Community Dialog */}
+			<ResponsiveOverlay
+				open={openCommunityDialog}
+				onOpenChange={setOpenCommunityDialog}
+				title={editingCommunity ? "Edit Community" : "Create Community"}
+				ariaLabel={editingCommunity ? "Edit Community" : "Create Community"}
+				footer={(
+					<div className="flex items-center gap-2">
+						<Button onClick={() => submitCommunity({
+							name: (document.getElementById("cm-name") as HTMLInputElement)?.value,
+							slug: (document.getElementById("cm-slug") as HTMLInputElement)?.value,
+							sports: (document.getElementById("cm-sports") as HTMLInputElement)?.value?.split(",").map((s) => s.trim()).filter(Boolean),
+							visibility: (document.getElementById("cm-vis") as HTMLSelectElement)?.value as CommunityVisibility,
+							joinPolicy: (document.getElementById("cm-join") as HTMLSelectElement)?.value as JoinPolicy,
+							location: { city: (document.getElementById("cm-city") as HTMLInputElement)?.value, country: (document.getElementById("cm-country") as HTMLInputElement)?.value },
+							coverImageUrl: (document.getElementById("cm-cover") as HTMLInputElement)?.value,
+							description: (document.getElementById("cm-desc") as HTMLTextAreaElement)?.value,
+							rules: (document.getElementById("cm-rules") as HTMLTextAreaElement)?.value,
+						})} className="bg-[#FF7A29] hover:bg-[#E63900]">{editingCommunity ? "Save" : "Create"}</Button>
+						<Button variant="outline" onClick={() => setOpenCommunityDialog(false)}>Cancel</Button>
+					</div>
+				)}
+			>
+				<div className="space-y-3">
 						<label className="space-y-1 block">
 							<span className="text-sm">Name</span>
 							<Input defaultValue={editingCommunity?.name || ""} id="cm-name" />
@@ -584,53 +601,36 @@ const CommunitiesClubsAdminPage: React.FC = () => {
 							<span className="text-sm">Rules</span>
 							<textarea id="cm-rules" className="w-full rounded-md border bg-background px-3 py-2 text-sm" defaultValue={editingCommunity?.rules || ""} />
 						</label>
-					</div>
-					<SheetFooter>
-						<div className="flex items-center gap-2">
-							<Button onClick={() => submitCommunity({
-								name: (document.getElementById("cm-name") as HTMLInputElement)?.value,
-								slug: (document.getElementById("cm-slug") as HTMLInputElement)?.value,
-								sports: (document.getElementById("cm-sports") as HTMLInputElement)?.value?.split(",").map((s) => s.trim()).filter(Boolean),
-								visibility: (document.getElementById("cm-vis") as HTMLSelectElement)?.value as CommunityVisibility,
-								joinPolicy: (document.getElementById("cm-join") as HTMLSelectElement)?.value as JoinPolicy,
-								location: { city: (document.getElementById("cm-city") as HTMLInputElement)?.value, country: (document.getElementById("cm-country") as HTMLInputElement)?.value },
-								coverImageUrl: (document.getElementById("cm-cover") as HTMLInputElement)?.value,
-								description: (document.getElementById("cm-desc") as HTMLTextAreaElement)?.value,
-								rules: (document.getElementById("cm-rules") as HTMLTextAreaElement)?.value,
-							})} className="bg-[#FF7A29] hover:bg-[#E63900]">{editingCommunity ? "Save" : "Create"}</Button>
-							<Button variant="outline" onClick={() => setOpenCommunityDialog(false)}>Cancel</Button>
-						</div>
-					</SheetFooter>
-				</SheetContent>
-			</Sheet>
+				</div>
+			</ResponsiveOverlay>
 
 			{/* Create Club Dialog */}
-			<Sheet open={openClubDialog} onOpenChange={setOpenClubDialog}>
-				<SheetContent side="right" className="sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>Create Club</SheetTitle>
-					</SheetHeader>
-					<div className="p-4 space-y-3">
+			<ResponsiveOverlay
+				open={openClubDialog}
+				onOpenChange={setOpenClubDialog}
+				title="Create Club"
+				ariaLabel="Create Club"
+				footer={(
+					<div className="flex items-center gap-2">
+						<Button onClick={() => submitClub({
+							name: (document.getElementById("nclub-name") as HTMLInputElement)?.value,
+							slug: (document.getElementById("nclub-slug") as HTMLInputElement)?.value,
+							sports: (document.getElementById("nclub-sports") as HTMLInputElement)?.value?.split(",").map((s) => s.trim()).filter(Boolean),
+							timezone: (document.getElementById("nclub-tz") as HTMLInputElement)?.value,
+							contactEmail: (document.getElementById("nclub-email") as HTMLInputElement)?.value,
+						})} className="bg-[#FF7A29] hover:bg-[#E63900]">Create</Button>
+						<Button variant="outline" onClick={() => setOpenClubDialog(false)}>Cancel</Button>
+					</div>
+				)}
+			>
+				<div className="space-y-3">
 						<label className="space-y-1 block"><span className="text-sm">Name</span><Input id="nclub-name" /></label>
 						<label className="space-y-1 block"><span className="text-sm">Slug</span><Input id="nclub-slug" /></label>
 						<label className="space-y-1 block"><span className="text-sm">Sports (comma-separated)</span><Input id="nclub-sports" defaultValue="Pickleball" /></label>
 						<label className="space-y-1 block"><span className="text-sm">Timezone</span><Input id="nclub-tz" defaultValue="UTC" /></label>
 						<label className="space-y-1 block"><span className="text-sm">Contact email (optional)</span><Input id="nclub-email" /></label>
-					</div>
-					<SheetFooter>
-						<div className="flex items-center gap-2">
-							<Button onClick={() => submitClub({
-								name: (document.getElementById("nclub-name") as HTMLInputElement)?.value,
-								slug: (document.getElementById("nclub-slug") as HTMLInputElement)?.value,
-								sports: (document.getElementById("nclub-sports") as HTMLInputElement)?.value?.split(",").map((s) => s.trim()).filter(Boolean),
-								timezone: (document.getElementById("nclub-tz") as HTMLInputElement)?.value,
-								contactEmail: (document.getElementById("nclub-email") as HTMLInputElement)?.value,
-							})} className="bg-[#FF7A29] hover:bg-[#E63900]">Create</Button>
-							<Button variant="outline" onClick={() => setOpenClubDialog(false)}>Cancel</Button>
-						</div>
-					</SheetFooter>
-				</SheetContent>
-			</Sheet>
+				</div>
+			</ResponsiveOverlay>
 		</div>
 	);
 };
