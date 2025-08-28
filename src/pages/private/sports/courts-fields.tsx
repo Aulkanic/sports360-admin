@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Badge } from "@/components/ui/badge";
 import { useDropzone } from "react-dropzone";
 
@@ -159,12 +159,19 @@ const CourtsFieldsPage: React.FC = () => {
 				))}
 			</div>
 
-			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent side="right" className="sm:max-w-xl">
-					<SheetHeader>
-						<SheetTitle>{editing ? "Edit" : "Add"} Facility</SheetTitle>
-					</SheetHeader>
-					<form onSubmit={save} className="p-4 space-y-4">
+			<ResponsiveOverlay
+				open={open}
+				onOpenChange={setOpen}
+				title={`${editing ? "Edit" : "Add"} Facility`}
+				ariaLabel="Facility Form"
+				footer={(
+					<div className="flex items-center justify-end gap-2">
+						<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+						<Button type="submit" form="facility-form">Save</Button>
+					</div>
+				)}
+			>
+				<form id="facility-form" onSubmit={save} className="space-y-4">
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<label className="space-y-1">
 								<span className="text-sm">Name</span>
@@ -238,15 +245,8 @@ const CourtsFieldsPage: React.FC = () => {
 							</div>
 						</div>
 
-						<SheetFooter>
-							<div className="flex items-center justify-end gap-2">
-								<Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-								<Button type="submit">Save</Button>
-							</div>
-						</SheetFooter>
-					</form>
-				</SheetContent>
-			</Sheet>
+				</form>
+			</ResponsiveOverlay>
 
 			{/* Delete Confirmation */}
 			{confirmId && (

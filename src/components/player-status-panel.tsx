@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,12 +92,8 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 	};
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent side="right" className="sm:max-w-md">
-				<SheetHeader>
-					<SheetTitle>{title}</SheetTitle>
-				</SheetHeader>
-				<div className="p-4 space-y-4">
+		<ResponsiveOverlay open={open} onOpenChange={onOpenChange} title={title} ariaLabel={typeof title === 'string' ? title : 'Players'}>
+			<div className="space-y-4">
 					{notice && <div className="rounded-md border p-3 text-sm bg-muted/30">{notice}</div>}
 					<div className="flex items-center gap-2">
 						<Input placeholder="Search players" value={filter} onChange={(e) => setFilter(e.target.value)} />
@@ -160,9 +156,8 @@ const PlayerStatusPanel: React.FC<PlayerStatusPanelProps> = ({ open, onOpenChang
 							<p className="text-sm text-muted-foreground">No players found.</p>
 						)}
 					</div>
-				</div>
-			</SheetContent>
-		</Sheet>
+			</div>
+		</ResponsiveOverlay>
 	);
 };
 

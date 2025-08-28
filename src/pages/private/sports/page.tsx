@@ -1,14 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-	Sheet,
-	SheetContent,
-	SheetHeader,
-	SheetTitle
-} from "@/components/ui/sheet";
+import ResponsiveOverlay from "@/components/responsive-overlay";
+import { useNavigate } from "react-router-dom";
 import React, { useMemo, useState } from "react";
-import EditCreateSheet from "./sheets/edit-create-sheet";
+// import EditCreateSheet from "./sheets/edit-create-sheet";
 
 export interface SportItem {
   id?: string;
@@ -79,23 +75,7 @@ const initialSports: SportItem[] = [
   },
 ];
 
-const facilities = [
-  "Court A",
-  "Court B",
-  "Court 1",
-  "Court 2",
-  "Field 1",
-  "Field 2",
-];
-const equipments = [
-  "Basketballs",
-  "Hoop",
-  "Rackets",
-  "Balls",
-  "Net",
-  "Soccer Balls",
-  "Cones",
-];
+// Facility and equipment lists are owned by the form route now
 
 const SportsPage: React.FC = () => {
   const [sports, setSports] = useState<SportItem[]>(initialSports);
@@ -103,24 +83,7 @@ const SportsPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<"All" | "Team" | "Individual">(
     "All"
   );
-  const [openEdit, setOpenEdit] = useState(false);
-  const [editing, setEditing] = useState<SportItem | null>(null);
- const [form, setForm] = useState<Omit<SportItem, "id">>({
-  name: "",
-  description: "",
-  type: "Team",
-  category: "Indoor", 
-  level: "Beginner",
-  coaching: "Available",
-  numPlayers: 0,
-  facility: facilities[0],
-  equipment: [],
-  positions: [],
-  status: "Active",
-  participants: 0,
-  imageUrl: "",
-  bannerUrl: "",
-});
+  const navigate = useNavigate();
   const [openDetails, setOpenDetails] = useState(false);
   const [detailItem, setDetailItem] = useState<SportItem | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -145,57 +108,14 @@ const SportsPage: React.FC = () => {
     return list;
   }, [sports, typeFilter, query]);
 
-  function validate(): string | null {
-    if (!form.name.trim()) return "Sport name is required";
-    if (!form.description.trim()) return "Description is required";
-    if (isNaN(Number(form.numPlayers)) || Number(form.numPlayers) <= 0)
-      return "Number of players must be a positive number";
-    if (!form.facility) return "Facility must be selected";
-    if (!Array.isArray(form.positions) || form.positions.length === 0)
-      return "At least one position is required";
-    return null;
-  }
+  // Validation handled by form route
 
   function openCreate() {
-    setEditing(null);
-    setForm({
-      name: "",
-      description: "",
-      type: "Team",
-      category: "Indoor",
-      level: "Beginner",
-      coaching: "Available",
-      numPlayers: 0,
-      facility: facilities[0],
-      equipment: [],
-      positions: [],
-      status: "Active",
-      participants: 0,
-      imageUrl: "",
-      bannerUrl: "",
-    });
-    setOpenEdit(true);
+    navigate("/super-admin/sports/form", { state: { mode: "create" } });
   }
 
   function openEditSheet(item: SportItem) {
-    setEditing(item);
-    setForm({
-      name: item.name,
-      description: item.description,
-      type: item.type,
-      category: item.category,
-      level: item.level,
-      coaching: item.coaching,
-      numPlayers: item.numPlayers,
-      facility: item.facility,
-      equipment: item.equipment,
-      positions: item.positions,
-      status: item.status,
-      participants: item.participants ?? 0,
-      imageUrl: item.imageUrl ?? "",
-      bannerUrl: item.bannerUrl ?? "",
-    });
-    setOpenEdit(true);
+    navigate("/super-admin/sports/form", { state: { mode: "edit", item } });
   }
 
   function openDetailsSheet(item: SportItem) {
@@ -203,19 +123,7 @@ const SportsPage: React.FC = () => {
     setOpenDetails(true);
   }
 
-  function save(e: React.FormEvent) {
-    e.preventDefault();
-    const error = validate();
-    if (error) return alert(error);
-    if (editing) {
-      setSports((prev) =>
-        prev.map((s) => (s.id === editing.id ? { ...editing, ...form } : s))
-      );
-    } else {
-      setSports((prev) => [{ id: `s${Date.now()}`, ...form }, ...prev]);
-    }
-    setOpenEdit(false);
-  }
+  // Save handled in dedicated form route
 
   function remove(id: string) {
     setConfirmId(id);
@@ -225,14 +133,7 @@ const SportsPage: React.FC = () => {
     setConfirmId(null);
   }
 
-  function toggleEquipment(item: string) {
-    setForm((p) => ({
-      ...p,
-      equipment: p.equipment.includes(item)
-        ? p.equipment.filter((e) => e !== item)
-        : [...p.equipment, item],
-    }));
-  }
+  // Form controls handled in dedicated form route
 
   return (
     <div className="space-y-4">
@@ -366,26 +267,11 @@ const SportsPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Edit/Create Sheet */}
-      <EditCreateSheet
-        openEdit={openEdit}
-        setOpenEdit={setOpenEdit}
-        editing={false} 
-        form={form}
-        setForm={setForm}
-        save={save}
-        toggleEquipment={toggleEquipment}
-        facilities={facilities}
-        equipments={equipments}
-      />
+      {/* Edit/Create moved to full-page form route */}
 
-      {/* Details Sheet */}
-      <Sheet open={openDetails} onOpenChange={setOpenDetails}>
-        <SheetContent side="right" className="sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>Sport Details</SheetTitle>
-          </SheetHeader>
-          <div className="p-4 space-y-4">
+      {/* Details overlay */}
+      <ResponsiveOverlay open={openDetails} onOpenChange={setOpenDetails} title="Sport Details" ariaLabel="Sport Details">
+          <div className="space-y-4">
             {detailItem && (
               <>
                 <div className="relative h-32 w-full rounded-lg overflow-hidden border">
@@ -464,8 +350,7 @@ const SportsPage: React.FC = () => {
               </>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+      </ResponsiveOverlay>
 
       {/* Delete Confirmation */}
       {confirmId && (
