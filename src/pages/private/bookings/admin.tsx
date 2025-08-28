@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import BookingsCalendarPage from "./calendar";
 
 interface BookingItem {
 	id: string;
@@ -43,6 +44,7 @@ const BookingsAdminPage: React.FC = () => {
 	const [query, setQuery] = useState("");
 	const [status, setStatus] = useState<"All" | BookingItem["status"]>("All");
 	const [activeTab, setActiveTab] = useState<"open-play" | "tournament" | "recurring" | "one-time" | "court-rental">("open-play");
+	const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
 	// Recurring filters
 	const [recurrenceType, setRecurrenceType] = useState("All");
@@ -218,11 +220,21 @@ const BookingsAdminPage: React.FC = () => {
 						<option value="Approved">Approved</option>
 						<option value="Rejected">Rejected</option>
 					</select>
+					<div className="ml-auto inline-flex rounded-md border overflow-hidden">
+						<button onClick={() => setViewMode("list")} className={`h-9 px-3 text-sm ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>List</button>
+						<button onClick={() => setViewMode("calendar")} className={`h-9 px-3 text-sm ${viewMode === "calendar" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>Calendar</button>
+					</div>
 				</div>
 			</div>
 
+			{viewMode === "calendar" && (
+				<div className="rounded-xl border bg-card p-2">
+					<BookingsCalendarPage />
+				</div>
+			)}
+
 			{/* Stats */}
-			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+			<div className={`grid grid-cols-2 md:grid-cols-4 gap-3 ${viewMode === "calendar" ? "hidden" : ""}`}>
 				<div className="rounded-lg bg-card p-3 border">
 					<p className="text-xs text-muted-foreground">Total</p>
 					<p className="text-lg font-semibold">{stats.total}</p>
@@ -242,7 +254,7 @@ const BookingsAdminPage: React.FC = () => {
 			</div>
 
 			{/* Breakdown by Type */}
-			<div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+			<div className={`grid grid-cols-2 md:grid-cols-5 gap-3 ${viewMode === "calendar" ? "hidden" : ""}`}>
 				{(([
 					{ label: "Open Play", key: "Open Play" },
 					{ label: "Tournament", key: "Tournament" },
@@ -258,7 +270,7 @@ const BookingsAdminPage: React.FC = () => {
 			</div>
 
 			{/* Admin Tabs */}
-			<div className="flex items-center gap-2 border-b">
+			<div className={`flex items-center gap-2 border-b ${viewMode === "calendar" ? "hidden" : ""}`}>
 				<button onClick={() => setActiveTab("open-play")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "open-play" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Open Play</button>
 				<button onClick={() => setActiveTab("tournament")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "tournament" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Tournament</button>
 				<button onClick={() => setActiveTab("recurring")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "recurring" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Recurring</button>
@@ -266,7 +278,7 @@ const BookingsAdminPage: React.FC = () => {
 				<button onClick={() => setActiveTab("court-rental")} className={`h-10 px-3 text-sm -mb-px border-b-2 ${activeTab === "court-rental" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>Court Rental</button>
 			</div>
 
-			{activeTab === "open-play" && (
+			{viewMode === "list" && activeTab === "open-play" && (
 				<div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
 					{openPlaySessions.map((s) => (
 						<div key={s.id} className="rounded-xl border bg-card p-4 flex flex-col gap-3">
@@ -318,7 +330,7 @@ const BookingsAdminPage: React.FC = () => {
 				</div>
 			)}
 
-			{activeTab === "tournament" && (
+			{viewMode === "list" && activeTab === "tournament" && (
 				<div className="space-y-4">
 					{tournaments.map((t) => (
 						<div key={t.id} className="rounded-xl border bg-card p-4 space-y-3">
@@ -395,7 +407,7 @@ const BookingsAdminPage: React.FC = () => {
 				</div>
 			)}
 
-			{activeTab === "recurring" && (
+			{viewMode === "list" && activeTab === "recurring" && (
 				<div className="space-y-4">
 					<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
 						<div className="text-sm text-muted-foreground">Manage recurring sessions</div>
@@ -454,7 +466,7 @@ const BookingsAdminPage: React.FC = () => {
 				</div>
 			)}
 
-			{activeTab === "one-time" && (
+			{viewMode === "list" && activeTab === "one-time" && (
 				<div className="space-y-4">
 					<div className="flex items-center justify-between gap-2">
 						<div className="text-sm text-muted-foreground">Manage one-time events</div>
@@ -497,7 +509,7 @@ const BookingsAdminPage: React.FC = () => {
 				</div>
 			)}
 
-			{activeTab === "court-rental" && (
+			{viewMode === "list" && activeTab === "court-rental" && (
 				<div className="space-y-4">
 					<div className="flex items-center justify-between gap-2">
 						<div className="text-sm text-muted-foreground">Court availability and bookings</div>
