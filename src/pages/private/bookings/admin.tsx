@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-import { urls } from "@/routes";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 interface BookingItem {
@@ -309,7 +308,7 @@ const BookingsAdminPage: React.FC = () => {
 								</div>
 								<div className="mt-2 flex items-center gap-2">
 									<Button size="sm" asChild>
-										<Link to={urls.openPlay}>Manage Matches</Link>
+										<Link to={`/open-play/${s.id}`}>Manage Matches</Link>
 									</Button>
 									<Button size="sm" variant="outline">View All</Button>
 								</div>

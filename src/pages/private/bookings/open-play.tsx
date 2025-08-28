@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ResponsiveOverlay from "@/components/responsive-overlay";
 import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
+import { useNavigate } from "react-router-dom";
 
 type Player = {
 	id: string;
@@ -119,6 +120,7 @@ const OpenPlayPage: React.FC = () => {
 	const [courtPlayers, setCourtPlayers] = useState<Record<string, Player[]>>({ "court-a": [], "court-b": [] });
   const [matches, setMatches] = useState<Match[]>([]);
   const [scoreEntry, setScoreEntry] = useState<Record<string, string>>({});
+	const navigate = useNavigate();
 
 	// Create Open Play overlay state
 	const [createOpen, setCreateOpen] = useState(false);
@@ -247,7 +249,7 @@ const OpenPlayPage: React.FC = () => {
 			{/* Sessions list */}
 			<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
 				{sessions.map((s) => (
-					<div key={s.id} className={`rounded-xl border bg-card p-4 space-y-2 ${selectedSessionId === s.id ? "ring-2 ring-primary" : ""}`}>
+					<div key={s.id} className={`rounded-xl border bg-card p-4 space-y-2 ${selectedSessionId === s.id ? "ring-2 ring-primary" : ""} hover:bg-muted/30 cursor-pointer`} onClick={() => navigate(`/open-play/${s.id}`, { state: { session: s } })}>
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm font-semibold">{s.title}</p>
@@ -261,8 +263,8 @@ const OpenPlayPage: React.FC = () => {
 						</div>
 						<div className="text-xs text-muted-foreground">Participants: <span className="font-medium text-foreground">{s.participants.length}</span></div>
 						<div className="flex items-center gap-2">
-							<Button size="sm" variant="outline" onClick={() => openParticipants(s.id)}>Participants</Button>
-							<Button size="sm" onClick={() => setSelectedSessionId(s.id)}>Manage</Button>
+							<Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openParticipants(s.id); }}>Participants</Button>
+							<Button size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/open-play/${s.id}`, { state: { session: s } }); }}>Manage</Button>
 						</div>
 					</div>
 				))}
