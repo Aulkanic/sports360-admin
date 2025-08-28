@@ -48,7 +48,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: <FaTachometerAlt className="w-5 h-5" />,
       },
       {
-        title: "Sports",
+        title: "Facility",
         icon: <FaFutbol className="w-5 h-5" />,
         submenu: [
           {
@@ -57,12 +57,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             icon: <FaList className="w-4 h-4" />,
           },
           {
-            title: "Courts/Fields",
+            title: "Courts Rentals",
             url: urls.courtsFields,
             icon: <FaRegCalendar className="w-4 h-4" />,
           },
           {
-            title: "Equipment",
+            title: "Add-ons",
             url: urls.equipment,
             icon: <FaList className="w-4 h-4" />,
           },
