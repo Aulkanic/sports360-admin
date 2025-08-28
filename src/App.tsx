@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
-import 'leaflet/dist/leaflet.css';
+import "leaflet/dist/leaflet.css";
 import { routeList } from "./routes";
+import { OpenPlayDetailPage } from "./pages";
 
 function App() {
   return (
@@ -13,7 +14,7 @@ function App() {
             <Route key={path} path={path} element={element} />
           ))}
         </Route>
-
+        <Route path="/open-play/:id" element={<OpenPlayDetailPage />} />
         {/* Private Routes */}
         <Route element={routeList.private.layout}>
           {routeList.private.routes.map(({ path, element }) => (
