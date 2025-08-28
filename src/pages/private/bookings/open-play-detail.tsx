@@ -24,6 +24,8 @@ import { urls } from "@/routes";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Info, Gamepad2, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const Tag: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-white border text-xs">
@@ -36,6 +38,7 @@ const OpenPlayDetailPage: React.FC = () => {
   const { id } = useParams();
   const location = useLocation() as { state?: { session?: OpenPlaySession } };
   const [tab, setTab] = useState<"details" | "game">("game");
+  const [mobileBenchOpen, setMobileBenchOpen] = useState(false);
 
   const stateSession = location.state?.session as OpenPlaySession | undefined;
   const sessionById = useMemo(
@@ -166,6 +169,17 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   /* Controls */
+  function onTabsKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "ArrowRight") {
+      setTab((prev) => (prev === "details" ? "game" : "details"));
+    } else if (e.key === "ArrowLeft") {
+      setTab((prev) => (prev === "game" ? "details" : "game"));
+    } else if (e.key === "Home") {
+      setTab("details");
+    } else if (e.key === "End") {
+      setTab("game");
+    }
+  }
 
   function addCourt() {
     const idx = courts.length + 1;
@@ -332,33 +346,48 @@ const OpenPlayDetailPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center bg-primary gap-2 border-b">
+      <div
+        role="tablist"
+        aria-orientation="horizontal"
+        onKeyDown={onTabsKeyDown}
+        className="flex items-center gap-1 border-b bg-background sticky top-0 z-10 px-4 overflow-x-auto"
+      >
         <button
+          role="tab"
+          id="tab-details"
+          aria-controls="panel-details"
+          aria-selected={tab === "details"}
           onClick={() => setTab("details")}
           className={cn(
-            "h-10 px-8 text-sm -mb-px border-b-2 text-white",
+            "h-11 px-4 md:px-6 text-sm -mb-px border-b-2 inline-flex items-center gap-2 whitespace-nowrap",
             tab === "details"
-              ? "border-primary text-white"
-              : "border-transparent text-black hover:text-foreground"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           )}
         >
-          Details
+          <Info className="h-4 w-4" />
+          <span>Details</span>
         </button>
         <button
+          role="tab"
+          id="tab-game"
+          aria-controls="panel-game"
+          aria-selected={tab === "game"}
           onClick={() => setTab("game")}
           className={cn(
-            "h-10 px-8 text-sm -mb-px border-b-2",
+            "h-11 px-4 md:px-6 text-sm -mb-px border-b-2 inline-flex items-center gap-2 whitespace-nowrap",
             tab === "game"
-              ? "border-primary text-white"
-              : "border-transparent text-black hover:text-foreground"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           )}
         >
-          Game
+          <Gamepad2 className="h-4 w-4" />
+          <span>Game</span>
         </button>
       </div>
 
       {tab === "details" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div id="panel-details" role="tabpanel" aria-labelledby="tab-details" tabIndex={0} className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-3">
             <div className="rounded-xl border bg-card p-4">
               <p className="text-sm font-semibold">Session Info</p>
@@ -467,9 +496,55 @@ const OpenPlayDetailPage: React.FC = () => {
 
       {tab === "game" && (
         <DndContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4 p-4">
+          <div id="panel-game" role="tabpanel" aria-labelledby="tab-game" tabIndex={0} className="p-4 space-y-3">
+            {/* Mobile bench */}
+            <div className="lg:hidden">
+              <Collapsible open={mobileBenchOpen} onOpenChange={setMobileBenchOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full h-10 rounded-md border bg-background text-sm inline-flex items-center justify-between px-3">
+                    <span className="inline-flex items-center gap-2 font-medium">Bench & Queues</span>
+                    <ChevronDown className={cn("h-4 w-4 transition", mobileBenchOpen ? "rotate-180" : "rotate-0")} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3 space-y-3">
+                  <div className="rounded-xl border bg-card p-3">
+                    <p className="text-sm font-semibold">Bench</p>
+                    <p className="text-xs text-muted-foreground">Drag players from here onto courts</p>
+                  </div>
+                  {/* Ready */}
+                  <DroppablePanel id="ready" title="Ready" subtitle="Players ready to play" childrenClassName="grid grid-cols-1">
+                    {readyList.map((p) => (
+                      <DraggablePill key={p.id} participant={p} />
+                    ))}
+                    {readyList.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No players ready</p>
+                    )}
+                  </DroppablePanel>
+                  {/* Resting */}
+                  <DroppablePanel id="resting" title="Resting" subtitle="Players taking a break" childrenClassName="grid grid-cols-1">
+                    {restingList.map((p) => (
+                      <DraggablePill key={p.id} participant={p} />
+                    ))}
+                    {restingList.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No players resting</p>
+                    )}
+                  </DroppablePanel>
+                  {/* Reserve */}
+                  <DroppablePanel id="reserve" title="Reserve" subtitle="Overflow or RSVP later" childrenClassName="grid grid-cols-1">
+                    {reserveList.map((p) => (
+                      <DraggablePill key={p.id} participant={p} />
+                    ))}
+                    {reserveList.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No players in reserve</p>
+                    )}
+                  </DroppablePanel>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4">
             {/* ===== Left: Bench / Queues ===== */}
-            <aside className="space-y-3 lg:sticky lg:top-4 h-max">
+            <aside className="space-y-3 lg:sticky lg:top-4 h-max hidden lg:block">
               <div className="rounded-xl border bg-card p-3">
                 <p className="text-sm font-semibold">Bench</p>
                 <p className="text-xs text-muted-foreground">
