@@ -324,11 +324,27 @@ const OpenPlayPage: React.FC = () => {
             </label>
           </div>
           <label className="space-y-1 block">
-            <span className="text-sm">Location</span>
+            <span className="text-sm">Court Location</span>
             <Input
               value={createForm.location}
               onChange={(e) => setCreateForm((p) => ({ ...p, location: e.target.value }))}
               placeholder="e.g., Court A"
+            />
+          </label>
+          <label className="space-y-1 block">
+            <span className="text-sm">Max Players</span>
+            <Input
+              value={createForm.location}
+              onChange={(e) => setCreateForm((p) => ({ ...p, location: e.target.value }))}
+              
+            />
+          </label>
+          <label className="space-y-1 block">
+            <span className="text-sm">Price</span>
+            <Input
+              value={createForm.location}
+              onChange={(e) => setCreateForm((p) => ({ ...p, location: e.target.value }))}
+              
             />
           </label>
           <div className="space-y-1">

@@ -470,7 +470,7 @@ const EquipmentPage: React.FC = () => {
               {/* Price Input */}
               <label className="space-y-2">
                 <span className="text-sm font-medium text-gray-700">
-                  Price (₱)
+                  Price per hour
                 </span>
                 <Input
                   type="number"
@@ -525,81 +525,6 @@ const EquipmentPage: React.FC = () => {
                   className="border border-gray-300 p-3 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </label>
-
-              {/* Rented by Parties - Span across 2 columns */}
-              <div className="md:col-span-2 space-y-4">
-                <span className="text-sm font-medium text-gray-700">
-                  Rented by Parties
-                </span>
-                <div className="space-y-4">
-                  {form.rented.map((renter, index) => (
-                    <div
-                      key={index}
-                      className="flex gap-4 items-center border-b py-3"
-                    >
-                      <Input
-                        value={renter.party}
-                        onChange={(e) =>
-                          setForm((prev) => {
-                            const newRented = [...prev.rented];
-                            newRented[index].party = e.target.value;
-                            return { ...prev, rented: newRented };
-                          })
-                        }
-                        placeholder="Party Name"
-                        className="border border-gray-300 p-3 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        value={renter.rentedQuantity}
-                        onChange={(e) =>
-                          setForm((prev) => {
-                            const newRented = [...prev.rented];
-                            newRented[index].rentedQuantity = Number(
-                              e.target.value
-                            );
-                            return { ...prev, rented: newRented };
-                          })
-                        }
-                        placeholder="Quantity"
-                        className="border border-gray-300 p-3 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() =>
-                          setForm((prev) => {
-                            const newRented = prev.rented.filter(
-                              (_, idx) => idx !== index
-                            );
-                            return { ...prev, rented: newRented };
-                          })
-                        }
-                        className="ml-4 text-white bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-600"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        rented: [
-                          ...prev.rented,
-                          { party: "", rentedQuantity: 0 },
-                        ],
-                      }))
-                    }
-                    className="w-full text-gray-700 border-gray-300 hover:border-gray-500 focus:ring-2 focus:ring-primary"
-                  >
-                    Add Renter
-                  </Button>
-                </div>
-              </div>
 
            
             </div>
