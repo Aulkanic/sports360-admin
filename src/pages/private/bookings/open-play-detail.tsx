@@ -16,7 +16,7 @@ import type { OpenPlaySession, Participant, Court, ParticipantStatus, Match } fr
 import { buildBalancedTeams, initials } from "@/components/features/open-play/utils";
 
 const Tag: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs">
+  <span className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-white border text-xs">
     {children}
   </span>
 );
@@ -32,7 +32,6 @@ const OpenPlayDetailPage: React.FC = () => {
     () => stateSession ?? SAMPLE_SESSIONS.find((s) => s.id === id),
     [stateSession, id]
   );
-
   const [participants, setParticipants] = useState<Participant[]>(
     () => (sessionById?.participants ?? []) as Participant[]
   );
@@ -251,33 +250,33 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-4 bg-primary text-white">
         <div>
           <h1 className="text-xl font-semibold">{session.title}</h1>
           <div className="mt-1 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{session.level.join(" / ")}</Badge>
-            <Tag>{session.when}</Tag>
-            <Tag>{session.location}</Tag>
+            <Badge variant="outline" className="text-white px-3 py-2">{session.level.join(" / ")}</Badge>
+            <Tag >{session.when}</Tag>
+            <Tag >{session.location}</Tag>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
+          <Button variant="outline" className="text-black" onClick={() => navigate(-1)}>Back</Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b">
+      <div className="flex items-center bg-primary gap-2 border-b">
         <button
           onClick={() => setTab("details")}
-          className={cn("h-10 px-3 text-sm -mb-px border-b-2",
-            tab === "details" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
+          className={cn("h-10 px-8 text-sm -mb-px border-b-2 text-white",
+            tab === "details" ? "border-primary text-white" : "border-transparent text-black hover:text-foreground")}
         >Details</button>
         <button
           onClick={() => setTab("game")}
-          className={cn("h-10 px-3 text-sm -mb-px border-b-2",
-            tab === "game" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
+          className={cn("h-10 px-8 text-sm -mb-px border-b-2",
+            tab === "game" ? "border-primary text-white" : "border-transparent text-black hover:text-foreground")}
         >Game</button>
       </div>
 
@@ -333,7 +332,7 @@ const OpenPlayDetailPage: React.FC = () => {
 
       {tab === "game" && (
         <DndContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
             {/* Queues */}
             <div className="space-y-3">
               <DroppablePanel id="ready" title="Ready" subtitle="Players ready to play">

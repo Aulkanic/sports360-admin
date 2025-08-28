@@ -2,22 +2,18 @@ import React, { type ReactNode } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
-interface DroppablePanelProps {
+interface MatchCardPanelProps {
   id: string;
   title: string;
-  subtitle?: string;
-  footer?: ReactNode;
   children?: ReactNode;
   childrenClassName?: string; 
 }
 
-const DroppablePanel: React.FC<DroppablePanelProps> = ({
+const MatchCardPanel: React.FC<MatchCardPanelProps> = ({
   id,
   title,
-  subtitle,
-  footer,
   children,
-  childrenClassName = "grid grid-cols-2", 
+  childrenClassName = "flex", 
 }) => {
   const { isOver, setNodeRef } = useDroppable({ id });
 
@@ -25,14 +21,11 @@ const DroppablePanel: React.FC<DroppablePanelProps> = ({
     <div
       ref={setNodeRef}
       className={cn(
-        "rounded-xl border p-3 bg-card shadow-sm transition",
+        "border bg-card transition",
         isOver ? "bg-muted/40 ring-1 ring-primary/30" : ""
       )}
     >
-      <div className="mb-2">
-        <p className="text-sm font-semibold">{title}</p>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-      </div>
+    
 
       <div className={cn("space-y-2 gap-3 min-h-[120px] cursor-pointer", childrenClassName)}>
         {children ?? (
@@ -40,9 +33,11 @@ const DroppablePanel: React.FC<DroppablePanelProps> = ({
         )}
       </div>
 
-      {footer}
+      <div className="bg-black h-8 flex items-center justify-center">
+        <p className="text-white text-center">{title}</p>
+      </div>
     </div>
   );
 };
 
-export default DroppablePanel;
+export default MatchCardPanel;

@@ -1,9 +1,7 @@
-import React from "react";
-import { useDraggable } from "@dnd-kit/core";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useDraggable } from "@dnd-kit/core";
+import React from "react";
 import type { Participant } from "../types";
-import { initials } from "../utils";
 
 const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -24,10 +22,7 @@ const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) 
       {...attributes}
       className="rounded-lg border bg-card p-2 flex items-center gap-3 hover:shadow-sm transition"
     >
-      <Avatar className="h-8 w-8">
-        <AvatarImage src={participant.avatarUrl} />
-        <AvatarFallback>{initials(participant.name)}</AvatarFallback>
-      </Avatar>
+      <img src={participant.avatarUrl ?? "https://tse3.mm.bing.net/th/id/OIP.Cgu701azNx8XXf5cSrAnyAHaHa?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"} className="h-8 w-8 rounded-full" alt="" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{participant.name}</p>
         <div className="flex items-center gap-2">
