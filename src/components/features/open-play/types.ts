@@ -6,7 +6,7 @@ export type Participant = {
   name: string;
   level: Level;
   status: ParticipantStatus;
-  avatarUrl?: string;
+  avatar?: string;
 };
 
 export type Court = {

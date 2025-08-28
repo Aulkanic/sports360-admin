@@ -50,7 +50,7 @@ export const SAMPLE_SESSIONS: OpenPlaySession[] = [
     level: ["Beginner", "Intermediate"],
     rules: "Games to 11, win by 2.",
     format: "Rolling queue, doubles preferred.",
-    participants: makePlayers(["Ready", "Resting", "Reserve"]).slice(0, 12),
+    participants: makePlayers(["Ready", "Resting", "Reserve"]),
   },
   {
     id: "op-2",
@@ -60,6 +60,6 @@ export const SAMPLE_SESSIONS: OpenPlaySession[] = [
     level: ["Intermediate", "Advanced"],
     rules: "First to 4 games, no-ad.",
     format: "Singles or doubles based on turnout.",
-    participants: makePlayers(["Ready", "Resting"]).slice(6, 16),
+    participants: makePlayers(["Ready", "Resting"]).slice(2, 16),
   },
 ];

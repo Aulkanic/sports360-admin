@@ -20,9 +20,9 @@ const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) 
       style={style}
       {...listeners}
       {...attributes}
-      className="rounded-lg border bg-card p-2 flex items-center gap-3 hover:shadow-sm transition"
+      className="rounded-lg border max-h-16 bg-card p-2 flex items-center gap-3 hover:shadow-sm transition"
     >
-      <img src={participant.avatarUrl ?? "https://tse3.mm.bing.net/th/id/OIP.Cgu701azNx8XXf5cSrAnyAHaHa?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"} className="h-8 w-8 rounded-full" alt="" />
+      <img src={participant.avatar ?? "https://tse3.mm.bing.net/th/id/OIP.Cgu701azNx8XXf5cSrAnyAHaHa?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"} className="h-8 w-8 rounded-full" alt="" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{participant.name}</p>
         <div className="flex items-center gap-2">

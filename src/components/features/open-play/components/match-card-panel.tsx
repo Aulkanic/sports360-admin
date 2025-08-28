@@ -1,35 +1,32 @@
-import React, { type ReactNode } from "react";
-import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
+import { useDroppable } from "@dnd-kit/core";
+import React, { type ReactNode } from "react";
 
 interface MatchCardPanelProps {
   id: string;
   title: string;
   children?: ReactNode;
-  childrenClassName?: string; 
+  className?: string;
 }
 
-const MatchCardPanel: React.FC<MatchCardPanelProps> = ({
-  id,
-  title,
-  children,
-  childrenClassName = "flex", 
-}) => {
+const MatchCardPanel: React.FC<MatchCardPanelProps> = ({ id, title, children, className }) => {
   const { isOver, setNodeRef } = useDroppable({ id });
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "border bg-card transition",
-        isOver ? "bg-muted/40 ring-1 ring-primary/30" : ""
+        "border bg-card transition rounded-md overflow-hidden",
+        isOver ? "bg-muted/40 ring-1 ring-primary/30" : "",
+        className
       )}
     >
-    
-
-      <div className={cn("space-y-2 gap-3 min-h-[120px] cursor-pointer", childrenClassName)}>
+      {/* increased min height so images are taller */}
+      <div className="flex h-full min-h-[200px] gap-2 ">
         {children ?? (
-          <p className="text-xs text-muted-foreground">Drag players here</p>
+          <div className="grid place-items-center w-full">
+            <p className="text-xs text-muted-foreground">Drag players here</p>
+          </div>
         )}
       </div>
 
