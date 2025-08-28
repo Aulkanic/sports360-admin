@@ -19,6 +19,13 @@ function App() {
             <Route key={path} path={path} element={element} />
           ))}
         </Route>
+
+        {/* SportsHub Routes */}
+        <Route element={routeList.sportshub.layout}>
+          {routeList.sportshub.routes.map(({ path, element }) => (
+            <Route key={path} path={path} element={element} />
+          ))}
+        </Route>
       </Routes>
     </Router>
   );
