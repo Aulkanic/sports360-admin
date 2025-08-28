@@ -197,8 +197,8 @@ const LoginPage: React.FC = () => {
 
             <p className="mt-6 text-center text-sm text-gray-600">
               Don’t have an account?{" "}
-              <a href="/register" className="text-[#FF5C00] hover:underline">
-                Create one
+              <a href={urls.sportshubRegister} className="text-[#FF5C00] hover:underline">
+                Register your Sports Hub
               </a>
             </p>
           </div>

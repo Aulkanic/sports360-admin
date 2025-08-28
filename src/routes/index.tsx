@@ -1,8 +1,14 @@
-import { PrivateLayout, PublicLayout } from "@/layout";
+import { PrivateLayout, PublicLayout, SportsHubLayout } from "@/layout";
 import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, CourtsFieldsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, BookingsExplorePage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
+import SportsHubRegisterPage from "@/pages/public/register/sportshub";
+import SportsHubDashboardPage from "@/pages/private/sportshub/dashboard";
 
 export const urls = {
 	login: "/",
+  sportshubRegister: "/register/sportshub",
+  sportshubDashboard: "/sportshub/dashboard",
+	sportshubBookingsCalendar: "/sportshub/bookings/calendar",
+	sportshubBookingsAdmin: "/sportshub/bookings/manage",
 	superadmindashboard: '/super-admin/dashboard',
 	members: '/super-admin/members',
 	plans: '/super-admin/membership-plans',
@@ -23,7 +29,10 @@ export const urls = {
 export const routeList = {
 	public: {
 		layout: <PublicLayout />,
-		routes: [{ path: urls.login, element: <LoginPage /> }],
+		routes: [
+			{ path: urls.login, element: <LoginPage /> },
+			{ path: urls.sportshubRegister, element: <SportsHubRegisterPage /> },
+		],
 	},
 	private : {
 		layout: <PrivateLayout />,
@@ -43,6 +52,15 @@ export const routeList = {
 			{ path: urls.communities, element: <CommunitiesClubsAdminPage /> },
 			{ path: urls.profile, element: <ProfilePage /> },
 			{ path: urls.settings, element: <SettingsPage /> },
+		]
+	},
+	// SportsHub private area
+	sportshub: {
+		layout: <SportsHubLayout />,
+		routes: [
+			{ path: urls.sportshubDashboard, element: <SportsHubDashboardPage /> },
+			{ path: urls.sportshubBookingsCalendar, element: <BookingsCalendarPage /> },
+			{ path: urls.sportshubBookingsAdmin, element: <BookingsAdminPage /> },
 		]
 	}
 };
