@@ -133,6 +133,21 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   function moveToCourtTeam(courtId: string, teamKey: "A" | "B", participant: Participant) {
+    // Check if court is closed
+    const court = courts.find(c => c.id === courtId);
+    if (court?.status === "Closed") {
+      alert("Cannot add players to a closed court");
+      return;
+    }
+
+    // Check if court already has 4 players
+    const currentTeams = courtTeams[courtId] ?? { A: [], B: [] };
+    const currentTotalPlayers = currentTeams.A.length + currentTeams.B.length;
+    if (currentTotalPlayers >= 4) {
+      alert("Court already has maximum 4 players");
+      return;
+    }
+
     setCourtTeams((prev) => {
       const next = deepClone(prev);
       if (!next[courtId]) next[courtId] = { A: [], B: [] };
@@ -272,6 +287,21 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   function matchMakeCourt(courtId: string) {
+    // Check if court is closed
+    const court = courts.find(c => c.id === courtId);
+    if (court?.status === "Closed") {
+      alert("Cannot add players to a closed court");
+      return;
+    }
+
+    // Check if court already has 4 players
+    const currentTeams = courtTeams[courtId] ?? { A: [], B: [] };
+    const currentTotalPlayers = currentTeams.A.length + currentTeams.B.length;
+    if (currentTotalPlayers >= 4) {
+      alert("Court already has maximum 4 players");
+      return;
+    }
+
     const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
     const need = perTeam * 2;
     const pool = [...readyList].slice(0, need);
@@ -279,6 +309,28 @@ const OpenPlayDetailPage: React.FC = () => {
     const { A, B } = buildBalancedTeams(pool, perTeam);
     setCourtTeams((prev) => ({ ...prev, [courtId]: { A, B } }));
     [...A, ...B].forEach((p) => updateStatus(p.id, "In-Game"));
+  }
+
+  // Validation functions
+  function canStartGame(courtId: string): boolean {
+    const court = courts.find(c => c.id === courtId);
+    const teams = courtTeams[courtId] ?? { A: [], B: [] };
+    const totalPlayers = teams.A.length + teams.B.length;
+    
+    // Game can only start if court is open and has exactly 4 players
+    return court?.status === "Open" && totalPlayers === 4;
+  }
+
+  function canEndGame(courtId: string): boolean {
+    const court = courts.find(c => c.id === courtId);
+    // Game can only end if it's currently in-game
+    return court?.status === "In-Game";
+  }
+
+  function canCloseCourt(courtId: string): boolean {
+    const court = courts.find(c => c.id === courtId);
+    // Court can only be closed if it's open (no active game) or if the game has been completed
+    return court?.status === "Open" || court?.status === "Closed";
   }
 
   function shuffleTeamsAll() {
@@ -983,17 +1035,20 @@ const OpenPlayDetailPage: React.FC = () => {
                            
 
                             <div className="p-2">
-                              <CourtMatchmakingCard
-                                court={c}
-                                teamA={teams.A}
-                                teamB={teams.B}
-                                capacity={c.capacity}
-                                onStart={() => startGame(c.id)}
-                                onEnd={() => endGame(c.id)}
-                                onRename={() => renameCourt(c.id)}
-                                onToggleOpen={() => toggleCourtOpen(c.id)}
-                                onRandomPick={() => matchMakeCourt(c.id)}
-                              />
+                                                              <CourtMatchmakingCard
+                                  court={c}
+                                  teamA={teams.A}
+                                  teamB={teams.B}
+                                  capacity={c.capacity}
+                                  onStart={() => startGame(c.id)}
+                                  onEnd={() => endGame(c.id)}
+                                  onRename={() => renameCourt(c.id)}
+                                  onToggleOpen={() => toggleCourtOpen(c.id)}
+                                  onRandomPick={() => matchMakeCourt(c.id)}
+                                  canStartGame={canStartGame(c.id)}
+                                  canEndGame={canEndGame(c.id)}
+                                  canCloseCourt={canCloseCourt(c.id)}
+                                />
                               <p className="text-[11px] text-muted-foreground text-center mt-2">
                                 Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
                               </p>

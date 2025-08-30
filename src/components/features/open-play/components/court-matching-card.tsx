@@ -15,7 +15,10 @@ const CourtMatchmakingCard: React.FC<{
   onRename: () => void;
   onToggleOpen: () => void;
   onRandomPick: () => void;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick }) => {
+  canStartGame: boolean;
+  canEndGame: boolean;
+  canCloseCourt: boolean;
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 44;
   const nvz = 7;
@@ -27,7 +30,19 @@ const CourtMatchmakingCard: React.FC<{
   return (
     <div className="rounded-2xl border p-0 overflow-hidden bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-        <p className="font-semibold uppercase tracking-wide">{court.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold uppercase tracking-wide">{court.name}</p>
+          {court.status === "Open" && !canStartGame && (
+            <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded-full">
+              Need 4 players
+            </span>
+          )}
+          {court.status === "Open" && canStartGame && (
+            <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+              Ready to start
+            </span>
+          )}
+        </div>
         <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
           {court.status}
         </Badge>
@@ -99,10 +114,39 @@ const CourtMatchmakingCard: React.FC<{
       </div>
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3 pt-3">
-        <Button size="sm" variant="outline" onClick={onRandomPick}>Random Pick</Button>
-        <Button size="sm" onClick={onStart}>Start Game</Button>
-        <Button size="sm" variant="outline" onClick={onEnd}>End Game</Button>
-        <Button size="sm" variant="outline" onClick={onToggleOpen}>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={onRandomPick}
+          disabled={court.status !== "Open"}
+          title={court.status !== "Open" ? "Court must be open to random pick players" : "Randomly pick players for this court"}
+        >
+          Random Pick
+        </Button>
+        <Button 
+          size="sm" 
+          onClick={onStart}
+          disabled={!canStartGame}
+          title={!canStartGame ? "Need exactly 4 players to start game" : "Start the game"}
+        >
+          Start Game
+        </Button>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={onEnd}
+          disabled={!canEndGame}
+          title={!canEndGame ? "Game must be in progress to end" : "End the game and select winner"}
+        >
+          End Game
+        </Button>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={onToggleOpen}
+          disabled={!canCloseCourt}
+          title={!canCloseCourt ? "Cannot close court while game is in progress" : court.status === "Closed" ? "Reopen Court" : "Close Court"}
+        >
           {court.status === "Closed" ? "Reopen Court" : "Close Court"}
         </Button>
       </div>
