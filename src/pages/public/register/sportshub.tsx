@@ -55,7 +55,7 @@ async function reverseGeocode({ lat, lng }: LatLng): Promise<string | null> {
 
 const ClickToSetMarker: React.FC<{ onPick: (p: LatLng) => void }> = ({ onPick }) => {
   useMapEvents({
-    click: (e) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }),
+    click: (e: any) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }),
   });
   return null;
 };
