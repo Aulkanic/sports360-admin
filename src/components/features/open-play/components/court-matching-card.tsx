@@ -5,8 +5,6 @@ import type { Court, Participant } from "../types";
 import MatchCardPanel from "./match-card-panel";
 import MatchDraggablePill from "./match-card-pill";
 
-// ...imports unchanged
-
 const CourtMatchmakingCard: React.FC<{
   court: Court;
   teamA: Participant[];
@@ -16,7 +14,8 @@ const CourtMatchmakingCard: React.FC<{
   onEnd: () => void;
   onRename: () => void;
   onToggleOpen: () => void;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onRename, onToggleOpen }) => {
+  onRandomPick: () => void;
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 44;
   const nvz = 7;
@@ -100,12 +99,12 @@ const CourtMatchmakingCard: React.FC<{
       </div>
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3 pt-3">
-        <Button size="sm" variant="outline" onClick={onRename}>Rename Court</Button>
+        <Button size="sm" variant="outline" onClick={onRandomPick}>Random Pick</Button>
+        <Button size="sm" onClick={onStart}>Start Game</Button>
+        <Button size="sm" variant="outline" onClick={onEnd}>End Game</Button>
         <Button size="sm" variant="outline" onClick={onToggleOpen}>
           {court.status === "Closed" ? "Reopen Court" : "Close Court"}
         </Button>
-        <Button size="sm" variant="outline" onClick={onEnd}>End Game</Button>
-        <Button size="sm" onClick={onStart}>Start Game</Button>
       </div>
     </div>
   );

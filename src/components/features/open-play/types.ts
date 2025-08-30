@@ -1,5 +1,5 @@
 export type Level = "Beginner" | "Intermediate" | "Advanced";
-export type ParticipantStatus = "Ready" | "Resting" | "Reserve" | "In-Game";
+export type ParticipantStatus = "Ready" | "Resting" | "Reserve" | "In-Game" | "Waitlist";
 
 export type Participant = {
   id: string;
@@ -7,6 +7,9 @@ export type Participant = {
   level: Level;
   status: ParticipantStatus;
   avatar?: string;
+  paymentStatus: "Paid" | "Pending" | "Rejected";
+  isApproved: boolean;
+  waitlistReason?: string;
 };
 
 export type Court = {
@@ -22,6 +25,8 @@ export type Match = {
   courtName: string;
   teamA: Participant[];
   teamB: Participant[];
+  teamAName?: string;
+  teamBName?: string;
   status: "Scheduled" | "Completed";
   winner?: "A" | "B";
   score?: string;

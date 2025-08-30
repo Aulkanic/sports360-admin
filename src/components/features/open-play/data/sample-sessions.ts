@@ -31,12 +31,20 @@ const ATHLETE_PHOTOS = [
 function makePlayers(status: ParticipantStatus[] = ["Ready", "Resting", "Reserve"]) {
   return people.map(([name, lvl, idx]) => {
     const i = (idx as number) - 1; // zero-based
+    const currentStatus = status[(idx as number) % status.length];
+    
     return {
       id: `u${idx}`,
       name,
       level: lvl as Level,
-      status: status[(idx as number) % status.length],
+      status: currentStatus,
       avatarUrl: ATHLETE_PHOTOS[i % ATHLETE_PHOTOS.length],
+      paymentStatus: currentStatus === "Waitlist" ? "Pending" : "Paid",
+      isApproved: currentStatus !== "Waitlist",
+      waitlistReason: currentStatus === "Waitlist" ? 
+        (idx % 3 === 0 ? "Payment pending" : 
+         idx % 3 === 1 ? "Registration incomplete" : 
+         "Awaiting admin approval") : undefined,
     };
   });
 }
