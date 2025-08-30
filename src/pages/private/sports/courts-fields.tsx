@@ -296,7 +296,7 @@ const CourtsFieldsPage: React.FC = () => {
       <ResponsiveOverlay
         open={open}
         onOpenChange={setOpen}
-        title={`${editing ? "Edit" : "Add"} Facility`}
+        title={`${editing ? "Edit" : "Add"} Courts`}
         ariaLabel="Facility Form"
         footer={
           <div className="flex items-center justify-end gap-2">
@@ -371,7 +371,7 @@ const CourtsFieldsPage: React.FC = () => {
               />
             </label>
           </div>
-          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="space-y-1">
               <span className="text-sm">Hourly Rate (₱/hr)</span>
               <Input
@@ -391,17 +391,6 @@ const CourtsFieldsPage: React.FC = () => {
                 min={1}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, minHours: Number(e.target.value) }))
-                }
-              />
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-sm">Max Hours</span>
-              <Input
-                type="number"
-                min={1}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, maxHours: Number(e.target.value) }))
                 }
               />
             </label>

@@ -111,6 +111,157 @@ const initial: BookingEvent[] = [
     start: addDays(new Date(), 4),
     end: addDays(new Date(), 4),
   },
+  // Additional Court Rental Dummy Data
+  {
+    id: "cr1",
+    title: "Court Rental – Tennis Court 1",
+    description: "Private tennis lesson - John Smith",
+    type: "Court Rental",
+    location: "Court 1",
+    available: 2,
+    start: addDays(new Date(), 0),
+    end: addDays(new Date(), 0),
+  },
+  {
+    id: "cr2",
+    title: "Court Rental – Basketball Court A",
+    description: "Corporate team building - TechCorp Inc.",
+    type: "Court Rental",
+    location: "Court A",
+    available: 8,
+    start: addDays(new Date(), 1),
+    end: addDays(new Date(), 1),
+  },
+  {
+    id: "cr3",
+    title: "Court Rental – Badminton Court 2",
+    description: "Family tournament - Wilson Family",
+    type: "Court Rental",
+    location: "Court 2",
+    available: 6,
+    start: addDays(new Date(), 2),
+    end: addDays(new Date(), 2),
+  },
+  {
+    id: "cr4",
+    title: "Court Rental – Pickleball Court 3",
+    description: "Senior group session - Golden Age Club",
+    type: "Court Rental",
+    location: "Court 3",
+    available: 4,
+    start: addDays(new Date(), 3),
+    end: addDays(new Date(), 3),
+  },
+  {
+    id: "cr5",
+    title: "Court Rental – Volleyball Court B",
+    description: "University team practice - State U Volleyball",
+    type: "Court Rental",
+    location: "Court B",
+    available: 12,
+    start: addDays(new Date(), 4),
+    end: addDays(new Date(), 4),
+  },
+  {
+    id: "cr6",
+    title: "Court Rental – Tennis Court 4",
+    description: "Professional coaching session - Coach Mike",
+    type: "Court Rental",
+    location: "Court 4",
+    available: 2,
+    start: addDays(new Date(), 5),
+    end: addDays(new Date(), 5),
+  },
+  {
+    id: "cr7",
+    title: "Court Rental – Basketball Court A",
+    description: "Youth league practice - Junior Hoops",
+    type: "Court Rental",
+    location: "Court A",
+    available: 10,
+    start: addDays(new Date(), 6),
+    end: addDays(new Date(), 6),
+  },
+  {
+    id: "cr8",
+    title: "Court Rental – Badminton Court 1",
+    description: "Tournament preparation - Elite Badminton Club",
+    type: "Court Rental",
+    location: "Court 1",
+    available: 4,
+    start: addDays(new Date(), 7),
+    end: addDays(new Date(), 7),
+  },
+  {
+    id: "cr9",
+    title: "Court Rental – Pickleball Court 2",
+    description: "Beginner workshop - Pickleball Pro",
+    type: "Court Rental",
+    location: "Court 2",
+    available: 8,
+    start: addDays(new Date(), 8),
+    end: addDays(new Date(), 8),
+  },
+  {
+    id: "cr10",
+    title: "Court Rental – Tennis Court 3",
+    description: "Doubles match - Tennis Enthusiasts",
+    type: "Court Rental",
+    location: "Court 3",
+    available: 4,
+    start: addDays(new Date(), 9),
+    end: addDays(new Date(), 9),
+  },
+  {
+    id: "cr11",
+    title: "Court Rental – Volleyball Court B",
+    description: "Beach volleyball training - Sand Spikers",
+    type: "Court Rental",
+    location: "Court B",
+    available: 6,
+    start: addDays(new Date(), 10),
+    end: addDays(new Date(), 10),
+  },
+  {
+    id: "cr12",
+    title: "Court Rental – Basketball Court A",
+    description: "3v3 tournament - Street Ballers",
+    type: "Court Rental",
+    location: "Court A",
+    available: 12,
+    start: addDays(new Date(), 11),
+    end: addDays(new Date(), 11),
+  },
+  {
+    id: "cr13",
+    title: "Court Rental – Badminton Court 4",
+    description: "Mixed doubles session - Badminton Buddies",
+    type: "Court Rental",
+    location: "Court 4",
+    available: 4,
+    start: addDays(new Date(), 12),
+    end: addDays(new Date(), 12),
+  },
+  {
+    id: "cr14",
+    title: "Court Rental – Pickleball Court 1",
+    description: "Advanced clinic - Pickleball Masters",
+    type: "Court Rental",
+    location: "Court 1",
+    available: 6,
+    start: addDays(new Date(), 13),
+    end: addDays(new Date(), 13),
+  },
+  {
+    id: "cr15",
+    title: "Court Rental – Tennis Court 2",
+    description: "Singles match - Tennis Rivals",
+    type: "Court Rental",
+    location: "Court 2",
+    available: 2,
+    start: addDays(new Date(), 14),
+    end: addDays(new Date(), 14),
+  },
 ];
 
 const colorForType: Record<BookingEvent["type"], string> = {
@@ -431,6 +582,15 @@ const BookingsCalendarPage: React.FC = () => {
                 <p className="text-muted-foreground">
                   Available: {selected.available}
                 </p>
+                {selected.type === "Court Rental" && (
+                  <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded">
+                    <p className="text-xs font-medium text-orange-800">Court Rental Details</p>
+                    <p className="text-xs text-orange-700">{selected.description}</p>
+                    <p className="text-xs text-orange-600 mt-1">
+                      Duration: 2 hours • Rate: $50/hour
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             <label className="space-y-1 block">
@@ -466,6 +626,25 @@ const BookingsCalendarPage: React.FC = () => {
                 required
               />
             </label>
+            {selected?.type === "Court Rental" && (
+              <>
+                <label className="space-y-1 block">
+                  <span className="text-sm">Phone Number</span>
+                  <Input
+                    type="tel"
+                    placeholder="+1 (555) 123-4567"
+                    required
+                  />
+                </label>
+                <label className="space-y-1 block">
+                  <span className="text-sm">Special Requests</span>
+                  <textarea
+                    className="w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                    placeholder="Any special equipment or setup requirements..."
+                  />
+                </label>
+              </>
+            )}
           </form>
       </ResponsiveOverlay>
 
