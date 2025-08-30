@@ -268,24 +268,6 @@ const OpenPlayDetailPage: React.FC = () => {
     setShowWinnerDialog(null);
   }
 
-  function randomPickBalanced() {
-    const pool = [...readyList];
-    const next = deepClone(courtTeams);
-
-    for (const court of courts) {
-      if (court.status !== "Open") continue;
-      const perTeam = Math.floor(court.capacity / 2);
-      const need = perTeam * 2;
-      if (pool.length < 2) break;
-
-      const take = pool.splice(0, Math.min(need, pool.length));
-      const { A, B } = buildBalancedTeams(take, perTeam);
-      next[court.id] = { A, B };
-      [...A, ...B].forEach((p) => updateStatus(p.id, "In-Game"));
-    }
-    setCourtTeams(next);
-  }
-
   function matchMakeCourt(courtId: string) {
     // Check if court is closed
     const court = courts.find(c => c.id === courtId);
@@ -331,37 +313,6 @@ const OpenPlayDetailPage: React.FC = () => {
     const court = courts.find(c => c.id === courtId);
     // Court can only be closed if it's open (no active game) or if the game has been completed
     return court?.status === "Open" || court?.status === "Closed";
-  }
-
-  function shuffleTeamsAll() {
-    const assigned = Object.values(courtTeams).flatMap((t) => [...t.A, ...t.B]);
-    const shuffled = [...assigned].sort(() => Math.random() - 0.5);
-    const next = deepClone(courtTeams);
-    let idx = 0;
-    for (const court of courts) {
-      const perTeam = Math.floor(court.capacity / 2);
-      next[court.id] = { A: [], B: [] };
-      for (let i = 0; i < perTeam && idx < shuffled.length; i++) next[court.id].A.push(shuffled[idx++]);
-      for (let i = 0; i < perTeam && idx < shuffled.length; i++) next[court.id].B.push(shuffled[idx++]);
-    }
-    setCourtTeams(next);
-  }
-
-  function confirmMatches() {
-    const newMatches: Match[] = [];
-    for (const court of courts) {
-      const t = courtTeams[court.id] ?? { A: [], B: [] };
-      if (t.A.length === 0 || t.B.length === 0) continue;
-      newMatches.push({
-        id: `${court.id}-${Date.now()}`,
-        courtId: court.id,
-        courtName: court.name,
-        teamA: t.A,
-        teamB: t.B,
-        status: "Scheduled",
-      });
-    }
-    setMatches(newMatches);
   }
 
   function setResult(matchId: string, winner: "A" | "B") {
