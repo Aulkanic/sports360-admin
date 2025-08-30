@@ -165,22 +165,6 @@ const CourtsFieldsPage: React.FC = () => {
     }));
   }
 
-  function updateAmenity(idx: number, value: string) {
-    setForm((p) => ({
-      ...p,
-      amenities: (p.amenities ?? []).map((s, i) => (i === idx ? value : s)),
-    }));
-  }
-  function addAmenityField() {
-    setForm((p) => ({ ...p, amenities: [...(p.amenities ?? []), ""] }));
-  }
-  function removeAmenityField(idx: number) {
-    setForm((p) => ({
-      ...p,
-      amenities: (p.amenities ?? []).filter((_, i) => i !== idx),
-    }));
-  }
-
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const urls = acceptedFiles.map((f) => URL.createObjectURL(f));
     setForm((p) => ({
@@ -358,16 +342,6 @@ const CourtsFieldsPage: React.FC = () => {
                 <option value="Room">Room</option>
               </select>
             </label>
-            <label className="space-y-1 md:col-span-2">
-              <span className="text-sm">Location</span>
-              <Input
-                value={form.location}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, location: e.target.value }))
-                }
-                required
-              />
-            </label>
             <label className="space-y-1">
               <span className="text-sm">Status</span>
               <select
@@ -396,16 +370,6 @@ const CourtsFieldsPage: React.FC = () => {
                 }
               />
             </label>
-            <div className="flex flex-nowrap col-span-2 gap-3">
-              <label className="space-y-1 flex-1 block">
-                <span className="text-sm">Date</span>
-                <Input type="date" />
-              </label>
-              <label className="space-y-1 flex-1 block">
-                <span className="text-sm">Time</span>
-                <Input type="time" />
-              </label>
-            </div>
           </div>
           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
             <label className="space-y-1">
@@ -443,20 +407,6 @@ const CourtsFieldsPage: React.FC = () => {
             </label>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Amenities</span>
-              <Button type="button" size="sm" variant="outline" onClick={addAmenityField}>Add Amenity</Button>
-            </div>
-            <div className="space-y-2">
-              {(form.amenities ?? []).map((a, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <Input className="flex-1" placeholder="e.g., Lighting" value={a} onChange={(e) => updateAmenity(idx, e.target.value)} />
-                  <Button type="button" variant="outline" size="sm" onClick={() => removeAmenityField(idx)}>Remove</Button>
-                </div>
-              ))}
-            </div>
-          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
