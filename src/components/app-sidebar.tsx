@@ -83,11 +83,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: urls.plans,
         icon: <FaDollarSign className="w-5 h-5" />,
       },
-      // {
-      //   title: "Events",
-      //   url: urls.events,
-      //   icon: <FaRegCalendar className="w-5 h-5" />,
-      // },
+      {
+        title: "Events",
+        url: urls.events,
+        icon: <FaRegCalendar className="w-5 h-5" />,
+      },
       {
         title: "Bookings",
         icon: <FaCalendarAlt className="w-5 h-5" />,
