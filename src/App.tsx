@@ -3,11 +3,13 @@ import "./App.css";
 import "leaflet/dist/leaflet.css";
 import { routeList } from "./routes";
 import { OpenPlayDetailPage } from "./pages";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <AuthProvider>
+      <Router>
+        <Routes>
         {/* Public Routes */}
         <Route element={routeList.public.layout}>
           {routeList.public.routes.map(({ path, element }) => (
@@ -28,8 +30,14 @@ function App() {
             <Route key={path} path={path} element={element} />
           ))}
         </Route>
-      </Routes>
-    </Router>
+
+        {/* Standalone Routes (no layout) */}
+        {routeList.standalone.routes.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

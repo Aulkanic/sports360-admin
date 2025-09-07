@@ -27,7 +27,8 @@ import {
   FaUserAlt,
   FaUsers,
 } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   Collapsible,
@@ -39,6 +40,8 @@ import { Separator } from "./ui/separator";
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [activeItem, setActiveItem] = React.useState("Dashboard");
   const [openSubmenu, setOpenSubmenu] = React.useState<string | null>(null);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const data = {
     navMain: [
@@ -48,7 +51,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: <FaTachometerAlt className="w-5 h-5" />,
       },
       {
-        title: "Facility",
+        title: "Facility Management",
         icon: <FaFutbol className="w-5 h-5" />,
         submenu: [
           {
@@ -82,11 +85,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Membership Plans",
         url: urls.plans,
         icon: <FaDollarSign className="w-5 h-5" />,
-      },
-      {
-        title: "Events",
-        url: urls.events,
-        icon: <FaRegCalendar className="w-5 h-5" />,
       },
       {
         title: "Bookings",
@@ -292,19 +290,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <Avatar className="w-10 h-10 border-2 border-white/20">
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback className="bg-white/20 text-white font-semibold">
-              SA
+              {user?.userName ? user.userName.substring(0, 2).toUpperCase() : "SA"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-white truncate">
-              Super Admin
+              {user?.userName || "Super Admin"}
             </p>
             <div className="flex items-center gap-1">
               <Shield className="w-3 h-3 text-green-400" />
-              <p className="text-xs text-white/70">Online</p>
+              <p className="text-xs text-white/70">{user?.userType || "Admin"}</p>
             </div>
           </div>
-          <button className="p-2 rounded-lg hover:bg-white/10 transition-colors group">
+          <button 
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors group"
+            onClick={() => {
+              logout();
+              navigate(urls.login);
+            }}
+            title="Logout"
+          >
             <FaSignOutAlt className="w-4 h-4 text-white/70 group-hover:text-white" />
           </button>
         </div>

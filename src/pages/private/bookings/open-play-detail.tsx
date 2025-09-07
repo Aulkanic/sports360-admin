@@ -315,6 +315,39 @@ const OpenPlayDetailPage: React.FC = () => {
     return court?.status === "Open" || court?.status === "Closed";
   }
 
+  function viewMatchupScreen(courtId: string) {
+    const court = courts.find(c => c.id === courtId);
+    const teams = courtTeams[courtId] ?? { A: [], B: [] };
+    
+    if (teams.A.length === 0 && teams.B.length === 0) {
+      alert("No players assigned to this court yet");
+      return;
+    }
+
+    const matchupData = {
+      id: `${courtId}-${Date.now()}`,
+      sport: session?.title || "Open Play",
+      courtName: court?.name || "Unknown Court",
+      teamA: teams.A,
+      teamB: teams.B,
+      teamAName: teamNames[courtId]?.A,
+      teamBName: teamNames[courtId]?.B,
+      status: court?.status === "In-Game" ? "In-Progress" : "Scheduled",
+      startTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      endTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // Open TV Display in a new tab
+    const newWindow = window.open(`/matchup/${courtId}`, '_blank');
+    
+    // Pass the matchup data to the new window
+    if (newWindow) {
+      newWindow.addEventListener('load', () => {
+        newWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
+      });
+    }
+  }
+
   function setResult(matchId: string, winner: "A" | "B") {
     setMatches((prev) =>
       prev.map((m) =>
@@ -407,7 +440,7 @@ const OpenPlayDetailPage: React.FC = () => {
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="w-full px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h1 className="text-2xl font-bold">{session.title}</h1>
@@ -444,7 +477,7 @@ const OpenPlayDetailPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="bg-white border-b shadow-sm flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="w-full px-6">
           <div className="flex items-center gap-8">
             <button
               onClick={() => setTab("details")}
@@ -474,10 +507,10 @@ const OpenPlayDetailPage: React.FC = () => {
 
       {tab === "details" && (
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="w-full px-6 py-6">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
               {/* Main Content */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="xl:col-span-3 space-y-6">
                 {/* Session Info Card */}
                 <div className="bg-white rounded-xl border shadow-sm p-6">
                   <div className="flex items-center gap-2 mb-4">
@@ -891,8 +924,8 @@ const OpenPlayDetailPage: React.FC = () => {
       {tab === "game" && (
         <DndContext onDragEnd={onDragEnd}>
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto px-4 py-6">
-              <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6">
+            <div className="w-full px-6 py-6">
+              <div className="grid grid-cols-1 xl:grid-cols-[400px_minmax(0,1fr)] gap-6">
                 {/* ===== Left: Bench / Queues ===== */}
                 <aside className="space-y-4 lg:sticky lg:top-6 h-max">
                   <div className="bg-white rounded-xl border shadow-sm p-4">
@@ -970,6 +1003,21 @@ const OpenPlayDetailPage: React.FC = () => {
                         <Button variant="outline" onClick={addCourt}>
                           Add Court
                         </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            const activeCourt = courts.find(c => c.status === "In-Game");
+                            if (activeCourt) {
+                              viewMatchupScreen(activeCourt.id);
+                            } else {
+                              alert("No active games to display");
+                            }
+                          }}
+                          className="bg-primary text-white hover:bg-primary/90"
+                        >
+                          <Trophy className="h-4 w-4 mr-2" />
+                          View Matchup Screen
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -1000,9 +1048,22 @@ const OpenPlayDetailPage: React.FC = () => {
                                   canEndGame={canEndGame(c.id)}
                                   canCloseCourt={canCloseCourt(c.id)}
                                 />
-                              <p className="text-[11px] text-muted-foreground text-center mt-2">
-                                Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
-                              </p>
+                              <div className="flex flex-col items-center gap-2 mt-2">
+                                <p className="text-[11px] text-muted-foreground text-center">
+                                  Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
+                                </p>
+                                {(teams.A.length > 0 || teams.B.length > 0) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => viewMatchupScreen(c.id)}
+                                    className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                                  >
+                                    <Trophy className="h-3 w-3 mr-1" />
+                                    TV Display
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -1022,7 +1083,7 @@ const OpenPlayDetailPage: React.FC = () => {
                         No matches yet. Confirm matches to generate them from court assignments.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                         {matches.map((m) => (
                           <div key={m.id} className="rounded-2xl border bg-card p-3 space-y-2">
                             <div className="flex items-center justify-between">
@@ -1154,7 +1215,7 @@ const OpenPlayDetailPage: React.FC = () => {
                       <span className="text-xs text-muted-foreground">Customize team names for courts</span>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {courts.map((court) => {
                         const teams = courtTeams[court.id] ?? { A: [], B: [] };
                         const currentNames = teamNames[court.id] ?? { A: "", B: "" };

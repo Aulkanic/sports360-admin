@@ -4,7 +4,7 @@ import MembersPage from "./private/members/page";
 import MembershipPlansPage from "./private/membership-plans/page";
 import SportsPage from "./private/sports/page";
 import SportsFormPage from "./private/sports/form";
-import CourtsFieldsPage from "./private/sports/courts-fields";
+import CourtsPage from "./private/sports/courts-fields";
 import EventsPage from "./private/events/page";
 import BookingsCalendarPage from "./private/bookings/calendar";
 import BookingsAdminPage from "./private/bookings/admin";
@@ -24,7 +24,7 @@ export {
 	MembershipPlansPage,
 	SportsPage,
 	SportsFormPage,
-	CourtsFieldsPage,
+	CourtsPage,
 	EventsPage,
 	BookingsCalendarPage,
 	BookingsAdminPage,

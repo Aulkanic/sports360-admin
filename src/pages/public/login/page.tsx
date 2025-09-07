@@ -1,20 +1,34 @@
 import { urls } from "@/routes";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPw, setShowPw] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    
     const form = new FormData(e.currentTarget);
     const email = (form.get("email") as string) ?? "";
     const password = (form.get("password") as string) ?? "";
-    console.log({ email, password });
-    navigate(urls.superadmindashboard);
+
+    try {
+      await login(email, password);
+      console.log("Login successful");
+      navigate(urls.superadmindashboard);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      setError(error.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleGoogle() {
@@ -123,6 +137,11 @@ const LoginPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
               <div>
                 <label
                   htmlFor="email"

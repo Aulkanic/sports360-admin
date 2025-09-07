@@ -1,7 +1,9 @@
 import { PrivateLayout, PublicLayout, SportsHubLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, SportsFormPage, CourtsFieldsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, OpenPlayDetailPage, BookingsExplorePage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, SportsFormPage, CourtsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, OpenPlayDetailPage, BookingsExplorePage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
+import MatchupScreen from "@/pages/private/bookings/matchup-screen";
 import SportsHubRegisterPage from "@/pages/public/register/sportshub";
 import SportsHubDashboardPage from "@/pages/private/sportshub/dashboard";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export const urls = {
 	login: "/",
@@ -23,6 +25,7 @@ export const urls = {
 	calendarDashboard: '/super-admin/bookings/calendar-dashboard',
 	openPlay: '/super-admin/bookings/open-play',
 	openPlayDetail: '/open-play/:id',
+	matchupScreen: '/matchup/:id',
 	communities: '/super-admin/communities-clubs',
 	profile: '/super-admin/profile',
 	settings: '/super-admin/settings',
@@ -39,32 +42,39 @@ export const routeList = {
 	private : {
 		layout: <PrivateLayout />,
 		routes : [
-			{ path: urls.superadmindashboard, element: <SuperAdminDashboardPage /> },
-			{ path: urls.members, element: <MembersPage /> },
-			{ path: urls.plans, element: <MembershipPlansPage /> },
-			{ path: urls.sports, element: <SportsPage /> },
-			{ path: urls.sportsForm, element: <SportsFormPage /> },
-			{ path: urls.courtsFields, element: <CourtsFieldsPage /> },
-			{ path: urls.events, element: <EventsPage /> },
-			{ path: urls.bookingsCalendar, element: <BookingsCalendarPage /> },
-			{ path: urls.bookingsAdmin, element: <BookingsAdminPage /> },
-			{ path: urls.bookingsExplore, element: <BookingsExplorePage /> },
-			{ path: urls.equipment, element: <EquipmentPage /> },
-			{ path: urls.calendarDashboard, element: <CalendarDashboardPage /> },
-			{ path: urls.openPlay, element: <OpenPlayPage /> },
-			{ path: urls.openPlayDetail, element: <OpenPlayDetailPage /> },
-			{ path: urls.communities, element: <CommunitiesClubsAdminPage /> },
-			{ path: urls.profile, element: <ProfilePage /> },
-			{ path: urls.settings, element: <SettingsPage /> },
+			{ path: urls.superadmindashboard, element: <ProtectedRoute><SuperAdminDashboardPage /></ProtectedRoute> },
+			{ path: urls.members, element: <ProtectedRoute><MembersPage /></ProtectedRoute> },
+			{ path: urls.plans, element: <ProtectedRoute><MembershipPlansPage /></ProtectedRoute> },
+			{ path: urls.sports, element: <ProtectedRoute><SportsPage /></ProtectedRoute> },
+			{ path: urls.sportsForm, element: <ProtectedRoute><SportsFormPage /></ProtectedRoute> },
+			{ path: urls.courtsFields, element: <ProtectedRoute><CourtsPage /></ProtectedRoute> },
+			{ path: urls.events, element: <ProtectedRoute><EventsPage /></ProtectedRoute> },
+			{ path: urls.bookingsCalendar, element: <ProtectedRoute><BookingsCalendarPage /></ProtectedRoute> },
+			{ path: urls.bookingsAdmin, element: <ProtectedRoute><BookingsAdminPage /></ProtectedRoute> },
+			{ path: urls.bookingsExplore, element: <ProtectedRoute><BookingsExplorePage /></ProtectedRoute> },
+			{ path: urls.equipment, element: <ProtectedRoute><EquipmentPage /></ProtectedRoute> },
+			{ path: urls.calendarDashboard, element: <ProtectedRoute><CalendarDashboardPage /></ProtectedRoute> },
+			{ path: urls.openPlay, element: <ProtectedRoute><OpenPlayPage /></ProtectedRoute> },
+			{ path: urls.openPlayDetail, element: <ProtectedRoute><OpenPlayDetailPage /></ProtectedRoute> },
+			{ path: urls.communities, element: <ProtectedRoute><CommunitiesClubsAdminPage /></ProtectedRoute> },
+			{ path: urls.profile, element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+			{ path: urls.settings, element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
 		]
 	},
 	// SportsHub private area
 	sportshub: {
 		layout: <SportsHubLayout />,
 		routes: [
-			{ path: urls.sportshubDashboard, element: <SportsHubDashboardPage /> },
-			{ path: urls.sportshubBookingsCalendar, element: <BookingsCalendarPage /> },
-			{ path: urls.sportshubBookingsAdmin, element: <BookingsAdminPage /> },
+			{ path: urls.sportshubDashboard, element: <ProtectedRoute><SportsHubDashboardPage /></ProtectedRoute> },
+			{ path: urls.sportshubBookingsCalendar, element: <ProtectedRoute><BookingsCalendarPage /></ProtectedRoute> },
+			{ path: urls.sportshubBookingsAdmin, element: <ProtectedRoute><BookingsAdminPage /></ProtectedRoute> },
+		]
+	},
+	// Standalone routes without layout (for TV displays, etc.)
+	standalone: {
+		layout: null,
+		routes: [
+			{ path: urls.matchupScreen, element: <MatchupScreen /> },
 		]
 	}
 };

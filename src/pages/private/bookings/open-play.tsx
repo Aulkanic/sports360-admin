@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ResponsiveOverlay from "@/components/responsive-overlay";
 import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-panel";
@@ -8,14 +8,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { Calendar, Clock, MapPin, Users, Plus, Play, Settings, UserCheck, Star, TrendingUp, Grid3X3, CalendarDays } from "lucide-react";
+import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, addDays, addWeeks } from 'date-fns';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import ClubCalendar from "@/components/club-calendar";
+import {
+  getAllOpenPlaySessions,
+  createOpenPlaySession,
+  deleteOpenPlayOccurrence,
+  getOpenPlayStats,
+  getOpenPlayLookup,
+  type CreateOpenPlaySessionData,
+  type OpenPlayStats,
+  type OpenPlayLookup
+} from "@/services/open-play.service";
 
 type LevelTag = "Beginner" | "Intermediate" | "Advanced";
 
 type OpenPlaySession = {
   id: string;
   title: string;
+  description?: string;
   when: string;
   location: string;
+  eventType?: "one-time" | "recurring" | "tournament";
   level: LevelTag[];
   participants: (PlayerItem & {
     avatar?: string;
@@ -42,44 +59,111 @@ const ppl = {
 const initialSessions: OpenPlaySession[] = [
   {
     id: "op-1",
-    title: "Pickleball Open Play",
-    when: "Fri • 7:00–9:00 PM",
-    location: "Court A",
-    level: ["Beginner", "Intermediate"],
+    title: "Morning Tennis Practice",
+    description: "Early morning tennis session for dedicated players. Focus on technique and fitness. Perfect start to your day with some quality court time.",
+    when: "Mon • 6:00–8:00 AM",
+    location: "Court 1",
+    eventType: "recurring",
+    level: ["Intermediate", "Advanced"],
     participants: [
-      { id: "u1", name: ppl.alice.name, status: "Resting", avatar: ppl.alice.avatar, initials: ppl.alice.initials, level: ppl.alice.level },
-      { id: "u2", name: ppl.bob.name,   status: "Resting", avatar: ppl.bob.avatar,   initials: ppl.bob.initials,   level: ppl.bob.level },
+      { id: "u1", name: ppl.alice.name, status: "In-Game", avatar: ppl.alice.avatar, initials: ppl.alice.initials, level: ppl.alice.level },
+      { id: "u2", name: ppl.bob.name,   status: "In-Game", avatar: ppl.bob.avatar,   initials: ppl.bob.initials,   level: ppl.bob.level },
       { id: "u3", name: ppl.carol.name, status: "Resting", avatar: ppl.carol.avatar, initials: ppl.carol.initials, level: ppl.carol.level },
       { id: "u4", name: ppl.david.name, status: "Resting", avatar: ppl.david.avatar, initials: ppl.david.initials, level: ppl.david.level },
-      { id: "u5", name: ppl.kate.name,  status: "Resting", avatar: ppl.kate.avatar,  initials: ppl.kate.initials,  level: ppl.kate.level },
-      { id: "u6", name: ppl.liam.name,  status: "Resting", avatar: ppl.liam.avatar,  initials: ppl.liam.initials,  level: ppl.liam.level },
     ],
   },
   {
     id: "op-2",
-    title: "Tennis Rally Night",
-    when: "Sat • 9:00–11:00 AM",
-    location: "Court 3",
-    level: ["Intermediate", "Advanced"],
+    title: "Pickleball Open Play",
+    description: "Join us for a fun and friendly pickleball session! All skill levels welcome. We'll rotate players to ensure everyone gets to play. Bring your own paddle or borrow one from us.",
+    when: "Tue • 10:00–12:00 PM",
+    location: "Court 2",
+    eventType: "recurring",
+    level: ["Beginner", "Intermediate"],
     participants: [
-      { id: "u7",  name: ppl.ivy.name,  status: "Resting", avatar: ppl.ivy.avatar,  initials: ppl.ivy.initials,  level: ppl.ivy.level },
-      { id: "u8",  name: ppl.jack.name, status: "Resting", avatar: ppl.jack.avatar, initials: ppl.jack.initials, level: ppl.jack.level },
-      { id: "u9",  name: ppl.mia.name,  status: "Resting", avatar: ppl.mia.avatar,  initials: ppl.mia.initials,  level: ppl.mia.level },
-      { id: "u10", name: ppl.noah.name, status: "Resting", avatar: ppl.noah.avatar, initials: ppl.noah.initials, level: ppl.noah.level },
+      { id: "u5", name: ppl.kate.name,  status: "In-Game", avatar: ppl.kate.avatar,  initials: ppl.kate.initials,  level: ppl.kate.level },
+      { id: "u6", name: ppl.liam.name,  status: "In-Game", avatar: ppl.liam.avatar,  initials: ppl.liam.initials,  level: ppl.liam.level },
+      { id: "u7", name: ppl.ivy.name,   status: "Resting", avatar: ppl.ivy.avatar,  initials: ppl.ivy.initials,  level: ppl.ivy.level },
+      { id: "u8", name: ppl.jack.name,  status: "Resting", avatar: ppl.jack.avatar, initials: ppl.jack.initials, level: ppl.jack.level },
+      { id: "u9", name: ppl.mia.name,   status: "Resting", avatar: ppl.mia.avatar,  initials: ppl.mia.initials,  level: ppl.mia.level },
     ],
   },
   {
     id: "op-3",
-    title: "Badminton Open Court",
-    when: "Sun • 2:00–5:00 PM",
-    location: "Hall B",
+    title: "Badminton Championship",
+    description: "Annual badminton championship tournament! Single elimination format with prizes for top 3 players. Registration closes 2 days before the event. Bring your A-game and compete for the championship title!",
+    when: "Wed • 2:00–5:00 PM",
+    location: "Hall A",
+    eventType: "tournament",
     level: ["Beginner", "Intermediate", "Advanced"],
     participants: [
-      { id: "u11", name: ppl.owen.name, status: "Resting", avatar: ppl.owen.avatar, initials: ppl.owen.initials, level: ppl.owen.level },
+      { id: "u10", name: ppl.noah.name, status: "In-Game", avatar: ppl.noah.avatar, initials: ppl.noah.initials, level: ppl.noah.level },
+      { id: "u11", name: ppl.owen.name, status: "In-Game", avatar: ppl.owen.avatar, initials: ppl.owen.initials, level: ppl.owen.level },
       { id: "u12", name: ppl.pia.name,  status: "Resting", avatar: ppl.pia.avatar,  initials: ppl.pia.initials,  level: ppl.pia.level },
       { id: "u13", name: "Guest 1",     status: "Resting", avatar: "https://i.pravatar.cc/100?img=13", initials: "G1", level: "Beginner" },
       { id: "u14", name: "Guest 2",     status: "Resting", avatar: "https://i.pravatar.cc/100?img=14", initials: "G2", level: "Intermediate" },
       { id: "u15", name: "Guest 3",     status: "Resting", avatar: "https://i.pravatar.cc/100?img=15", initials: "G3", level: "Advanced" },
+    ],
+  },
+  {
+    id: "op-4",
+    title: "Table Tennis Tournament",
+    description: "Weekly table tennis tournament with round-robin format. Great for competitive players looking to test their skills against others.",
+    when: "Thu • 6:00–8:00 PM",
+    location: "Hall B",
+    eventType: "tournament",
+    level: ["Intermediate", "Advanced"],
+    participants: [
+      { id: "u16", name: "Player 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=16", initials: "P1", level: "Intermediate" },
+      { id: "u17", name: "Player 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=17", initials: "P2", level: "Advanced" },
+      { id: "u18", name: "Player 3", status: "Resting", avatar: "https://i.pravatar.cc/100?img=18", initials: "P3", level: "Intermediate" },
+      { id: "u19", name: "Player 4", status: "Resting", avatar: "https://i.pravatar.cc/100?img=19", initials: "P4", level: "Advanced" },
+    ],
+  },
+  {
+    id: "op-5",
+    title: "Squash Open Session",
+    description: "Open squash session for all levels. Learn the basics or improve your game with experienced players. Equipment provided.",
+    when: "Fri • 4:00–6:00 PM",
+    location: "Court 3",
+    eventType: "one-time",
+    level: ["Beginner", "Intermediate"],
+    participants: [
+      { id: "u20", name: "Squash 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=20", initials: "S1", level: "Beginner" },
+      { id: "u21", name: "Squash 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=21", initials: "S2", level: "Intermediate" },
+      { id: "u22", name: "Squash 3", status: "Resting", avatar: "https://i.pravatar.cc/100?img=22", initials: "S3", level: "Beginner" },
+    ],
+  },
+  {
+    id: "op-6",
+    title: "Basketball 3v3 League",
+    description: "Weekly 3v3 basketball league games. Teams compete in a round-robin format with playoffs at the end of the season.",
+    when: "Sat • 9:00–11:00 AM",
+    location: "Court 4",
+    eventType: "recurring",
+    level: ["Intermediate", "Advanced"],
+    participants: [
+      { id: "u23", name: "Ball 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=23", initials: "B1", level: "Intermediate" },
+      { id: "u24", name: "Ball 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=24", initials: "B2", level: "Advanced" },
+      { id: "u25", name: "Ball 3", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=25", initials: "B3", level: "Intermediate" },
+      { id: "u26", name: "Ball 4", status: "Resting", avatar: "https://i.pravatar.cc/100?img=26", initials: "B4", level: "Advanced" },
+      { id: "u27", name: "Ball 5", status: "Resting", avatar: "https://i.pravatar.cc/100?img=27", initials: "B5", level: "Intermediate" },
+      { id: "u28", name: "Ball 6", status: "Resting", avatar: "https://i.pravatar.cc/100?img=28", initials: "B6", level: "Advanced" },
+    ],
+  },
+  {
+    id: "op-7",
+    title: "Volleyball Beach Night",
+    description: "Beach volleyball session with sand court setup. Fun and relaxed atmosphere perfect for beginners and intermediate players.",
+    when: "Sun • 3:00–5:00 PM",
+    location: "Beach Court",
+    eventType: "one-time",
+    level: ["Beginner", "Intermediate"],
+    participants: [
+      { id: "u29", name: "Volley 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=29", initials: "V1", level: "Beginner" },
+      { id: "u30", name: "Volley 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=30", initials: "V2", level: "Intermediate" },
+      { id: "u31", name: "Volley 3", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=31", initials: "V3", level: "Beginner" },
+      { id: "u32", name: "Volley 4", status: "Resting", avatar: "https://i.pravatar.cc/100?img=32", initials: "V4", level: "Intermediate" },
     ],
   },
 ];
@@ -126,232 +210,1089 @@ function AvatarsStrip({
 }
 
 const OpenPlayPage: React.FC = () => {
-  const [sessions, setSessions] = useState<OpenPlaySession[]>(initialSessions);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-    initialSessions[0]?.id ?? null
-  );
+  const [sessions, setSessions] = useState<OpenPlaySession[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
+  const [calDate, setCalDate] = useState<Date>(new Date());
+  const [calView, setCalView] = useState<string>(Views.MONTH);
+  const [stats, setStats] = useState<OpenPlayStats | null>(null);
+  const [lookup, setLookup] = useState<OpenPlayLookup | null>(null);
   const navigate = useNavigate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
     title: "",
+    description: "",
     date: "",
-    time: "",
-    location: "",
+    startTime: "",
+    endTime: "",
+    maxPlayers: 10,
+    price: 0,
+    eventType: "one-time" as "one-time" | "recurring" | "tournament",
+    // Recurring fields
+    frequency: "weekly" as "daily" | "weekly" | "monthly",
+    endDate: "",
+    // Tournament fields
+    tournamentFormat: "single-elimination" as "single-elimination" | "double-elimination" | "round-robin",
+    prize: "",
+    registrationDeadline: "",
     levels: { Beginner: true, Intermediate: false, Advanced: false },
   });
 
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [participantsSessionId, setParticipantsSessionId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null); // Delete confirmation state
+
+  // Load data from API
+  const loadSessions = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const [sessionsData, statsData, lookupData] = await Promise.all([
+        getAllOpenPlaySessions(),
+        getOpenPlayStats(),
+        getOpenPlayLookup()
+      ]);
+      
+      setStats(statsData);
+      setLookup(lookupData);
+      
+      // Convert API sessions to frontend format
+      const convertedSessions: OpenPlaySession[] = sessionsData.map(session => ({
+        id: session.id,
+        title: session.title,
+        description: session.description,
+        when: session.when,
+        location: session.location,
+        eventType: session.eventType,
+        level: session.level,
+        participants: session.participants.map(p => ({
+          id: p.id,
+          name: p.name,
+          status: p.status === 'In-Game' ? 'In-Game' : 'Resting', // Map to PlayerItem status
+          avatar: p.avatar,
+          initials: p.initials,
+          level: p.level
+        }))
+      }));
+      
+      setSessions(convertedSessions);
+      
+      // Set first session as selected if none selected
+      if (!selectedSessionId && convertedSessions.length > 0) {
+        setSelectedSessionId(convertedSessions[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading open-play sessions:', error);
+      // Fallback to mock data on error
+      setSessions(initialSessions);
+      if (!selectedSessionId && initialSessions.length > 0) {
+        setSelectedSessionId(initialSessions[0].id);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedSessionId]);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
+  // React Big Calendar localizer
+  const locales = {} as any;
+  const localizer = dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+    getDay,
+    locales,
+  });
+
+  // Color coding for event types (matching events page)
+  const colorForType: Record<string, string> = {
+    'one-time': '#3b82f6', // blue-500
+    'tournament': '#22c55e', // green-500
+    'recurring': '#f59e0b', // amber-500
+  };
+
+  const getEventTypeColor = (eventType?: string) => {
+    return colorForType[eventType || 'one-time'] || '#6b7280';
+  };
+
+  // Convert sessions to calendar events (matching events page structure)
+  const rbcEvents: RBCEvent[] = useMemo(() => {
+    const expanded: OpenPlaySession[] = [];
+    sessions.forEach((session) => {
+      if (session.eventType === 'recurring') {
+        // Generate recurring events for the next 8 weeks
+        const occurrences = 8;
+        const baseStart = new Date();
+        const baseEnd = new Date();
+        
+        // Set base times based on session ID
+        if (session.id === 'op-1') {
+          baseStart.setHours(6, 0, 0, 0);  // 6:00 AM
+          baseEnd.setHours(8, 0, 0, 0);    // 8:00 AM
+        } else if (session.id === 'op-2') {
+          baseStart.setHours(10, 0, 0, 0); // 10:00 AM
+          baseEnd.setHours(12, 0, 0, 0);   // 12:00 PM
+        } else if (session.id === 'op-6') {
+          baseStart.setHours(9, 0, 0, 0);  // 9:00 AM
+          baseEnd.setHours(11, 0, 0, 0);   // 11:00 AM
+        }
+        
+        for (let i = 0; i < occurrences; i++) {
+          const dateStart = addWeeks(baseStart, i);
+          const dateEnd = addWeeks(baseEnd, i);
+          expanded.push({ ...session, id: `${session.id}-r${i + 1}`, when: `${format(dateStart, 'EEE')} • ${format(dateStart, 'HH:mm')}–${format(dateEnd, 'HH:mm')}` });
+        }
+      } else {
+        // Single occurrence events
+        const today = new Date();
+        const sessionDate = new Date(today);
+        
+        if (session.id === 'op-1') sessionDate.setDate(today.getDate() + 1);      // Monday
+        else if (session.id === 'op-2') sessionDate.setDate(today.getDate() + 2);  // Tuesday
+        else if (session.id === 'op-3') sessionDate.setDate(today.getDate() + 3);  // Wednesday
+        else if (session.id === 'op-4') sessionDate.setDate(today.getDate() + 4);  // Thursday
+        else if (session.id === 'op-5') sessionDate.setDate(today.getDate() + 5);  // Friday
+        else if (session.id === 'op-6') sessionDate.setDate(today.getDate() + 6);  // Saturday
+        else if (session.id === 'op-7') sessionDate.setDate(today.getDate() + 7);  // Sunday
+        
+        const startDateTime = new Date(sessionDate);
+        const endDateTime = new Date(sessionDate);
+        
+        if (session.id === 'op-1') {
+          startDateTime.setHours(6, 0, 0, 0);   // 6:00 AM
+          endDateTime.setHours(8, 0, 0, 0);     // 8:00 AM
+        } else if (session.id === 'op-2') {
+          startDateTime.setHours(10, 0, 0, 0);  // 10:00 AM
+          endDateTime.setHours(12, 0, 0, 0);    // 12:00 PM
+        } else if (session.id === 'op-3') {
+          startDateTime.setHours(14, 0, 0, 0);  // 2:00 PM
+          endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
+        } else if (session.id === 'op-4') {
+          startDateTime.setHours(18, 0, 0, 0);  // 6:00 PM
+          endDateTime.setHours(20, 0, 0, 0);    // 8:00 PM
+        } else if (session.id === 'op-5') {
+          startDateTime.setHours(16, 0, 0, 0);  // 4:00 PM
+          endDateTime.setHours(18, 0, 0, 0);    // 6:00 PM
+        } else if (session.id === 'op-6') {
+          startDateTime.setHours(9, 0, 0, 0);   // 9:00 AM
+          endDateTime.setHours(11, 0, 0, 0);    // 11:00 AM
+        } else if (session.id === 'op-7') {
+          startDateTime.setHours(15, 0, 0, 0);  // 3:00 PM
+          endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
+        }
+        
+        expanded.push({ ...session, when: `${format(startDateTime, 'EEE')} • ${format(startDateTime, 'HH:mm')}–${format(endDateTime, 'HH:mm')}` });
+      }
+    });
+    
+    return expanded.map((session) => {
+      // Parse the session date and time from the 'when' field
+      // const [, timeStr] = session.when.split(' • ');
+      // const [,] = timeStr.split('–');
+      
+      // Create date objects based on session ID mapping
+      const today = new Date();
+      const sessionDate = new Date(today);
+      
+      if (session.id.includes('op-1')) sessionDate.setDate(today.getDate() + 1);      // Monday
+      else if (session.id.includes('op-2')) sessionDate.setDate(today.getDate() + 2);  // Tuesday
+      else if (session.id.includes('op-3')) sessionDate.setDate(today.getDate() + 3);  // Wednesday
+      else if (session.id.includes('op-4')) sessionDate.setDate(today.getDate() + 4);  // Thursday
+      else if (session.id.includes('op-5')) sessionDate.setDate(today.getDate() + 5);  // Friday
+      else if (session.id.includes('op-6')) sessionDate.setDate(today.getDate() + 6);  // Saturday
+      else if (session.id.includes('op-7')) sessionDate.setDate(today.getDate() + 7);  // Sunday
+      
+      const startDateTime = new Date(sessionDate);
+      const endDateTime = new Date(sessionDate);
+      
+      // Set times based on session ID
+      if (session.id.includes('op-1')) {
+        startDateTime.setHours(6, 0, 0, 0);   // 6:00 AM
+        endDateTime.setHours(8, 0, 0, 0);     // 8:00 AM
+      } else if (session.id.includes('op-2')) {
+        startDateTime.setHours(10, 0, 0, 0);  // 10:00 AM
+        endDateTime.setHours(12, 0, 0, 0);    // 12:00 PM
+      } else if (session.id.includes('op-3')) {
+        startDateTime.setHours(14, 0, 0, 0);  // 2:00 PM
+        endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
+      } else if (session.id.includes('op-4')) {
+        startDateTime.setHours(18, 0, 0, 0);  // 6:00 PM
+        endDateTime.setHours(20, 0, 0, 0);    // 8:00 PM
+      } else if (session.id.includes('op-5')) {
+        startDateTime.setHours(16, 0, 0, 0);  // 4:00 PM
+        endDateTime.setHours(18, 0, 0, 0);    // 6:00 PM
+      } else if (session.id.includes('op-6')) {
+        startDateTime.setHours(9, 0, 0, 0);   // 9:00 AM
+        endDateTime.setHours(11, 0, 0, 0);    // 11:00 AM
+      } else if (session.id.includes('op-7')) {
+        startDateTime.setHours(15, 0, 0, 0);  // 3:00 PM
+        endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
+      }
+      
+      return {
+        id: session.id,
+        title: session.title,
+        start: startDateTime,
+        end: endDateTime,
+        resource: session,
+      };
+    });
+  }, [sessions]);
+
+  // Event content component (matching events page)
+  const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
+    const data = (event as any).resource as OpenPlaySession;
+    const bg = getEventTypeColor(data.eventType);
+    return (
+      <div className="flex items-center gap-2 px-1 py-0.5">
+        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: bg }} />
+        <span className="text-xs font-medium">{data.title}</span>
+      </div>
+    );
+  };
 
   function openParticipants(sessionId: string) {
     setParticipantsSessionId(sessionId);
     setParticipantsOpen(true);
   }
 
-  function handleCreateSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const levels = Object.entries(createForm.levels)
-      .filter(([, v]) => v)
-      .map(([k]) => k as LevelTag);
-    if (!createForm.title.trim() || !createForm.date || !createForm.time || !createForm.location.trim() || levels.length === 0)
-      return;
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      setIsLoading(true);
+      await deleteOpenPlayOccurrence(sessionId);
+      await loadSessions(); // Reload sessions to get updated data
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      alert('Failed to delete session. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const newSession: OpenPlaySession = {
-      id: `op-${Date.now()}`,
-      title: createForm.title.trim(),
-      when: `${createForm.date} • ${createForm.time}`,
-      location: createForm.location.trim(),
-      level: levels,
-      participants: [],
-    };
-    setSessions((prev) => [newSession, ...prev]);
-    setCreateOpen(false);
-    setCreateForm({
-      title: "",
-      date: "",
-      time: "",
-      location: "",
-      levels: { Beginner: true, Intermediate: false, Advanced: false },
-    });
-    setSelectedSessionId((id) => id ?? newSession.id);
+  // Helper function to generate recurring occurrences
+  const generateRecurringOccurrences = (
+    startDate: string,
+    endDate: string,
+    frequency: "daily" | "weekly" | "monthly",
+    startTime: string,
+    endTime: string,
+    capacity: number
+  ) => {
+    const occurrences: any[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const current = new Date(start);
+    let count = 0;
+    const maxOccurrences = 100; // Limit to prevent performance issues
+
+    while (current <= end && count < maxOccurrences) {
+      occurrences.push({
+        date: current.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        startTime: startTime,
+        endTime: endTime,
+        capacity: capacity
+      });
+
+      count++;
+
+      // Increment based on frequency
+      switch (frequency) {
+        case "daily":
+          current.setDate(current.getDate() + 1);
+          break;
+        case "weekly":
+          current.setDate(current.getDate() + 7);
+          break;
+        case "monthly":
+          current.setMonth(current.getMonth() + 1);
+          break;
+      }
+    }
+
+    if (count >= maxOccurrences) {
+      console.warn(`Generated maximum ${maxOccurrences} occurrences. Consider reducing the date range.`);
+    }
+
+    return occurrences;
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const levels = Object.entries(createForm.levels)
+        .filter(([, v]) => v)
+        .map(([k]) => k as LevelTag);
+        
+      // Basic validation
+      if (!createForm.title.trim() || !createForm.date || !createForm.startTime || !createForm.endTime || levels.length === 0) {
+        alert("Please fill in all required fields");
+        setIsLoading(false);
+        return;
+      }
+
+      // Time range validation
+      if (createForm.startTime >= createForm.endTime) {
+        alert("End time must be after start time");
+        setIsLoading(false);
+        return;
+      }
+
+      // Recurring event validation
+      if (createForm.eventType === "recurring" && !createForm.endDate) {
+        alert("Please select an end date for recurring events");
+        setIsLoading(false);
+        return;
+      }
+
+      // Tournament validation
+      if (createForm.eventType === "tournament" && !createForm.registrationDeadline) {
+        alert("Please set a registration deadline for tournaments");
+        setIsLoading(false);
+        return;
+      }
+
+      // Map levels to level IDs (assuming lookup data is available)
+      const levelIds = levels.map(level => {
+        const levelRef = lookup?.levels.find(l => l.description === level);
+        return levelRef?.id || 1; // Default to first level if not found
+      });
+
+      // Generate occurrences based on event type
+      let occurrences: any[] = [];
+      
+      if (createForm.eventType === "recurring") {
+        // Generate recurring occurrences
+        occurrences = generateRecurringOccurrences(
+          createForm.date,
+          createForm.endDate,
+          createForm.frequency,
+          createForm.startTime,
+          createForm.endTime,
+          createForm.maxPlayers || 10
+        );
+        
+        // Validate number of occurrences
+        if (occurrences.length > 100) {
+          alert(`Too many sessions! You're trying to create ${occurrences.length} sessions. Please reduce the date range or frequency. Maximum allowed is 100 sessions.`);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (occurrences.length > 50) {
+          const confirm = window.confirm(`You're about to create ${occurrences.length} sessions. This may take a moment. Do you want to continue?`);
+          if (!confirm) {
+            setIsLoading(false);
+            return;
+          }
+        }
+      } else {
+        // Single occurrence for one-time events and tournaments
+        occurrences = [{
+          date: createForm.date,
+          startTime: createForm.startTime,
+          endTime: createForm.endTime,
+          capacity: createForm.maxPlayers || 10
+        }];
+      }
+
+      // Create session data for API
+      const sessionData: CreateOpenPlaySessionData = {
+        title: createForm.title.trim(),
+        description: createForm.description.trim(),
+        hubId: "1", // TODO: Get from user context or selection
+        levelId: levelIds[0], // Use first level for now
+        pricePerPlayer: createForm.price || 0,
+        currency: "PHP",
+        capacity: createForm.maxPlayers || 10,
+        occurrences: occurrences
+      };
+
+      // Create session via API
+      await createOpenPlaySession(sessionData);
+      
+      // Reload sessions to get updated data
+      await loadSessions();
+      
+      // Close form and reset
+      setCreateOpen(false);
+      setCreateForm({
+        title: "",
+        description: "",
+        date: "",
+        startTime: "",
+        endTime: "",
+        maxPlayers: 10,
+        price: 0,
+        eventType: "one-time",
+        frequency: "weekly",
+        endDate: "",
+        tournamentFormat: "single-elimination",
+        prize: "",
+        registrationDeadline: "",
+        levels: { Beginner: true, Intermediate: false, Advanced: false },
+      });
+      
+    } catch (error) {
+      console.error('Error creating session:', error);
+      alert('Failed to create session. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Open Play</h1>
-          <p className="text-sm text-muted-foreground">
-            Create sessions and manage participants. Click a card to manage matches.
-          </p>
+    <div className="space-y-6 p-6">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold text-foreground">Open Play Sessions</h1>
+          <p className="text-muted-foreground">Create and manage open play sessions for your sports community</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setCreateOpen(true)} className="shadow-sm">Create Open Play</Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center border rounded-lg p-1">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="h-8 px-3"
+            >
+              <Grid3X3 className="h-4 w-4 mr-1" />
+              Grid
+            </Button>
+            <Button
+              variant={viewMode === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("calendar")}
+              className="h-8 px-3"
+            >
+              <CalendarDays className="h-4 w-4 mr-1" />
+              Calendar
+            </Button>
+          </div>
+          <Button 
+            onClick={() => setCreateOpen(true)} 
+            className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Session
+          </Button>
         </div>
       </div>
 
-      {/* Sessions grid */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-card border border-primary/10 rounded-lg p-4 hover:shadow-lg hover:shadow-primary/10 transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Sessions</p>
+              <p className="text-2xl font-bold text-primary">{stats?.totalOccurrences || sessions.length}</p>
+            </div>
+            <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-primary" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-green-200/50 rounded-lg p-4 hover:shadow-lg hover:shadow-green-100/50 transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Active Programs</p>
+              <p className="text-2xl font-bold text-green-600">{stats?.activePrograms || 0}</p>
+            </div>
+            <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+              <Play className="h-4 w-4 text-green-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-blue-200/50 rounded-lg p-4 hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Participants</p>
+              <p className="text-2xl font-bold text-blue-600">{stats?.totalParticipants || 0}</p>
+            </div>
+            <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <Users className="h-4 w-4 text-blue-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-purple-200/50 rounded-lg p-4 hover:shadow-lg hover:shadow-purple-100/50 transition-all duration-200">
+          <div className="flex items-center justify-between">
+        <div>
+              <p className="text-sm font-medium text-muted-foreground">Upcoming Sessions</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {stats?.upcomingOccurrences || 0}
+          </p>
+        </div>
+            <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Event Type Legend */}
+      {viewMode === "calendar" && (
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          {(Object.keys(colorForType) as Array<keyof typeof colorForType>).map((k) => (
+            <span key={String(k)} className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: colorForType[k] }} />
+              <span className="text-muted-foreground">{k}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Sessions Grid View */}
+      {viewMode === "grid" && (
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {sessions.map((s) => {
           const topLevels = Array.from(new Set(s.participants.map((p) => p.level).filter(Boolean))) as LevelTag[];
+          const isActive = s.participants.length > 0;
           return (
             <div
               key={s.id}
               className={cn(
-                "group relative overflow-hidden rounded-2xl border bg-card p-4 transition-all",
-                "hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40",
-                selectedSessionId === s.id ? "ring-2 ring-primary/70" : ""
+                "group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300",
+                "hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02] hover:border-primary/30",
+                selectedSessionId === s.id ? "ring-2 ring-primary/70 shadow-lg shadow-primary/20" : "",
+                isActive ? "border-green-200/50" : "border-primary/10"
               )}
               onClick={() => navigate(`/open-play/${s.id}`, { state: { session: s } })}
               role="button"
             >
-              {/* subtle gradient accent */}
-              <div className="pointer-events-none absolute inset-x-0 -top-20 h-36 translate-y-0 bg-gradient-to-b from-primary/10 to-transparent" />
-
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-base font-semibold">{s.title}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5">{s.when}</span>
-                    <span className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5">{s.location}</span>
-                    <Badge variant="outline" className="ml-1">{s.level.join(" / ")}</Badge>
-                  </div>
-                </div>
-                <Badge className="whitespace-nowrap">Open Play</Badge>
+              {/* Enhanced gradient accent */}
+              <div className="pointer-events-none absolute inset-x-0 -top-20 h-36 translate-y-0 bg-gradient-to-b from-primary/15 to-transparent" />
+              
+              {/* Status indicator */}
+              <div className="absolute top-3 right-3">
+                <Badge 
+                  className={`px-3 py-1 text-xs font-medium ${
+                    isActive 
+                      ? "bg-green-100 text-green-800 border-green-200" 
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}
+                >
+                  {isActive ? "Active" : "Open"}
+                </Badge>
               </div>
 
-              {/* participants strip */}
-              <div className="mt-3 flex items-center justify-between">
+              <div className="p-5 space-y-4">
+                {/* Header */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {s.title}
+                  </h3>
+                  {s.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {s.description}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{s.when}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      <span>{s.location}</span>
+                    </div>
+                    {s.eventType === 'recurring' && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>Weekly</span>
+                      </div>
+                    )}
+                    {s.eventType === 'tournament' && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Star className="h-3 w-3" />
+                        <span>Single Elimination</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {s.level.map((lvl) => (
+                      <Badge
+                        key={lvl}
+                        variant="outline"
+                        className={`text-xs px-2 py-1 ${levelColor[lvl]}`}
+                      >
+                        {lvl}
+                      </Badge>
+                    ))}
+                    {s.eventType && (
+                      <Badge
+                        variant="outline"
+                        className={`text-xs px-2 py-1 ${
+                          s.eventType === 'tournament' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                          s.eventType === 'recurring' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                          'bg-gray-100 text-gray-800 border-gray-200'
+                        }`}
+                      >
+                        {s.eventType === 'tournament' ? 'Tournament' :
+                         s.eventType === 'recurring' ? 'Recurring' :
+                         'One-time'}
+                      </Badge>
+                    )}
+                  </div>
+              </div>
+
+                {/* Participants Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <AvatarsStrip
                     people={s.participants.map((p) => ({ avatar: (p as any).avatar, initials: (p as any).initials, name: p.name }))}
-                    max={3}
-                    size={28}
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{s.participants.length} / 10</span>{" "}
-                    participants
+                        max={4}
+                        size={32}
+                      />
+                      <div className="text-sm">
+                        <span className="font-medium text-foreground">{s.participants.length}</span>
+                        <span className="text-muted-foreground"> / 10 players</span>
                   </div>
                 </div>
-                {/* top skill signal (optional) */}
                 {topLevels.length > 0 && (
-                  <div className="hidden sm:flex items-center gap-1">
-                    {topLevels.slice(0, 2).map((lvl) => (
-                      <span
-                        key={lvl}
-                        className={cn(
-                          "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
-                          levelColor[lvl]
-                        )}
-                      >
-                        {lvl}
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 text-amber-500" />
+                        <span className="text-xs text-muted-foreground">
+                          {topLevels.slice(0, 2).join(", ")}
                       </span>
-                    ))}
                   </div>
                 )}
               </div>
 
-              {/* actions */}
-              <div className="mt-3 flex items-center gap-2">
+                  {/* Progress bar */}
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(s.participants.length / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 pt-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="hover:translate-y-[-1px]"
+                    className="flex-1 h-9 border-primary/20 hover:bg-primary/10 hover:border-primary/30 text-primary hover:text-primary"
                   onClick={(e) => {
                     e.stopPropagation();
                     openParticipants(s.id);
                   }}
                 >
-                  Participants
+                    <UserCheck className="h-3 w-3 mr-1" />
+                    Players
                 </Button>
                 <Button
                   size="sm"
-                  className="hover:translate-y-[-1px]"
+                    className="flex-1 h-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/open-play/${s.id}`, { state: { session: s } });
                   }}
                 >
+                    <Settings className="h-3 w-3 mr-1" />
                   Manage
                 </Button>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+      )}
+      
+      {/* Empty State */}
+      {sessions.length === 0 && (
+        <div className="text-center py-12">
+          <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No open play sessions</h3>
+          <p className="text-muted-foreground mb-4">
+            Create your first open play session to get started
+          </p>
+          <Button onClick={() => setCreateOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Session
+          </Button>
+        </div>
+      )}
 
       {/* Create Open Play overlay */}
       <ResponsiveOverlay
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="Create Open Play"
-        ariaLabel="Create Open Play"
+        title="Create Open Play Session"
+        ariaLabel="Create Open Play Session"
+        className="max-w-2xl w-[95vw]"
+        headerClassName="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20"
+        contentClassName="bg-gradient-to-b from-background to-primary/5"
         footer={
-          <div className="flex items-center justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+          <div className="flex items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+            <div className="text-sm text-muted-foreground">
+              Fill in the details to create a new open play session
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setCreateOpen(false)}
+                className="h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/30"
+              >
               Cancel
             </Button>
-            <Button type="submit" form="open-play-create-form">Create</Button>
+              <Button 
+                type="submit" 
+                form="open-play-create-form"
+                className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Session
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         }
       >
-        <form id="open-play-create-form" onSubmit={handleCreateSubmit} className="space-y-3">
-          <label className="space-y-1 block">
-            <span className="text-sm">Title</span>
+        <form id="open-play-create-form" onSubmit={handleCreateSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-primary/20">
+              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Session Details</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Set the date and time range for your session. The end time must be after the start time.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Session Title *</label>
             <Input
               value={createForm.title}
               onChange={(e) => setCreateForm((p) => ({ ...p, title: e.target.value }))}
               placeholder="e.g., Pickleball Open Play"
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="space-y-1 block">
-              <span className="text-sm">Date</span>
+                  className="h-11"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Event Type *</label>
+                <select
+                  className="w-full h-11 rounded-md border bg-background px-3 text-sm"
+                  value={createForm.eventType}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, eventType: e.target.value as "one-time" | "recurring" | "tournament" }))}
+                  required
+                >
+                  <option value="one-time">One-time Event</option>
+                  <option value="recurring">Recurring Event</option>
+                  <option value="tournament">Tournament</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Date *</label>
               <Input
                 type="date"
                 value={createForm.date}
                 onChange={(e) => setCreateForm((p) => ({ ...p, date: e.target.value }))}
-              />
-            </label>
-            <label className="space-y-1 block">
-              <span className="text-sm">Time</span>
+                  className="h-11"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Start Time *</label>
               <Input
                 type="time"
-                value={createForm.time}
-                onChange={(e) => setCreateForm((p) => ({ ...p, time: e.target.value }))}
+                value={createForm.startTime}
+                onChange={(e) => setCreateForm((p) => ({ ...p, startTime: e.target.value }))}
+                  className="h-11"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">End Time *</label>
+              <Input
+                type="time"
+                value={createForm.endTime}
+                onChange={(e) => setCreateForm((p) => ({ ...p, endTime: e.target.value }))}
+                  className="h-11"
+                  required
+                />
+              </div>
+              {/* Quick Time Presets */}
+              <div className="col-span-2 space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Quick Presets</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "1 Hour", start: "09:00", end: "10:00" },
+                    { label: "1.5 Hours", start: "09:00", end: "10:30" },
+                    { label: "2 Hours", start: "09:00", end: "11:00" },
+                    { label: "3 Hours", start: "09:00", end: "12:00" },
+                  ].map((preset) => (
+                    <Button
+                      key={preset.label}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCreateForm(prev => ({
+                        ...prev,
+                        startTime: preset.start,
+                        endTime: preset.end,
+                      }))}
+                      className="h-8 px-3 text-xs border-primary/20 hover:bg-primary/10 hover:border-primary/30"
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration Display */}
+              {createForm.startTime && createForm.endTime && (
+                <div className="col-span-2 space-y-2">
+                  <div className={`flex items-center gap-2 p-3 border rounded-lg ${
+                    createForm.startTime >= createForm.endTime 
+                      ? 'bg-red-50 border-red-200' 
+                      : 'bg-primary/5 border-primary/20'
+                  }`}>
+                    <Clock className={`h-4 w-4 ${
+                      createForm.startTime >= createForm.endTime ? 'text-red-500' : 'text-primary'
+                    }`} />
+                    <span className={`text-sm font-medium ${
+                      createForm.startTime >= createForm.endTime ? 'text-red-600' : 'text-primary'
+                    }`}>
+                      Session Duration: {(() => {
+                        if (createForm.startTime >= createForm.endTime) {
+                          return "Invalid time range";
+                        }
+                        const start = new Date(`2000-01-01T${createForm.startTime}:00`);
+                        const end = new Date(`2000-01-01T${createForm.endTime}:00`);
+                        const diffMs = end.getTime() - start.getTime();
+                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                        if (diffHours > 0) {
+                          return `${diffHours}h ${diffMinutes}m`;
+                        }
+                        return `${diffMinutes}m`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Description Field */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <textarea
+                value={createForm.description}
+                onChange={(e) => setCreateForm((p) => ({ ...p, description: e.target.value }))}
+                placeholder="Describe your event, rules, special instructions, or any additional information participants should know..."
+                className="w-full min-h-24 rounded-md border bg-background px-3 py-2 text-sm resize-none"
+                rows={4}
               />
-            </label>
+            </div>
           </div>
-          <label className="space-y-1 block">
-            <span className="text-sm">Court Location</span>
-            <Input
-              value={createForm.location}
-              onChange={(e) => setCreateForm((p) => ({ ...p, location: e.target.value }))}
-              placeholder="e.g., Court A"
-            />
-          </label>
-          <label className="space-y-1 block">
-            <span className="text-sm">Max Players</span>
-            <Input
-              value={createForm.location}
-              onChange={(e) => setCreateForm((p) => ({ ...p, location: e.target.value }))}
+
+          {/* Recurring Event Settings */}
+          {createForm.eventType === "recurring" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-primary/20">
+                <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Recurring Settings</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Frequency *</label>
+                  <select
+                    className="w-full h-11 rounded-md border bg-background px-3 text-sm"
+                    value={createForm.frequency}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, frequency: e.target.value as "daily" | "weekly" | "monthly" }))}
+                    required
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">End Date *</label>
+                  <Input
+                    type="date"
+                    value={createForm.endDate}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, endDate: e.target.value }))}
+                    className="h-11"
+                    required
+                  />
+                </div>
+              </div>
               
-            />
-          </label>
-          <label className="space-y-1 block">
-            <span className="text-sm">Price</span>
+              {/* Recurring Preview */}
+              {createForm.date && createForm.endDate && createForm.frequency && (
+                <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">Recurring Preview</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    This will create {(() => {
+                      const occurrences = generateRecurringOccurrences(
+                        createForm.date,
+                        createForm.endDate,
+                        createForm.frequency,
+                        createForm.startTime || "09:00",
+                        createForm.endTime || "11:00",
+                        10
+                      );
+                      return occurrences.length;
+                    })()} session{(() => {
+                      const occurrences = generateRecurringOccurrences(
+                        createForm.date,
+                        createForm.endDate,
+                        createForm.frequency,
+                        createForm.startTime || "09:00",
+                        createForm.endTime || "11:00",
+                        10
+                      );
+                      return occurrences.length !== 1 ? 's' : '';
+                    })()} from {new Date(createForm.date).toLocaleDateString()} to {new Date(createForm.endDate).toLocaleDateString()}
+                  </p>
+                  {(() => {
+                    const occurrences = generateRecurringOccurrences(
+                      createForm.date,
+                      createForm.endDate,
+                      createForm.frequency,
+                      createForm.startTime || "09:00",
+                      createForm.endTime || "11:00",
+                      10
+                    );
+                    if (occurrences.length >= 50) {
+                      return (
+                        <p className="text-sm text-amber-600 mt-2">
+                          ⚠️ Warning: Creating {occurrences.length} sessions may take a moment. Consider reducing the date range.
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tournament Settings */}
+          {createForm.eventType === "tournament" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-primary/20">
+                <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Star className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Tournament Settings</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Tournament Format *</label>
+                  <select
+                    className="w-full h-11 rounded-md border bg-background px-3 text-sm"
+                    value={createForm.tournamentFormat}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, tournamentFormat: e.target.value as "single-elimination" | "double-elimination" | "round-robin" }))}
+                    required
+                  >
+                    <option value="single-elimination">Single Elimination</option>
+                    <option value="double-elimination">Double Elimination</option>
+                    <option value="round-robin">Round Robin</option>
+                  </select>
+          </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Registration Deadline *</label>
             <Input
-              value={createForm.location}
-              onChange={(e) => setCreateForm((p) => ({ ...p, location: e.target.value }))}
-              
-            />
-          </label>
-          <div className="space-y-1">
-            <span className="text-sm">Levels</span>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
+                    type="datetime-local"
+                    value={createForm.registrationDeadline}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, registrationDeadline: e.target.value }))}
+                    className="h-11"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-foreground">Prize/Prize Pool</label>
+            <Input
+                    value={createForm.prize}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, prize: e.target.value }))}
+                    placeholder="e.g., ₱5,000 cash prize or Trophy + Certificate"
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Session Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-primary/20">
+              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <Settings className="h-4 w-4 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Session Settings</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Max Players</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={createForm.maxPlayers}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, maxPlayers: Number(e.target.value) }))}
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Price per Player (₱)</label>
+            <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={createForm.price}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, price: Number(e.target.value) }))}
+                  placeholder="0.00"
+                  className="h-11"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Skill Levels */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-primary/20">
+              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <Star className="h-4 w-4 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Skill Levels</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {(["Beginner", "Intermediate", "Advanced"] as LevelTag[]).map((lvl) => (
-                <label key={lvl} className="inline-flex items-center gap-2">
+                <div key={lvl} className={`space-y-2 p-3 border rounded-lg transition-all ${
+                  (createForm.levels as any)[lvl] ? 'border-primary/30 bg-primary/10' : 'border-border bg-muted/30'
+                }`}>
+                  <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     checked={(createForm.levels as any)[lvl]}
@@ -361,20 +1302,103 @@ const OpenPlayPage: React.FC = () => {
                         levels: { ...p.levels, [lvl]: e.target.checked },
                       }))
                     }
-                  />
-                  <span>{lvl}</span>
-                </label>
+                      className="h-4 w-4 text-primary rounded border-primary/30 focus:ring-primary/20"
+                    />
+                    <span className="text-sm font-medium capitalize text-foreground">{lvl}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {lvl === 'Beginner' && 'New to the sport or learning basics'}
+                    {lvl === 'Intermediate' && 'Some experience, comfortable with rules'}
+                    {lvl === 'Advanced' && 'Experienced players, competitive level'}
+                  </p>
+                </div>
               ))}
             </div>
           </div>
         </form>
       </ResponsiveOverlay>
 
+      {/* Calendar View */}
+      {viewMode === "calendar" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 rounded-xl border bg-card">
+            {/* Calendar toolbar */}
+            <div className="flex items-center justify-between p-2 border-b">
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => setCalDate(new Date())}>Today</Button>
+                <Button size="icon" variant="outline" onClick={() => setCalDate(addDays(calDate, calView === Views.MONTH ? -30 : calView === Views.WEEK ? -7 : -1))}>{"<"}</Button>
+                <Button size="icon" variant="outline" onClick={() => setCalDate(addDays(calDate, calView === Views.MONTH ? 30 : calView === Views.WEEK ? 7 : 1))}>{">"}</Button>
+                <span className="text-sm font-medium">{format(calDate, calView === Views.MONTH ? "LLLL yyyy" : "PP")}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-md border overflow-hidden">
+                  {[Views.MONTH, Views.WEEK, Views.DAY].map((v) => (
+                    <button key={v} onClick={() => setCalView(v)} className={`h-8 px-3 text-sm ${calView === v ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}>{v[0] + v.slice(1).toLowerCase()}</button>
+                  ))}
+                </div>
+                <input type="date" className="h-8 w-[160px] rounded-md border bg-background px-2 text-sm" value={format(calDate, "yyyy-MM-dd")} onChange={(e) => setCalDate(new Date(e.target.value))} />
+              </div>
+            </div>
+            <ClubCalendar
+              localizer={localizer}
+              events={rbcEvents}
+              startAccessor="start"
+              endAccessor="end"
+              selectable
+              popup
+              components={{ event: EventContent }}
+              onSelectSlot={(slot: SlotInfo) => {
+                // Pre-fill form with selected date/time range
+                setCreateForm(prev => ({
+                  ...prev,
+                  date: format(slot.start, 'yyyy-MM-dd'),
+                  startTime: format(slot.start, 'HH:mm'),
+                  endTime: format(slot.end, 'HH:mm'),
+                }));
+                setCreateOpen(true);
+              }}
+              onSelectEvent={(event: RBCEvent) => {
+                const session = (event as any).resource as OpenPlaySession;
+                navigate(`/open-play/${session.id}`, { state: { session } });
+              }}
+              views={[Views.MONTH, Views.WEEK, Views.DAY]}
+              date={calDate}
+              view={calView as any}
+              onNavigate={(d: any) => setCalDate(d)}
+              onView={(v: any) => setCalView(v)}
+              eventPropGetter={(event: RBCEvent) => {
+                const data = (event as any).resource as OpenPlaySession;
+                const bg = getEventTypeColor(data.eventType);
+                return { style: { backgroundColor: `${bg}22`, border: `1px solid ${bg}66`, color: "inherit", borderRadius: 8 } };
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            {sessions.map((session) => (
+              <div key={session.id} className="rounded-lg border bg-card p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold">{session.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{session.description}</p>
+                  </div>
+                  <Badge variant={session.eventType === 'tournament' ? 'success' : session.eventType === 'recurring' ? 'warning' : 'muted'}>{session.eventType}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{session.when} • Court TBD • {session.eventType}</p>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => navigate(`/open-play/${session.id}`, { state: { session } })}>View</Button>
+                  <Button size="sm" variant="destructive" onClick={() => setDeleteId(session.id)}>Delete</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Participants overlay */}
       <PlayerStatusPanel
         open={participantsOpen}
         onOpenChange={setParticipantsOpen}
-        title="Participants"
+        title={`Participants - ${sessions.find((s) => s.id === participantsSessionId)?.title || 'Session'}`}
         players={sessions.find((s) => s.id === participantsSessionId)?.participants ?? []}
         adminMode
         onToggleStatus={(playerId, to) => {
@@ -392,8 +1416,32 @@ const OpenPlayPage: React.FC = () => {
             )
           );
         }}
-        notice="Players shown here have joined this Open Play session."
+        notice="Manage player statuses and view session participants. Players can be moved between playing, resting, and waiting states."
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-lg border w-full max-w-sm p-4 space-y-3">
+            <h3 className="text-base font-semibold">Delete Session</h3>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete this open-play session? This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteId(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteId && handleDeleteSession(deleteId)}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
