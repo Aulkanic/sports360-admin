@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { Calendar, Clock, DollarSign, Star, Edit3, Plus, Trash2 } from 'lucide-react';
 import TimeSlotManager from '@/components/TimeSlotManager';
 import type { CourtFormData } from '@/types/court.types';
+import { getImagePreview } from '@/utils/image.utils';
 
 interface CourtFormProps {
   form: CourtFormData;
@@ -44,13 +45,6 @@ const CourtForm: React.FC<CourtFormProps> = ({ form, setForm }) => {
     }));
   };
 
-  const getImagePreview = (image: string | File): string => {
-    if (typeof image === 'string') {
-      return image;
-    } else {
-      return URL.createObjectURL(image);
-    }
-  };
 
   const isFile = (image: string | File): image is File => {
     return image instanceof File;

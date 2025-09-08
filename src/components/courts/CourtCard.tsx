@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import type { Court } from '@/types/court.types';
 import { CalendarDays, Clock, DollarSign, Edit3, MapPin, Trash2, Users } from 'lucide-react';
 import React from 'react';
+import { getImagePreview } from '@/utils/image.utils';
 
 interface CourtCardProps {
   court: Court;
@@ -12,13 +13,6 @@ interface CourtCardProps {
 }
 
 const CourtCard: React.FC<CourtCardProps> = ({ court, onEdit, onDelete, onViewBookings }) => {
-  const getImagePreview = (image: string | File): string => {
-    if (typeof image === 'string') {
-      return image;
-    } else {
-      return URL.createObjectURL(image);
-    }
-  };
 
   return (
     <div className="group bg-card border border-primary/10 rounded-xl shadow-sm hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:border-primary/30">
