@@ -5,7 +5,6 @@ import {
   createCourt,
   updateCourt,
   deleteCourt,
-  getCourtAvailability,
   type Court as APICourt,
   type CreateCourtData,
   type UpdateCourtData
@@ -228,40 +227,40 @@ export const useCourts = () => {
       
       // Convert API courts to local format for display
       const convertedCourts = await Promise.all(courtsData.map(async (court: APICourt) => {
-        // Load availability data for each court
-        let availabilityData = null;
-        try {
-          availabilityData = await getCourtAvailability(court.id);
-        } catch (error) {
-          console.error(`Error loading availability for court ${court.id}:`, error);
-        }
+        // Get availability from courtRentalOptions
+        const rentalOption = court.courtRentalOptions?.[0];
+        const availabilityData = rentalOption?.courtAvailability || [];
 
         // Convert availability data to frontend format
-        const convertedAvailability = convertAvailabilityFromAPI(availabilityData || []);
+        const convertedAvailability = convertAvailabilityFromAPI(availabilityData);
 
         return {
-          id: court.id,
+          id: court.id.toString(),
           name: court.courtName,
           location: court.hub?.sportsHubName || 'Unknown Location',
-          status: (court.status === 'available' ? 'Available' : 
-                  court.status === 'maintenance' ? 'Maintenance' :
-                  court.status === 'booked' ? 'Booked' : 'Fully Booked') as Court['status'],
+          status: (court.status === 'AVAILABLE' ? 'Available' : 
+                  court.status === 'MAINTENANCE' ? 'Maintenance' :
+                  court.status === 'BOOKED' ? 'Booked' : 'Fully Booked') as Court['status'],
           capacity: court.capacity,
-          hourlyRate: court.rental?.hourlyRate,
-          hubId: court.hubId,
-          rentalId: court.rentalId,
+          hourlyRate: rentalOption?.hourlyRate,
+          hubId: court.hubId.toString(),
           courtName: court.courtName,
-          courtNumber: court.courtNumber,
           isActive: court.isActive,
-          hub: court.hub,
-          rental: court.rental,
+          hub: court.hub ? {
+            id: court.hub.id,
+            sportsHubName: court.hub.sportsHubName,
+            streetAddress: court.hub.streetAddress,
+            city: court.hub.city,
+            stateProvince: court.hub.stateProvince,
+            zipPostalCode: court.hub.zipPostalCode
+          } : undefined,
           _count: court._count,
           // Use actual API data
-          images: court.images || [],
-          description: court.description || "",
+          images: rentalOption?.uploads?.map(upload => upload.filePath) || [],
+          description: rentalOption?.description || "",
           openingHours: "08:00 - 22:00", // This could be calculated from availability
           reservations: court._count?.bookings || 0,
-          minHours: 1,
+          minHours: rentalOption?.minimumHours || 1,
           bookings: [],
           availability: convertedAvailability
         };
@@ -280,14 +279,14 @@ export const useCourts = () => {
     setIsLoading(true);
     try {
       const createData: CreateCourtData = {
-        hubId: formData.hubId || 'default-hub-id',
+        hubId: formData.hubId || '1', // Default to hub ID 1
         courtName: formData.name,
-        courtNumber: formData.courtNumber,
-        status: formData.status.toLowerCase(),
+        status: formData.status.toUpperCase(),
         capacity: formData.capacity,
-        images: (formData.images ?? []).filter(Boolean),
+        hourlyRate: formData.hourlyRate,
+        minimumHours: formData.minHours,
         description: formData.description || undefined,
-        isActive: formData.isActive,
+        images: (formData.images ?? []).filter(Boolean),
         availability: convertAvailabilityToAPI(formData.availability)
       };
       
@@ -307,12 +306,12 @@ export const useCourts = () => {
     try {
       const updateData: UpdateCourtData = {
         courtName: formData.name,
-        courtNumber: formData.courtNumber,
-        status: formData.status.toLowerCase(),
+        status: formData.status.toUpperCase(),
         capacity: formData.capacity,
-        images: (formData.images ?? []).filter(Boolean),
+        hourlyRate: formData.hourlyRate,
+        minimumHours: formData.minHours,
         description: formData.description || undefined,
-        isActive: formData.isActive,
+        images: (formData.images ?? []).filter(Boolean),
         availability: convertAvailabilityToAPI(formData.availability)
       };
       

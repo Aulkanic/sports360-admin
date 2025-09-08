@@ -8,32 +8,22 @@ import apiClient from "@/config/api";
 
 export interface Court {
   id: string;
-  hubId: string;
-  rentalId: string;
+  hubId: number;
   courtName: string;
-  courtNumber?: string;
-  status: 'available' | 'maintenance' | 'booked' | 'unavailable';
+  status: 'AVAILABLE' | 'MAINTENANCE' | 'BOOKED' | 'UNAVAILABLE';
   capacity: number;
-  images: string[];
-  description?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   hub?: {
-    id: string;
+    id: number;
     sportsHubName: string;
-    address: string;
+    streetAddress: string;
+    city: string;
+    stateProvince: string;
+    zipPostalCode: string;
   };
-  rental?: {
-    id: string;
-    rentalName: string;
-    hourlyRate: number;
-    currency: string;
-    sport: {
-      id: string;
-      name: string;
-    };
-  };
+  courtRentalOptions?: CourtRentalOption[];
   availability?: CourtAvailability[];
   _count?: {
     bookings: number;
@@ -44,39 +34,63 @@ export interface Court {
 
 export interface CourtAvailability {
   id: string;
-  courtId: string;
   weekday: number; // 1-7 (Monday-Sunday)
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
   isAvailable: boolean;
-  price?: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
+}
+
+export interface CourtRentalOption {
+  id: string;
+  offeringName: string;
+  description?: string;
+  hourlyRate: number;
+  minimumHours: number;
+  currency: string;
+  maxPlayersPerCourt: number;
+  isActive: boolean;
+  sport: {
+    id: number;
+    name: string;
+  };
+  uploads: {
+    fileName: string;
+    filePath: string;
+  }[];
+  courtAvailability: CourtAvailability[];
 }
 
 export interface CreateCourtData {
   hubId: string;
-  rentalId?: string;
   courtName: string;
-  courtNumber?: string;
   status?: string;
   capacity?: number;
-  images?: (string | File)[];
+  hourlyRate?: number;
+  minimumHours?: number;
   description?: string;
-  isActive?: boolean;
-  availability?: any[];
+  availability?: {
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    isAvailable: boolean;
+  }[];
+  images?: (string | File)[];
 }
 
 export interface UpdateCourtData {
   courtName?: string;
-  courtNumber?: string;
   status?: string;
   capacity?: number;
-  images?: (string | File)[];
+  hourlyRate?: number;
+  minimumHours?: number;
   description?: string;
-  isActive?: boolean;
-  availability?: any[];
+  availability?: {
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    isAvailable: boolean;
+  }[];
+  images?: (string | File)[];
 }
 
 export interface CourtFilters {
@@ -155,7 +169,7 @@ export const getAllCourts = async (filters?: CourtFilters): Promise<Court[]> => 
     if (filters?.status) params.append('status', filters.status);
     if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
 
-    const response = await apiClient.get(`/admin-auth/courts?${params.toString()}`);
+    const response = await apiClient.get(`/courts/get-all-courts?${params.toString()}`);
     return response.data.data;
   } catch (error) {
     console.error('Error fetching courts:', error);
@@ -217,7 +231,7 @@ export const createCourt = async (courtData: CreateCourtData): Promise<Court> =>
         });
       }
       
-      const response = await apiClient.post('/admin-auth/courts', formData, {
+      const response = await apiClient.post('/courts/create-court', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -225,7 +239,7 @@ export const createCourt = async (courtData: CreateCourtData): Promise<Court> =>
       return response.data.data;
     } else {
       // Use regular JSON for non-file data
-      const response = await apiClient.post('/admin-auth/courts', courtData);
+      const response = await apiClient.post('/courts/create-court', courtData);
       return response.data.data;
     }
   } catch (error) {
@@ -275,7 +289,7 @@ export const updateCourt = async (courtId: string, updateData: UpdateCourtData):
         });
       }
       
-      const response = await apiClient.put(`/admin-auth/courts/${courtId}`, formData, {
+      const response = await apiClient.put(`/courts/update-court/${courtId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -283,7 +297,7 @@ export const updateCourt = async (courtId: string, updateData: UpdateCourtData):
       return response.data.data;
     } else {
       // Use regular JSON for non-file data
-      const response = await apiClient.put(`/admin-auth/courts/${courtId}`, updateData);
+      const response = await apiClient.put(`/courts/update-court/${courtId}`, updateData);
       return response.data.data;
     }
   } catch (error) {

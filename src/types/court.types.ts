@@ -46,9 +46,12 @@ export interface Court {
   courtNumber?: string;
   isActive?: boolean;
   hub?: {
-    id: string;
+    id: number;
     sportsHubName: string;
-    address: string;
+    streetAddress: string;
+    city: string;
+    stateProvince: string;
+    zipPostalCode: string;
   };
   rental?: {
     id: string;
