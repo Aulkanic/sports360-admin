@@ -25,16 +25,16 @@ export interface OpenPlayParticipant {
 
 export interface OpenPlaySession {
   id: string;
-  title: string;
+  sessionName: string;
   description?: string;
   when: string;
   location: string;
-  eventType?: "one-time" | "recurring" | "tournament";
+  eventType?: "single" | "recurring";
   level: Level[];
   participants: OpenPlayParticipant[];
   rules?: string;
   format?: string;
-  capacity?: number;
+  maxParticipants?: number;
   spotsLeft?: number;
   pricePerPlayer?: number;
   currency?: string;
@@ -47,46 +47,57 @@ export interface OpenPlaySession {
   hubName?: string;
   createdAt?: string;
   updatedAt?: string;
+  occurrences?: OpenPlayOccurrence[];
+}
+
+export interface OpenPlayOccurrence {
+  id: string;
+  sessionId: string;
+  courtId?: string;
+  occurrenceDate: string;
+  startTime: string;
+  endTime: string;
+  currentParticipants: number;
+  sessionType: string;
+  status: string;
+  court?: {
+    id: string;
+    courtName: string;
+    capacity: number;
+    status: string;
+  };
+  participants?: OpenPlayParticipant[];
 }
 
 export interface CreateOpenPlaySessionData {
-  title: string;
+  sessionTitle: string;
+  eventType: "single" | "recurring";
+  date: string;
+  startTime: string;
+  endTime: string;
   description?: string;
-  hubId: string;
-  sportId?: string;
-  courtId?: string;
-  levelId?: number;
-  formatId?: number;
+  maxPlayers: number;
   pricePerPlayer?: number;
-  currency?: string;
-  capacity?: number;
-  rules?: string;
-  format?: string;
-  schedules?: {
-    weekday: number;
-    startTime: string;
-    endTime: string;
-  }[];
-  occurrences?: {
-    date: string;
-    startTime: string;
-    endTime: string;
-    capacity?: number;
-    pricePerPlayer?: number;
-  }[];
+  skillLevels: string[];
+  courtId: string;
+  hubId: string;
+  sportsId: string;
+  recurringSettings?: {
+    frequency: "daily" | "weekly" | "monthly";
+    endDate: string;
+  };
 }
 
 export interface UpdateOpenPlaySessionData {
-  title?: string;
+  sessionTitle?: string;
   description?: string;
-  levelId?: number;
-  formatId?: number;
+  maxPlayers?: number;
   pricePerPlayer?: number;
-  currency?: string;
-  capacity?: number;
-  rules?: string;
-  format?: string;
-  statusId?: number;
+  skillLevels?: string[];
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  courtId?: string;
 }
 
 export interface OpenPlayLookup {
@@ -125,7 +136,7 @@ export const getAllOpenPlaySessions = async (filters?: {
     if (filters?.statusId) params.append('statusId', filters.statusId.toString());
     if (filters?.levelId) params.append('levelId', filters.levelId.toString());
 
-    const response = await apiClient.get(`/admin-auth/open-play/sessions?${params.toString()}`);
+    const response = await apiClient.get(`/openplay/sessions?${params.toString()}`);
     return response.data.data;
   } catch (error) {
     console.error('Error fetching open-play sessions:', error);
@@ -138,7 +149,7 @@ export const getAllOpenPlaySessions = async (filters?: {
  */
 export const getOpenPlaySessionById = async (sessionId: string): Promise<OpenPlaySession> => {
   try {
-    const response = await apiClient.get(`/admin-auth/open-play/sessions/${sessionId}`);
+    const response = await apiClient.get(`/openplay/sessions/${sessionId}`);
     return response.data.data;
   } catch (error) {
     console.error('Error fetching open-play session:', error);
@@ -151,7 +162,7 @@ export const getOpenPlaySessionById = async (sessionId: string): Promise<OpenPla
  */
 export const createOpenPlaySession = async (sessionData: CreateOpenPlaySessionData): Promise<any> => {
   try {
-    const response = await apiClient.post('/admin-auth/open-play/sessions', sessionData);
+    const response = await apiClient.post('/openplay/create-session', sessionData);
     return response.data.data;
   } catch (error) {
     console.error('Error creating open-play session:', error);
@@ -160,14 +171,14 @@ export const createOpenPlaySession = async (sessionData: CreateOpenPlaySessionDa
 };
 
 /**
- * Update an open-play program
+ * Update an open-play session
  */
-export const updateOpenPlayProgram = async (programId: string, updateData: UpdateOpenPlaySessionData): Promise<any> => {
+export const updateOpenPlaySession = async (sessionId: string, updateData: UpdateOpenPlaySessionData): Promise<any> => {
   try {
-    const response = await apiClient.put(`/admin-auth/open-play/programs/${programId}`, updateData);
+    const response = await apiClient.put(`/openplay/sessions/${sessionId}`, updateData);
     return response.data.data;
   } catch (error) {
-    console.error('Error updating open-play program:', error);
+    console.error('Error updating open-play session:', error);
     throw error;
   }
 };
@@ -177,7 +188,7 @@ export const updateOpenPlayProgram = async (programId: string, updateData: Updat
  */
 export const updateOpenPlayOccurrence = async (occurrenceId: string, updateData: any): Promise<any> => {
   try {
-    const response = await apiClient.put(`/admin-auth/open-play/occurrences/${occurrenceId}`, updateData);
+    const response = await apiClient.put(`/openplay/occurrences/${occurrenceId}`, updateData);
     return response.data.data;
   } catch (error) {
     console.error('Error updating open-play occurrence:', error);
@@ -186,13 +197,13 @@ export const updateOpenPlayOccurrence = async (occurrenceId: string, updateData:
 };
 
 /**
- * Delete an open-play program
+ * Delete an open-play session
  */
-export const deleteOpenPlayProgram = async (programId: string): Promise<void> => {
+export const deleteOpenPlaySession = async (sessionId: string): Promise<void> => {
   try {
-    await apiClient.delete(`/admin-auth/open-play/programs/${programId}`);
+    await apiClient.delete(`/openplay/sessions/${sessionId}`);
   } catch (error) {
-    console.error('Error deleting open-play program:', error);
+    console.error('Error deleting open-play session:', error);
     throw error;
   }
 };
@@ -202,7 +213,7 @@ export const deleteOpenPlayProgram = async (programId: string): Promise<void> =>
  */
 export const deleteOpenPlayOccurrence = async (occurrenceId: string): Promise<void> => {
   try {
-    await apiClient.delete(`/admin-auth/open-play/occurrences/${occurrenceId}`);
+    await apiClient.delete(`/openplay/occurrences/${occurrenceId}`);
   } catch (error) {
     console.error('Error deleting open-play occurrence:', error);
     throw error;
@@ -214,7 +225,7 @@ export const deleteOpenPlayOccurrence = async (occurrenceId: string): Promise<vo
  */
 export const getOpenPlayParticipants = async (occurrenceId: string): Promise<OpenPlayParticipant[]> => {
   try {
-    const response = await apiClient.get(`/admin-auth/open-play/occurrences/${occurrenceId}/participants`);
+    const response = await apiClient.get(`/openplay/occurrences/${occurrenceId}/participants`);
     return response.data.data;
   } catch (error) {
     console.error('Error fetching participants:', error);
@@ -232,7 +243,7 @@ export const updateParticipantStatus = async (
 ): Promise<any> => {
   try {
     const response = await apiClient.put(
-      `/admin-auth/open-play/occurrences/${occurrenceId}/participants/${userName}/status`,
+      `/openplay/occurrences/${occurrenceId}/participants/${userName}/status`,
       { statusId }
     );
     return response.data.data;
@@ -248,7 +259,7 @@ export const updateParticipantStatus = async (
 export const getOpenPlayStats = async (hubId?: string): Promise<OpenPlayStats> => {
   try {
     const params = hubId ? `?hubId=${hubId}` : '';
-    const response = await apiClient.get(`/admin-auth/open-play/stats${params}`);
+    const response = await apiClient.get(`/openplay/stats${params}`);
     return response.data.data;
   } catch (error) {
     console.error('Error fetching open-play stats:', error);
@@ -261,10 +272,40 @@ export const getOpenPlayStats = async (hubId?: string): Promise<OpenPlayStats> =
  */
 export const getOpenPlayLookup = async (): Promise<OpenPlayLookup> => {
   try {
-    const response = await apiClient.get('/admin-auth/open-play/lookup');
+    const response = await apiClient.get('/openplay/lookup');
     return response.data.data;
   } catch (error) {
     console.error('Error fetching open-play lookup data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Check court availability for open play sessions
+ */
+export const checkCourtAvailability = async (params: {
+  courtId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  excludeSessionId?: string;
+}): Promise<{ isAvailable: boolean; conflicts: any[] }> => {
+  try {
+    const queryParams = new URLSearchParams({
+      courtId: params.courtId,
+      date: params.date,
+      startTime: params.startTime,
+      endTime: params.endTime,
+    });
+    
+    if (params.excludeSessionId) {
+      queryParams.append('excludeSessionId', params.excludeSessionId);
+    }
+
+    const response = await apiClient.get(`/openplay/check-availability?${queryParams.toString()}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error checking court availability:', error);
     throw error;
   }
 };
@@ -363,4 +404,108 @@ export const getParticipantAvatar = (participant: OpenPlayParticipant): string =
   // Generate a consistent avatar based on name
   // const initials = participant.initials || generateInitials(participant.name);
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(participant.name)}&background=random&color=fff&size=100&bold=true&format=png`;
+};
+
+/**
+ * Convert backend session data to frontend format
+ */
+export const convertSessionFromAPI = (apiSession: any): OpenPlaySession => {
+  const firstOccurrence = apiSession.occurrences?.[0];
+  
+  return {
+    id: apiSession.id.toString(),
+    sessionName: apiSession.sessionName,
+    description: apiSession.description,
+    when: firstOccurrence ? formatSessionTime(
+      firstOccurrence.occurrenceDate,
+      firstOccurrence.startTime,
+      firstOccurrence.endTime
+    ) : 'TBD',
+    location: firstOccurrence?.court?.courtName || 'TBD',
+    eventType: apiSession.occurrences?.length > 1 ? 'recurring' : 'single',
+    level: ['Beginner', 'Intermediate', 'Advanced'], // Default levels, should be mapped from API
+    participants: firstOccurrence?.participants?.map(convertParticipantFromAPI) || [],
+    maxParticipants: apiSession.maxParticipants,
+    spotsLeft: apiSession.maxParticipants - (firstOccurrence?.currentParticipants || 0),
+    pricePerPlayer: apiSession.pricePerPlayer,
+    currency: 'PHP',
+    status: firstOccurrence?.status || 'scheduled',
+    courtId: firstOccurrence?.courtId?.toString(),
+    courtName: firstOccurrence?.court?.courtName,
+    sportId: apiSession.sportsId?.toString(),
+    sportName: apiSession.sport?.name,
+    hubId: apiSession.hubId?.toString(),
+    hubName: apiSession.hub?.sportsHubName,
+    createdAt: apiSession.createdAt,
+    updatedAt: apiSession.updatedAt,
+    occurrences: apiSession.occurrences?.map(convertOccurrenceFromAPI) || []
+  };
+};
+
+/**
+ * Convert backend occurrence data to frontend format
+ */
+export const convertOccurrenceFromAPI = (apiOccurrence: any): OpenPlayOccurrence => {
+  return {
+    id: apiOccurrence.id.toString(),
+    sessionId: apiOccurrence.sessionId.toString(),
+    courtId: apiOccurrence.courtId?.toString(),
+    occurrenceDate: apiOccurrence.occurrenceDate,
+    startTime: apiOccurrence.startTime,
+    endTime: apiOccurrence.endTime,
+    currentParticipants: apiOccurrence.currentParticipants,
+    sessionType: apiOccurrence.sessionType,
+    status: apiOccurrence.status,
+    court: apiOccurrence.court ? {
+      id: apiOccurrence.court.id.toString(),
+      courtName: apiOccurrence.court.courtName,
+      capacity: apiOccurrence.court.capacity,
+      status: apiOccurrence.court.status
+    } : undefined,
+    participants: apiOccurrence.participants?.map(convertParticipantFromAPI) || []
+  };
+};
+
+/**
+ * Convert backend participant data to frontend format
+ */
+export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticipant => {
+  return {
+    id: apiParticipant.id.toString(),
+    name: apiParticipant.user?.personalInfo ? 
+      `${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}` :
+      apiParticipant.user?.userName || 'Unknown',
+    level: 'Intermediate', // Default level, should be mapped from API
+    status: mapParticipantStatus(apiParticipant.status),
+    avatar: undefined,
+    initials: apiParticipant.user?.personalInfo ? 
+      generateInitials(`${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}`) :
+      undefined,
+    paymentStatus: 'Paid', // Default, should be mapped from API
+    isApproved: apiParticipant.status === 'confirmed',
+    checkedInAt: apiParticipant.checkedInAt,
+    joinedAt: apiParticipant.registeredAt,
+    notes: apiParticipant.notes
+  };
+};
+
+/**
+ * Convert frontend session data to backend format
+ */
+export const convertSessionToAPI = (frontendSession: CreateOpenPlaySessionData): any => {
+  return {
+    sessionTitle: frontendSession.sessionTitle,
+    eventType: frontendSession.eventType,
+    date: frontendSession.date,
+    startTime: frontendSession.startTime,
+    endTime: frontendSession.endTime,
+    description: frontendSession.description,
+    maxPlayers: frontendSession.maxPlayers,
+    pricePerPlayer: frontendSession.pricePerPlayer,
+    skillLevels: frontendSession.skillLevels,
+    courtId: parseInt(frontendSession.courtId),
+    hubId: parseInt(frontendSession.hubId),
+    sportsId: parseInt(frontendSession.sportsId),
+    recurringSettings: frontendSession.recurringSettings
+  };
 };

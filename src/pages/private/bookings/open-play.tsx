@@ -10,18 +10,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Calendar, Clock, MapPin, Users, Plus, Play, Settings, UserCheck, Star, TrendingUp, Grid3X3, CalendarDays } from "lucide-react";
 import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addDays, addWeeks } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addDays } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import ClubCalendar from "@/components/club-calendar";
 import {
   getAllOpenPlaySessions,
   createOpenPlaySession,
-  deleteOpenPlayOccurrence,
+  deleteOpenPlaySession,
   getOpenPlayStats,
   getOpenPlayLookup,
   type CreateOpenPlaySessionData,
   type OpenPlayStats,
-  type OpenPlayLookup
+  // type OpenPlayLookup
 } from "@/services/open-play.service";
 
 type LevelTag = "Beginner" | "Intermediate" | "Advanced";
@@ -41,132 +41,9 @@ type OpenPlaySession = {
   })[];
 };
 
-const ppl = {
-  alice: { name: "Alice Johnson", avatar: "https://static.vecteezy.com/system/resources/previews/016/295/960/non_2x/portrait-of-young-athletic-man-with-a-crossed-arms-photo.jpg", initials: "AJ", level: "Intermediate" as LevelTag },
-  bob:   { name: "Bob Smith",     avatar: "https://i.pravatar.cc/100?img=2", initials: "BS", level: "Beginner" as LevelTag },
-  carol: { name: "Carol Davis",   avatar: "https://i.pravatar.cc/100?img=3", initials: "CD", level: "Advanced" as LevelTag },
-  david: { name: "David Lee",     avatar: "https://i.pravatar.cc/100?img=4", initials: "DL", level: "Intermediate" as LevelTag },
-  ivy:   { name: "Ivy Turner",    avatar: "https://i.pravatar.cc/100?img=5", initials: "IT", level: "Beginner" as LevelTag },
-  jack:  { name: "Jack Miller",   avatar: "https://i.pravatar.cc/100?img=6", initials: "JM", level: "Advanced" as LevelTag },
-  kate:  { name: "Kate Alvarez",  avatar: "https://i.pravatar.cc/100?img=7", initials: "KA", level: "Intermediate" as LevelTag },
-  liam:  { name: "Liam Chen",     avatar: "https://i.pravatar.cc/100?img=8", initials: "LC", level: "Intermediate" as LevelTag },
-  mia:   { name: "Mia Patel",     avatar: "https://i.pravatar.cc/100?img=9", initials: "MP", level: "Beginner" as LevelTag },
-  noah:  { name: "Noah Garcia",   avatar: "https://i.pravatar.cc/100?img=10", initials: "NG", level: "Advanced" as LevelTag },
-  owen:  { name: "Owen Brooks",   avatar: "https://i.pravatar.cc/100?img=11", initials: "OB", level: "Intermediate" as LevelTag },
-  pia:   { name: "Pia Ramos",     avatar: "https://i.pravatar.cc/100?img=12", initials: "PR", level: "Advanced" as LevelTag },
-};
+// Removed dummy participant data - now using real API data
 
-const initialSessions: OpenPlaySession[] = [
-  {
-    id: "op-1",
-    title: "Morning Tennis Practice",
-    description: "Early morning tennis session for dedicated players. Focus on technique and fitness. Perfect start to your day with some quality court time.",
-    when: "Mon • 6:00–8:00 AM",
-    location: "Court 1",
-    eventType: "recurring",
-    level: ["Intermediate", "Advanced"],
-    participants: [
-      { id: "u1", name: ppl.alice.name, status: "In-Game", avatar: ppl.alice.avatar, initials: ppl.alice.initials, level: ppl.alice.level },
-      { id: "u2", name: ppl.bob.name,   status: "In-Game", avatar: ppl.bob.avatar,   initials: ppl.bob.initials,   level: ppl.bob.level },
-      { id: "u3", name: ppl.carol.name, status: "Resting", avatar: ppl.carol.avatar, initials: ppl.carol.initials, level: ppl.carol.level },
-      { id: "u4", name: ppl.david.name, status: "Resting", avatar: ppl.david.avatar, initials: ppl.david.initials, level: ppl.david.level },
-    ],
-  },
-  {
-    id: "op-2",
-    title: "Pickleball Open Play",
-    description: "Join us for a fun and friendly pickleball session! All skill levels welcome. We'll rotate players to ensure everyone gets to play. Bring your own paddle or borrow one from us.",
-    when: "Tue • 10:00–12:00 PM",
-    location: "Court 2",
-    eventType: "recurring",
-    level: ["Beginner", "Intermediate"],
-    participants: [
-      { id: "u5", name: ppl.kate.name,  status: "In-Game", avatar: ppl.kate.avatar,  initials: ppl.kate.initials,  level: ppl.kate.level },
-      { id: "u6", name: ppl.liam.name,  status: "In-Game", avatar: ppl.liam.avatar,  initials: ppl.liam.initials,  level: ppl.liam.level },
-      { id: "u7", name: ppl.ivy.name,   status: "Resting", avatar: ppl.ivy.avatar,  initials: ppl.ivy.initials,  level: ppl.ivy.level },
-      { id: "u8", name: ppl.jack.name,  status: "Resting", avatar: ppl.jack.avatar, initials: ppl.jack.initials, level: ppl.jack.level },
-      { id: "u9", name: ppl.mia.name,   status: "Resting", avatar: ppl.mia.avatar,  initials: ppl.mia.initials,  level: ppl.mia.level },
-    ],
-  },
-  {
-    id: "op-3",
-    title: "Badminton Championship",
-    description: "Annual badminton championship tournament! Single elimination format with prizes for top 3 players. Registration closes 2 days before the event. Bring your A-game and compete for the championship title!",
-    when: "Wed • 2:00–5:00 PM",
-    location: "Hall A",
-    eventType: "tournament",
-    level: ["Beginner", "Intermediate", "Advanced"],
-    participants: [
-      { id: "u10", name: ppl.noah.name, status: "In-Game", avatar: ppl.noah.avatar, initials: ppl.noah.initials, level: ppl.noah.level },
-      { id: "u11", name: ppl.owen.name, status: "In-Game", avatar: ppl.owen.avatar, initials: ppl.owen.initials, level: ppl.owen.level },
-      { id: "u12", name: ppl.pia.name,  status: "Resting", avatar: ppl.pia.avatar,  initials: ppl.pia.initials,  level: ppl.pia.level },
-      { id: "u13", name: "Guest 1",     status: "Resting", avatar: "https://i.pravatar.cc/100?img=13", initials: "G1", level: "Beginner" },
-      { id: "u14", name: "Guest 2",     status: "Resting", avatar: "https://i.pravatar.cc/100?img=14", initials: "G2", level: "Intermediate" },
-      { id: "u15", name: "Guest 3",     status: "Resting", avatar: "https://i.pravatar.cc/100?img=15", initials: "G3", level: "Advanced" },
-    ],
-  },
-  {
-    id: "op-4",
-    title: "Table Tennis Tournament",
-    description: "Weekly table tennis tournament with round-robin format. Great for competitive players looking to test their skills against others.",
-    when: "Thu • 6:00–8:00 PM",
-    location: "Hall B",
-    eventType: "tournament",
-    level: ["Intermediate", "Advanced"],
-    participants: [
-      { id: "u16", name: "Player 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=16", initials: "P1", level: "Intermediate" },
-      { id: "u17", name: "Player 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=17", initials: "P2", level: "Advanced" },
-      { id: "u18", name: "Player 3", status: "Resting", avatar: "https://i.pravatar.cc/100?img=18", initials: "P3", level: "Intermediate" },
-      { id: "u19", name: "Player 4", status: "Resting", avatar: "https://i.pravatar.cc/100?img=19", initials: "P4", level: "Advanced" },
-    ],
-  },
-  {
-    id: "op-5",
-    title: "Squash Open Session",
-    description: "Open squash session for all levels. Learn the basics or improve your game with experienced players. Equipment provided.",
-    when: "Fri • 4:00–6:00 PM",
-    location: "Court 3",
-    eventType: "one-time",
-    level: ["Beginner", "Intermediate"],
-    participants: [
-      { id: "u20", name: "Squash 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=20", initials: "S1", level: "Beginner" },
-      { id: "u21", name: "Squash 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=21", initials: "S2", level: "Intermediate" },
-      { id: "u22", name: "Squash 3", status: "Resting", avatar: "https://i.pravatar.cc/100?img=22", initials: "S3", level: "Beginner" },
-    ],
-  },
-  {
-    id: "op-6",
-    title: "Basketball 3v3 League",
-    description: "Weekly 3v3 basketball league games. Teams compete in a round-robin format with playoffs at the end of the season.",
-    when: "Sat • 9:00–11:00 AM",
-    location: "Court 4",
-    eventType: "recurring",
-    level: ["Intermediate", "Advanced"],
-    participants: [
-      { id: "u23", name: "Ball 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=23", initials: "B1", level: "Intermediate" },
-      { id: "u24", name: "Ball 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=24", initials: "B2", level: "Advanced" },
-      { id: "u25", name: "Ball 3", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=25", initials: "B3", level: "Intermediate" },
-      { id: "u26", name: "Ball 4", status: "Resting", avatar: "https://i.pravatar.cc/100?img=26", initials: "B4", level: "Advanced" },
-      { id: "u27", name: "Ball 5", status: "Resting", avatar: "https://i.pravatar.cc/100?img=27", initials: "B5", level: "Intermediate" },
-      { id: "u28", name: "Ball 6", status: "Resting", avatar: "https://i.pravatar.cc/100?img=28", initials: "B6", level: "Advanced" },
-    ],
-  },
-  {
-    id: "op-7",
-    title: "Volleyball Beach Night",
-    description: "Beach volleyball session with sand court setup. Fun and relaxed atmosphere perfect for beginners and intermediate players.",
-    when: "Sun • 3:00–5:00 PM",
-    location: "Beach Court",
-    eventType: "one-time",
-    level: ["Beginner", "Intermediate"],
-    participants: [
-      { id: "u29", name: "Volley 1", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=29", initials: "V1", level: "Beginner" },
-      { id: "u30", name: "Volley 2", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=30", initials: "V2", level: "Intermediate" },
-      { id: "u31", name: "Volley 3", status: "In-Game", avatar: "https://i.pravatar.cc/100?img=31", initials: "V3", level: "Beginner" },
-      { id: "u32", name: "Volley 4", status: "Resting", avatar: "https://i.pravatar.cc/100?img=32", initials: "V4", level: "Intermediate" },
-    ],
-  },
-];
+// Removed dummy data - now using real API data
 
 const levelColor: Record<LevelTag, string> = {
   Beginner: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -211,13 +88,14 @@ function AvatarsStrip({
 
 const OpenPlayPage: React.FC = () => {
   const [sessions, setSessions] = useState<OpenPlaySession[]>([]);
+  const [originalApiData, setOriginalApiData] = useState<any[]>([]); // Store original API data for calendar
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
   const [calDate, setCalDate] = useState<Date>(new Date());
   const [calView, setCalView] = useState<string>(Views.MONTH);
   const [stats, setStats] = useState<OpenPlayStats | null>(null);
-  const [lookup, setLookup] = useState<OpenPlayLookup | null>(null);
+  // const [lookup, setLookup] = useState<OpenPlayLookup | null>(null);
   const navigate = useNavigate();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -248,34 +126,96 @@ const OpenPlayPage: React.FC = () => {
   const loadSessions = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log('Loading open play sessions...');
+      
       const [sessionsData, statsData, lookupData] = await Promise.all([
-        getAllOpenPlaySessions(),
-        getOpenPlayStats(),
-        getOpenPlayLookup()
+        getAllOpenPlaySessions().catch(err => {
+          console.error('Failed to fetch sessions:', err);
+          return []; // Return empty array on error
+        }),
+        getOpenPlayStats().catch(err => {
+          console.error('Failed to fetch stats:', err);
+          return null; // Return null on error
+        }),
+        getOpenPlayLookup().catch(err => {
+          console.error('Failed to fetch lookup:', err);
+          return null; // Return null on error
+        })
       ]);
       
+      console.log('API Response - Sessions:', sessionsData);
+      console.log('API Response - Stats:', statsData);
+      console.log('API Response - Lookup:', lookupData);
+      
+      // Ensure sessionsData is an array
+      const safeSessionsData = Array.isArray(sessionsData) ? sessionsData : [];
+      console.log('Safe sessions data:', safeSessionsData);
+      
       setStats(statsData);
-      setLookup(lookupData);
+      // setLookup(lookupData); // Commented out since lookup is not used
+      setOriginalApiData(safeSessionsData); // Store original API data
       
       // Convert API sessions to frontend format
-      const convertedSessions: OpenPlaySession[] = sessionsData.map(session => ({
-        id: session.id,
-        title: session.title,
-        description: session.description,
-        when: session.when,
-        location: session.location,
-        eventType: session.eventType,
-        level: session.level,
-        participants: session.participants.map(p => ({
-          id: p.id,
-          name: p.name,
-          status: p.status === 'In-Game' ? 'In-Game' : 'Resting', // Map to PlayerItem status
-          avatar: p.avatar,
-          initials: p.initials,
-          level: p.level
-        }))
-      }));
+      const convertedSessions: OpenPlaySession[] = safeSessionsData.map((apiSession: any) => {
+        const firstOccurrence = apiSession.occurrences?.[0];
+        
+        // Format the time display
+        let whenDisplay = 'TBD';
+        if (firstOccurrence) {
+          const date = new Date(firstOccurrence.occurrenceDate);
+          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayName = dayNames[date.getDay()];
+          
+          const start = new Date(`2000-01-01T${firstOccurrence.startTime}:00`);
+          const end = new Date(`2000-01-01T${firstOccurrence.endTime}:00`);
+          
+          const startFormatted = start.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: false 
+          });
+          const endFormatted = end.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: false 
+          });
+          
+          whenDisplay = `${dayName} • ${startFormatted}–${endFormatted}`;
+        }
+        
+        return {
+          id: apiSession.id.toString(),
+          title: apiSession.sessionName, // Map sessionName to title for frontend
+          description: apiSession.description,
+          when: whenDisplay,
+          location: firstOccurrence?.court?.courtName || 'TBD',
+          eventType: apiSession.occurrences?.length > 1 ? 'recurring' : 'one-time', // Map based on occurrences count
+          level: ['Beginner', 'Intermediate', 'Advanced'], // Default levels
+          participants: firstOccurrence?.participants?.map((p: any) => ({
+            id: p.id.toString(),
+            name: p.user?.personalInfo ? 
+              `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}` :
+              p.user?.userName || 'Unknown',
+            status: p.status === 'confirmed' ? 'In-Game' : 'Resting', // Map to PlayerItem status
+            avatar: undefined,
+            initials: p.user?.personalInfo ? 
+              `${p.user.personalInfo.firstName?.[0]}${p.user.personalInfo.lastName?.[0]}` :
+              p.user?.userName?.[0] || '?',
+            level: 'Intermediate' as LevelTag // Default level
+          })) || [],
+          // Add additional data for more informative cards
+          maxParticipants: apiSession.maxParticipants || 10,
+          pricePerPlayer: apiSession.pricePerPlayer || 150,
+          sessionType: apiSession.sessionType || 'regular',
+          isActive: apiSession.isActive,
+          createdAt: apiSession.createdAt,
+          hub: apiSession.hub,
+          sport: apiSession.sport,
+          totalOccurrences: apiSession.occurrences?.length || 0
+        };
+      });
       
+      console.log('Converted sessions:', convertedSessions);
       setSessions(convertedSessions);
       
       // Set first session as selected if none selected
@@ -284,11 +224,11 @@ const OpenPlayPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading open-play sessions:', error);
-      // Fallback to mock data on error
-      setSessions(initialSessions);
-      if (!selectedSessionId && initialSessions.length > 0) {
-        setSelectedSessionId(initialSessions[0].id);
-      }
+      console.error('Error details:', error);
+      // Show empty state on error instead of fallback data
+      setSessions([]);
+      setOriginalApiData([]);
+      setSelectedSessionId(null);
     } finally {
       setIsLoading(false);
     }
@@ -298,6 +238,30 @@ const OpenPlayPage: React.FC = () => {
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  // Test API endpoint directly
+  const testAPI = async () => {
+    try {
+      console.log('Testing API endpoint directly...');
+      const response = await fetch('http://localhost:5000/api/openplay/sessions', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      console.log('Direct API test result:', data);
+    } catch (error) {
+      console.error('Direct API test error:', error);
+    }
+  };
+
+  // Add test button for debugging
+  useEffect(() => {
+    // Add test function to window for debugging
+    (window as any).testOpenPlayAPI = testAPI;
+    console.log('Test function available at window.testOpenPlayAPI()');
+  }, []);
 
   // React Big Calendar localizer
   const locales = {} as any;
@@ -320,129 +284,50 @@ const OpenPlayPage: React.FC = () => {
     return colorForType[eventType || 'one-time'] || '#6b7280';
   };
 
-  // Convert sessions to calendar events (matching events page structure)
+  // Convert sessions to calendar events using real API data
   const rbcEvents: RBCEvent[] = useMemo(() => {
-    const expanded: OpenPlaySession[] = [];
-    sessions.forEach((session) => {
-      if (session.eventType === 'recurring') {
-        // Generate recurring events for the next 8 weeks
-        const occurrences = 8;
-        const baseStart = new Date();
-        const baseEnd = new Date();
-        
-        // Set base times based on session ID
-        if (session.id === 'op-1') {
-          baseStart.setHours(6, 0, 0, 0);  // 6:00 AM
-          baseEnd.setHours(8, 0, 0, 0);    // 8:00 AM
-        } else if (session.id === 'op-2') {
-          baseStart.setHours(10, 0, 0, 0); // 10:00 AM
-          baseEnd.setHours(12, 0, 0, 0);   // 12:00 PM
-        } else if (session.id === 'op-6') {
-          baseStart.setHours(9, 0, 0, 0);  // 9:00 AM
-          baseEnd.setHours(11, 0, 0, 0);   // 11:00 AM
-        }
-        
-        for (let i = 0; i < occurrences; i++) {
-          const dateStart = addWeeks(baseStart, i);
-          const dateEnd = addWeeks(baseEnd, i);
-          expanded.push({ ...session, id: `${session.id}-r${i + 1}`, when: `${format(dateStart, 'EEE')} • ${format(dateStart, 'HH:mm')}–${format(dateEnd, 'HH:mm')}` });
-        }
-      } else {
-        // Single occurrence events
-        const today = new Date();
-        const sessionDate = new Date(today);
-        
-        if (session.id === 'op-1') sessionDate.setDate(today.getDate() + 1);      // Monday
-        else if (session.id === 'op-2') sessionDate.setDate(today.getDate() + 2);  // Tuesday
-        else if (session.id === 'op-3') sessionDate.setDate(today.getDate() + 3);  // Wednesday
-        else if (session.id === 'op-4') sessionDate.setDate(today.getDate() + 4);  // Thursday
-        else if (session.id === 'op-5') sessionDate.setDate(today.getDate() + 5);  // Friday
-        else if (session.id === 'op-6') sessionDate.setDate(today.getDate() + 6);  // Saturday
-        else if (session.id === 'op-7') sessionDate.setDate(today.getDate() + 7);  // Sunday
-        
-        const startDateTime = new Date(sessionDate);
-        const endDateTime = new Date(sessionDate);
-        
-        if (session.id === 'op-1') {
-          startDateTime.setHours(6, 0, 0, 0);   // 6:00 AM
-          endDateTime.setHours(8, 0, 0, 0);     // 8:00 AM
-        } else if (session.id === 'op-2') {
-          startDateTime.setHours(10, 0, 0, 0);  // 10:00 AM
-          endDateTime.setHours(12, 0, 0, 0);    // 12:00 PM
-        } else if (session.id === 'op-3') {
-          startDateTime.setHours(14, 0, 0, 0);  // 2:00 PM
-          endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
-        } else if (session.id === 'op-4') {
-          startDateTime.setHours(18, 0, 0, 0);  // 6:00 PM
-          endDateTime.setHours(20, 0, 0, 0);    // 8:00 PM
-        } else if (session.id === 'op-5') {
-          startDateTime.setHours(16, 0, 0, 0);  // 4:00 PM
-          endDateTime.setHours(18, 0, 0, 0);    // 6:00 PM
-        } else if (session.id === 'op-6') {
-          startDateTime.setHours(9, 0, 0, 0);   // 9:00 AM
-          endDateTime.setHours(11, 0, 0, 0);    // 11:00 AM
-        } else if (session.id === 'op-7') {
-          startDateTime.setHours(15, 0, 0, 0);  // 3:00 PM
-          endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
-        }
-        
-        expanded.push({ ...session, when: `${format(startDateTime, 'EEE')} • ${format(startDateTime, 'HH:mm')}–${format(endDateTime, 'HH:mm')}` });
+    const events: RBCEvent[] = [];
+    
+    // Use original API data to create events for all occurrences
+    originalApiData.forEach((apiSession) => {
+      if (apiSession.occurrences && apiSession.occurrences.length > 0) {
+        apiSession.occurrences.forEach((occurrence: any) => {
+          const occurrenceDate = new Date(occurrence.occurrenceDate);
+          const startDateTime = new Date(occurrenceDate);
+          const endDateTime = new Date(occurrenceDate);
+          
+          // Parse time strings (e.g., "18:00", "21:00")
+          const [startHour, startMinute] = occurrence.startTime.split(':').map(Number);
+          const [endHour, endMinute] = occurrence.endTime.split(':').map(Number);
+          
+          startDateTime.setHours(startHour, startMinute, 0, 0);
+          endDateTime.setHours(endHour, endMinute, 0, 0);
+          
+          // Find the corresponding converted session for the resource
+          const convertedSession = sessions.find(s => s.id === apiSession.id.toString());
+          
+          events.push({
+            id: `${apiSession.id}-${occurrence.id}`,
+            title: apiSession.sessionName,
+        start: startDateTime,
+        end: endDateTime,
+            resource: convertedSession || {
+              id: apiSession.id.toString(),
+              title: apiSession.sessionName,
+              eventType: apiSession.occurrences.length > 1 ? 'recurring' : 'one-time',
+              participants: [],
+              level: ['Beginner', 'Intermediate', 'Advanced'],
+              when: '',
+              location: occurrence.court?.courtName || 'TBD',
+              description: apiSession.description
+            },
+          });
+        });
       }
     });
     
-    return expanded.map((session) => {
-      // Parse the session date and time from the 'when' field
-      // const [, timeStr] = session.when.split(' • ');
-      // const [,] = timeStr.split('–');
-      
-      // Create date objects based on session ID mapping
-      const today = new Date();
-      const sessionDate = new Date(today);
-      
-      if (session.id.includes('op-1')) sessionDate.setDate(today.getDate() + 1);      // Monday
-      else if (session.id.includes('op-2')) sessionDate.setDate(today.getDate() + 2);  // Tuesday
-      else if (session.id.includes('op-3')) sessionDate.setDate(today.getDate() + 3);  // Wednesday
-      else if (session.id.includes('op-4')) sessionDate.setDate(today.getDate() + 4);  // Thursday
-      else if (session.id.includes('op-5')) sessionDate.setDate(today.getDate() + 5);  // Friday
-      else if (session.id.includes('op-6')) sessionDate.setDate(today.getDate() + 6);  // Saturday
-      else if (session.id.includes('op-7')) sessionDate.setDate(today.getDate() + 7);  // Sunday
-      
-      const startDateTime = new Date(sessionDate);
-      const endDateTime = new Date(sessionDate);
-      
-      // Set times based on session ID
-      if (session.id.includes('op-1')) {
-        startDateTime.setHours(6, 0, 0, 0);   // 6:00 AM
-        endDateTime.setHours(8, 0, 0, 0);     // 8:00 AM
-      } else if (session.id.includes('op-2')) {
-        startDateTime.setHours(10, 0, 0, 0);  // 10:00 AM
-        endDateTime.setHours(12, 0, 0, 0);    // 12:00 PM
-      } else if (session.id.includes('op-3')) {
-        startDateTime.setHours(14, 0, 0, 0);  // 2:00 PM
-        endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
-      } else if (session.id.includes('op-4')) {
-        startDateTime.setHours(18, 0, 0, 0);  // 6:00 PM
-        endDateTime.setHours(20, 0, 0, 0);    // 8:00 PM
-      } else if (session.id.includes('op-5')) {
-        startDateTime.setHours(16, 0, 0, 0);  // 4:00 PM
-        endDateTime.setHours(18, 0, 0, 0);    // 6:00 PM
-      } else if (session.id.includes('op-6')) {
-        startDateTime.setHours(9, 0, 0, 0);   // 9:00 AM
-        endDateTime.setHours(11, 0, 0, 0);    // 11:00 AM
-      } else if (session.id.includes('op-7')) {
-        startDateTime.setHours(15, 0, 0, 0);  // 3:00 PM
-        endDateTime.setHours(17, 0, 0, 0);    // 5:00 PM
-      }
-      
-      return {
-        id: session.id,
-        title: session.title,
-        start: startDateTime,
-        end: endDateTime,
-        resource: session,
-      };
-    });
-  }, [sessions]);
+    return events;
+  }, [originalApiData, sessions]);
 
   // Event content component (matching events page)
   const EventContent: React.FC<{ event: RBCEvent }> = ({ event }) => {
@@ -464,7 +349,7 @@ const OpenPlayPage: React.FC = () => {
   const handleDeleteSession = async (sessionId: string) => {
     try {
       setIsLoading(true);
-      await deleteOpenPlayOccurrence(sessionId);
+      await deleteOpenPlaySession(sessionId);
       await loadSessions(); // Reload sessions to get updated data
       setDeleteId(null);
     } catch (error) {
@@ -560,10 +445,10 @@ const OpenPlayPage: React.FC = () => {
       }
 
       // Map levels to level IDs (assuming lookup data is available)
-      const levelIds = levels.map(level => {
-        const levelRef = lookup?.levels.find(l => l.description === level);
-        return levelRef?.id || 1; // Default to first level if not found
-      });
+      // const levelIds = levels.map(level => {
+      //   const levelRef = lookup?.levels.find(l => l.description === level);
+      //   return levelRef?.id || 1; // Default to first level if not found
+      // });
 
       // Generate occurrences based on event type
       let occurrences: any[] = [];
@@ -605,14 +490,22 @@ const OpenPlayPage: React.FC = () => {
 
       // Create session data for API
       const sessionData: CreateOpenPlaySessionData = {
-        title: createForm.title.trim(),
+        sessionTitle: createForm.title.trim(),
+        eventType: createForm.eventType === 'one-time' ? 'single' : createForm.eventType === 'recurring' ? 'recurring' : 'single', // Map tournament to single for now
+        date: createForm.date,
+        startTime: createForm.startTime,
+        endTime: createForm.endTime,
         description: createForm.description.trim(),
-        hubId: "1", // TODO: Get from user context or selection
-        levelId: levelIds[0], // Use first level for now
+        maxPlayers: createForm.maxPlayers || 10,
         pricePerPlayer: createForm.price || 0,
-        currency: "PHP",
-        capacity: createForm.maxPlayers || 10,
-        occurrences: occurrences
+        skillLevels: levels.map(level => level.toLowerCase()), // Convert to lowercase for API
+        courtId: "1", // TODO: Get from user context or selection
+        hubId: "1", // TODO: Get from user context or selection
+        sportsId: "1", // TODO: Get from user context or selection
+        recurringSettings: createForm.eventType === 'recurring' ? {
+          frequency: createForm.frequency,
+          endDate: createForm.endDate
+        } : undefined
       };
 
       // Create session via API
@@ -693,7 +586,7 @@ const OpenPlayPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Sessions</p>
-              <p className="text-2xl font-bold text-primary">{stats?.totalOccurrences || sessions.length}</p>
+              <p className="text-2xl font-bold text-primary">{stats?.totalOccurrences || originalApiData.reduce((total, session) => total + (session.occurrences?.length || 0), 0)}</p>
             </div>
             <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
               <Calendar className="h-4 w-4 text-primary" />
@@ -704,7 +597,7 @@ const OpenPlayPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Active Programs</p>
-              <p className="text-2xl font-bold text-green-600">{stats?.activePrograms || 0}</p>
+              <p className="text-2xl font-bold text-green-600">{stats?.activePrograms || originalApiData.filter(session => session.isActive).length}</p>
             </div>
             <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
               <Play className="h-4 w-4 text-green-600" />
@@ -715,7 +608,7 @@ const OpenPlayPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Participants</p>
-              <p className="text-2xl font-bold text-blue-600">{stats?.totalParticipants || 0}</p>
+              <p className="text-2xl font-bold text-blue-600">{stats?.totalParticipants || originalApiData.reduce((total, session) => total + (session.occurrences?.reduce((occTotal: number, occ: any) => occTotal + (occ.participants?.length || 0), 0) || 0), 0)}</p>
             </div>
             <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
               <Users className="h-4 w-4 text-blue-600" />
@@ -727,7 +620,7 @@ const OpenPlayPage: React.FC = () => {
         <div>
               <p className="text-sm font-medium text-muted-foreground">Upcoming Sessions</p>
               <p className="text-2xl font-bold text-purple-600">
-                {stats?.upcomingOccurrences || 0}
+                {stats?.upcomingOccurrences || originalApiData.reduce((total, session) => total + (session.occurrences?.filter((occ: any) => new Date(occ.occurrenceDate) > new Date()).length || 0), 0)}
           </p>
         </div>
             <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -760,9 +653,10 @@ const OpenPlayPage: React.FC = () => {
               key={s.id}
               className={cn(
                 "group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300",
-                "hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02] hover:border-primary/30",
-                selectedSessionId === s.id ? "ring-2 ring-primary/70 shadow-lg shadow-primary/20" : "",
-                isActive ? "border-green-200/50" : "border-primary/10"
+                "hover:shadow-xl hover:shadow-primary/15 hover:scale-[1.02] hover:border-primary/40",
+                "hover:-translate-y-1",
+                selectedSessionId === s.id ? "ring-2 ring-primary/70 shadow-xl shadow-primary/25 scale-[1.02]" : "",
+                isActive ? "border-green-200/50 bg-green-50/30" : "border-primary/10"
               )}
               onClick={() => navigate(`/open-play/${s.id}`, { state: { session: s } })}
               role="button"
@@ -771,7 +665,7 @@ const OpenPlayPage: React.FC = () => {
               <div className="pointer-events-none absolute inset-x-0 -top-20 h-36 translate-y-0 bg-gradient-to-b from-primary/15 to-transparent" />
               
               {/* Status indicator */}
-              <div className="absolute top-3 right-3">
+              <div className="absolute top-3 right-3 flex flex-col gap-1">
                 <Badge 
                   className={`px-3 py-1 text-xs font-medium ${
                     isActive 
@@ -779,128 +673,233 @@ const OpenPlayPage: React.FC = () => {
                       : "bg-muted text-muted-foreground border-border"
                   }`}
                 >
-                  {isActive ? "Active" : "Open"}
+                  {isActive ? "🟢 Active" : "🔵 Open"}
                 </Badge>
+                {s.participants.length >= 8 && (
+                  <Badge className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
+                    🔥 Popular
+                  </Badge>
+                )}
               </div>
 
               <div className="p-5 space-y-4">
                 {/* Header */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                     {s.title}
                   </h3>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+                      <Calendar className="h-3 w-3" />
+                      <span>ID: {s.id}</span>
+                    </div>
+                  </div>
+                  
                   {s.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                       {s.description}
                     </p>
                   )}
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>{s.when}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>{s.location}</span>
-                    </div>
-                    {s.eventType === 'recurring' && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>Weekly</span>
-                      </div>
-                    )}
-                    {s.eventType === 'tournament' && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Star className="h-3 w-3" />
-                        <span>Single Elimination</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {s.level.map((lvl) => (
-                      <Badge
-                        key={lvl}
-                        variant="outline"
-                        className={`text-xs px-2 py-1 ${levelColor[lvl]}`}
-                      >
-                        {lvl}
-                      </Badge>
-                    ))}
+
+                  {/* Event Type & Level Badges */}
+                  <div className="flex flex-wrap gap-2">
                     {s.eventType && (
                       <Badge
                         variant="outline"
-                        className={`text-xs px-2 py-1 ${
+                        className={`text-xs px-3 py-1 font-medium ${
                           s.eventType === 'tournament' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                           s.eventType === 'recurring' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                           'bg-gray-100 text-gray-800 border-gray-200'
                         }`}
                       >
-                        {s.eventType === 'tournament' ? 'Tournament' :
-                         s.eventType === 'recurring' ? 'Recurring' :
-                         'One-time'}
+                        {s.eventType === 'tournament' ? '🏆 Tournament' :
+                         s.eventType === 'recurring' ? '🔄 Recurring' :
+                         '📅 One-time'}
                       </Badge>
                     )}
+                    {s.level.map((lvl) => (
+                      <Badge
+                        key={lvl}
+                        variant="outline"
+                        className={`text-xs px-3 py-1 font-medium ${levelColor[lvl]}`}
+                      >
+                        {lvl}
+                      </Badge>
+                    ))}
+                    </div>
+
+                  {/* Session Details Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <div className="font-medium text-foreground">Schedule</div>
+                        <div className="text-xs">{s.when}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4 text-green-500" />
+                      <div>
+                        <div className="font-medium text-foreground">Location</div>
+                        <div className="text-xs">{s.location}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hub Information */}
+                  {(s as any).hub && (
+                    <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-200/30">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <div>
+                          <div className="font-medium text-blue-900">{(s as any).hub.sportsHubName}</div>
+                          <div className="text-xs text-blue-700">
+                            {(s as any).hub.city}, {(s as any).hub.stateProvince}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Info */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/30 rounded-lg p-2">
+                    <div className="flex items-center gap-4">
+                    {s.eventType === 'recurring' && (
+                        <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Weekly</span>
+                      </div>
+                    )}
+                    {s.eventType === 'tournament' && (
+                        <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3" />
+                        <span>Single Elimination</span>
+                      </div>
+                    )}
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>Max {(s as any).maxParticipants || 10} players</span>
+                  </div>
+                    </div>
+                    <div className="text-xs font-medium text-foreground">
+                      ₱{(s as any).pricePerPlayer || 150} per player
+                    </div>
                   </div>
               </div>
 
                 {/* Participants Section */}
-                <div className="space-y-3">
+                <div className="space-y-3 border-t pt-3">
                   <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                   <AvatarsStrip
                     people={s.participants.map((p) => ({ avatar: (p as any).avatar, initials: (p as any).initials, name: p.name }))}
                         max={4}
                         size={32}
                       />
                       <div className="text-sm">
-                        <span className="font-medium text-foreground">{s.participants.length}</span>
-                        <span className="text-muted-foreground"> / 10 players</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground text-lg">{s.participants.length}</span>
+                          <span className="text-muted-foreground">/ {(s as any).maxParticipants || 10} players</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {s.participants.length === 0 ? 'No participants yet' : 
+                           s.participants.length === 1 ? '1 participant' : 
+                           `${s.participants.length} participants`}
+                        </div>
                   </div>
                 </div>
                 {topLevels.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md">
+                        <Star className="h-3 w-3 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-800">
                           {topLevels.slice(0, 2).join(", ")}
                       </span>
                   </div>
                 )}
               </div>
 
-                  {/* Progress bar */}
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(s.participants.length / 10) * 100}%` }}
-                    />
+                  {/* Enhanced Progress bar with percentage */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Registration Progress</span>
+                      <span className="font-medium text-foreground">
+                        {Math.round((s.participants.length / ((s as any).maxParticipants || 10)) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2.5">
+                      <div 
+                        className={`h-2.5 rounded-full transition-all duration-500 ${
+                          s.participants.length >= 8 ? 'bg-green-500' :
+                          s.participants.length >= 5 ? 'bg-yellow-500' :
+                          s.participants.length >= 2 ? 'bg-blue-500' :
+                          'bg-gray-400'
+                        }`}
+                        style={{ width: `${(s.participants.length / ((s as any).maxParticipants || 10)) * 100}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {s.participants.length < 2 ? 'Need at least 2 players' :
+                       s.participants.length < 5 ? 'Good start!' :
+                       s.participants.length < 8 ? 'Almost full!' :
+                       'Session is full!'}
+                    </div>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex items-center gap-2 pt-3 border-t">
                 <Button
                   size="sm"
                   variant="outline"
-                    className="flex-1 h-9 border-primary/20 hover:bg-primary/10 hover:border-primary/30 text-primary hover:text-primary"
+                    className="flex-1 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/30 text-primary hover:text-primary transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
                     openParticipants(s.id);
                   }}
                 >
-                    <UserCheck className="h-3 w-3 mr-1" />
-                    Players
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium">Players</div>
+                      <div className="text-xs opacity-75">View & Manage</div>
+                    </div>
                 </Button>
                 <Button
                   size="sm"
-                    className="flex-1 h-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25"
+                    className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/open-play/${s.id}`, { state: { session: s } });
                   }}
                 >
-                    <Settings className="h-3 w-3 mr-1" />
-                  Manage
+                    <Settings className="h-4 w-4 mr-2" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium">Manage</div>
+                      <div className="text-xs opacity-75">Edit Session</div>
+                    </div>
                 </Button>
+                </div>
+
+                {/* Quick Stats Footer */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${(s as any).isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                      <span>{(s as any).isActive ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{(s as any).totalOccurrences || 0} sessions</span>
+                    </div>
+                    {(s as any).sport && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <span>{(s as any).sport.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs font-medium text-foreground">
+                    {s.eventType === 'recurring' ? 'Ongoing' : 'Scheduled'}
+                  </div>
                 </div>
               </div>
             </div>
