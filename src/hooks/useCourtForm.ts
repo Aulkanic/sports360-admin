@@ -27,7 +27,6 @@ export const useCourtForm = () => {
       hourlyRate: court.hourlyRate ?? 0,
       minHours: court.minHours ?? 1,
       hubId: court.hubId || "",
-      rentalId: court.rentalId || "",
       courtNumber: court.courtNumber || "",
       isActive: court.isActive ?? true,
       availability: court.availability ?? getDefaultFormData().availability,

@@ -102,7 +102,6 @@ export const getDefaultFormData = (): CourtFormData => ({
   hourlyRate: 0,
   minHours: 1,
   hubId: "",
-  rentalId: "",
   courtNumber: "",
   isActive: true,
   availability: {

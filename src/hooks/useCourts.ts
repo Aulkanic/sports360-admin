@@ -10,7 +10,7 @@ import {
   type CreateCourtData,
   type UpdateCourtData
 } from '@/services/court.service';
-import { convertAvailabilityFromAPI, convertAvailabilityToAPI, getDefaultFormData } from '@/utils/court.utils';
+import { convertAvailabilityFromAPI, convertAvailabilityToAPI } from '@/utils/court.utils';
 
 const initialCourts: Court[] = [
   {
@@ -281,7 +281,6 @@ export const useCourts = () => {
     try {
       const createData: CreateCourtData = {
         hubId: formData.hubId || 'default-hub-id',
-        rentalId: formData.rentalId || 'default-rental-id',
         courtName: formData.name,
         courtNumber: formData.courtNumber,
         status: formData.status.toLowerCase(),

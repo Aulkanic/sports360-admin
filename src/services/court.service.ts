@@ -57,7 +57,7 @@ export interface CourtAvailability {
 
 export interface CreateCourtData {
   hubId: string;
-  rentalId: string;
+  rentalId?: string;
   courtName: string;
   courtNumber?: string;
   status?: string;

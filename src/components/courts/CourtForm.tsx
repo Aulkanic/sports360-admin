@@ -13,7 +13,7 @@ interface CourtFormProps {
   isLoading: boolean;
 }
 
-const CourtForm: React.FC<CourtFormProps> = ({ form, setForm, editing, isLoading }) => {
+const CourtForm: React.FC<CourtFormProps> = ({ form, setForm }) => {
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     setForm((p) => ({
       ...p,
@@ -95,16 +95,6 @@ const CourtForm: React.FC<CourtFormProps> = ({ form, setForm, editing, isLoading
               value={form.hubId || ''}
               onChange={(e) => setForm((p) => ({ ...p, hubId: e.target.value }))}
               placeholder="Enter hub ID"
-              className="h-11"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Rental ID *</label>
-            <Input
-              value={form.rentalId || ''}
-              onChange={(e) => setForm((p) => ({ ...p, rentalId: e.target.value }))}
-              placeholder="Enter rental ID"
               className="h-11"
               required
             />

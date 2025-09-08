@@ -361,6 +361,6 @@ export const getParticipantAvatar = (participant: OpenPlayParticipant): string =
   }
   
   // Generate a consistent avatar based on name
-  const initials = participant.initials || generateInitials(participant.name);
+  // const initials = participant.initials || generateInitials(participant.name);
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(participant.name)}&background=random&color=fff&size=100&bold=true&format=png`;
 };

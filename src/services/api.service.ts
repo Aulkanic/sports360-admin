@@ -1,5 +1,4 @@
 import apiClient from '@/config/api';
-import { API_CONFIG } from '@/config/api';
 
 // Generic API service for common operations
 export class ApiService {

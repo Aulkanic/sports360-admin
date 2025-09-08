@@ -1,8 +1,8 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, Users, DollarSign, Edit3, Trash2, CalendarDays } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Court } from '@/types/court.types';
+import { CalendarDays, Clock, DollarSign, Edit3, MapPin, Trash2, Users } from 'lucide-react';
+import React from 'react';
 
 interface CourtCardProps {
   court: Court;
@@ -24,17 +24,11 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, onEdit, onDelete, onViewBo
     <div className="group bg-card border border-primary/10 rounded-xl shadow-sm hover:shadow-xl hover:shadow-primary/20 transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:border-primary/30">
       {/* Enhanced Image Section */}
       <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
-        {court.images && court.images[0] ? (
           <img
-            src={getImagePreview(court.images[0])}
+            src={court.images && court.images[0] ? getImagePreview(court.images[0]) : '/logo.png'}
             alt={court.name}
             className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-            <Calendar className="h-12 w-12 text-primary/40" />
-          </div>
-        )}
         
         {/* Image Overlay Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -58,7 +52,7 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, onEdit, onDelete, onViewBo
         
         {/* Enhanced Court Type Badge */}
         <div className="absolute top-3 left-3">
-          <Badge variant="secondary" className="px-3 py-1 text-xs font-medium bg-white/90 backdrop-blur-sm border-white/20 shadow-sm">
+          <Badge variant="secondary" className="px-3 py-1 text-xs !text-black font-medium bg-white/90 backdrop-blur-sm border-white/20 shadow-sm">
             Court
           </Badge>
         </div>
@@ -137,22 +131,7 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, onEdit, onDelete, onViewBo
                 </div>
               ))}
             </div>
-            {/* Show sample time slots for available days */}
-            {Object.values(court.availability).some((day: any) => day.available && day.timeSlots && day.timeSlots.length > 0) && (
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-muted-foreground">Sample Times:</p>
-                <div className="flex flex-wrap gap-1">
-                  {Object.entries(court.availability)
-                    .filter(([_, dayAvailability]: [string, any]) => dayAvailability.available && dayAvailability.timeSlots && dayAvailability.timeSlots.length > 0)
-                    .slice(0, 3)
-                    .map(([day, dayAvailability]: [string, any]) => (
-                      <Badge key={day} variant="secondary" className="text-xs px-2 py-1">
-                        {day.slice(0, 3)}: {dayAvailability.timeSlots[0]?.start}-{dayAvailability.timeSlots[0]?.end}
-                      </Badge>
-                    ))}
-                </div>
-              </div>
-            )}
+         
           </div>
         )}
         
