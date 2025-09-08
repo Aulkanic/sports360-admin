@@ -5,9 +5,9 @@ import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosErr
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   ENDPOINTS: {
-    ADMIN_LOGIN: '/auth/admin-login',
-    ADMIN_REFRESH_TOKEN: '/auth/admin-refresh-token',
-    ADMIN_ME: '/auth/me',
+    ADMIN_LOGIN: '/auth/login',
+    ADMIN_REFRESH_TOKEN: '/auth/refresh-token',
+    ADMIN_ME: '/auth/get-personal-info',
   },
   TIMEOUT: 10000, // 10 seconds
 } as const;
