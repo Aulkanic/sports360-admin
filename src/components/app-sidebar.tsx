@@ -288,7 +288,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="p-4 border-t border-white/10 shrink-0">
         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm">
           <Avatar className="w-10 h-10 border-2 border-white/20">
-            <AvatarImage src="https://github.com/shadcn.png" />
+            <AvatarImage src="/pickle.jpg" className="!object-cover" />
             <AvatarFallback className="bg-white/20 text-white font-semibold">
               {user?.userName ? user.userName.substring(0, 2).toUpperCase() : "SA"}
             </AvatarFallback>

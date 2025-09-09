@@ -164,9 +164,52 @@ export const createOpenPlaySession = async (sessionData: CreateOpenPlaySessionDa
   try {
     const response = await apiClient.post('/openplay/create-session', sessionData);
     return response.data.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating open-play session:', error);
-    throw error;
+    
+    // Check if the error has the expected structure
+    if (error.response?.data && typeof error.response.data === 'object') {
+      const errorData = error.response.data;
+      
+      // If it's already in the expected format, throw it as is
+      if (errorData.success === false && errorData.message && errorData.error) {
+        throw errorData;
+      }
+      
+      // If it's a different structure, format it
+      throw {
+        success: false,
+        message: errorData.message || 'Failed to create session',
+        error: errorData.error || error.message || 'An unexpected error occurred',
+        conflicts: errorData.conflicts || [],
+        suggestions: errorData.suggestions || {
+          message: 'Please try again with different parameters',
+          availableAlternatives: [
+            'Try booking at a different time',
+            'Use a different court if available',
+            'Check availability for a different date'
+          ],
+          conflictDetails: ''
+        }
+      };
+    }
+    
+    // Fallback for unexpected error formats
+    throw {
+      success: false,
+      message: 'Failed to create session',
+      error: error.message || 'An unexpected error occurred',
+      conflicts: [],
+      suggestions: {
+        message: 'Please try again with different parameters',
+        availableAlternatives: [
+          'Try booking at a different time',
+          'Use a different court if available',
+          'Check availability for a different date'
+        ],
+        conflictDetails: ''
+      }
+    };
   }
 };
 

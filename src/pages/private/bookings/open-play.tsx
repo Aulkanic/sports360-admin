@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ErrorDisplay, { type ApiError } from "@/components/ui/error-display";
 import { cn } from "@/lib/utils";
 import { Calendar, Clock, MapPin, Users, Plus, Play, Settings, UserCheck, Star, TrendingUp, Grid3X3, CalendarDays } from "lucide-react";
 import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from 'react-big-calendar';
@@ -121,6 +122,15 @@ const OpenPlayPage: React.FC = () => {
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [participantsSessionId, setParticipantsSessionId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null); // Delete confirmation state
+  const [createError, setCreateError] = useState<ApiError | null>(null); // Error state for session creation
+  const [errorModalOpen, setErrorModalOpen] = useState(false); // State for error modal
+  
+  // Debug: Log error state changes
+  useEffect(() => {
+    if (createError) {
+      console.log('Error state updated:', createError);
+    }
+  }, [createError]);
 
   // Load data from API
   const loadSessions = useCallback(async () => {
@@ -354,6 +364,8 @@ const OpenPlayPage: React.FC = () => {
       setDeleteId(null);
     } catch (error) {
       console.error('Error deleting session:', error);
+      // For delete errors, we'll still use a simple alert since it's less critical
+      // and the delete modal is already a confirmation dialog
       alert('Failed to delete session. Please try again.');
     } finally {
       setIsLoading(false);
@@ -410,6 +422,7 @@ const OpenPlayPage: React.FC = () => {
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setCreateError(null); // Clear any previous errors
     
     try {
       const levels = Object.entries(createForm.levels)
@@ -418,28 +431,84 @@ const OpenPlayPage: React.FC = () => {
         
       // Basic validation
       if (!createForm.title.trim() || !createForm.date || !createForm.startTime || !createForm.endTime || levels.length === 0) {
-        alert("Please fill in all required fields");
+        setCreateError({
+          success: false,
+          message: "Validation Error",
+          error: "Please fill in all required fields",
+          conflicts: [],
+          suggestions: {
+            message: "Please complete all required fields before creating the session",
+            availableAlternatives: [
+              "Check that all required fields are filled",
+              "Ensure at least one skill level is selected",
+              "Verify the date and time are properly set"
+            ],
+            conflictDetails: ""
+          }
+        });
         setIsLoading(false);
         return;
       }
 
       // Time range validation
       if (createForm.startTime >= createForm.endTime) {
-        alert("End time must be after start time");
+        setCreateError({
+          success: false,
+          message: "Invalid Time Range",
+          error: "End time must be after start time",
+          conflicts: [],
+          suggestions: {
+            message: "Please adjust the time range for your session",
+            availableAlternatives: [
+              "Set an end time that is after the start time",
+              "Use the quick presets for common durations",
+              "Check that both times are in the correct format"
+            ],
+            conflictDetails: ""
+          }
+        });
         setIsLoading(false);
         return;
       }
 
       // Recurring event validation
       if (createForm.eventType === "recurring" && !createForm.endDate) {
-        alert("Please select an end date for recurring events");
+        setCreateError({
+          success: false,
+          message: "Recurring Event Error",
+          error: "Please select an end date for recurring events",
+          conflicts: [],
+          suggestions: {
+            message: "Recurring events require an end date to be specified",
+            availableAlternatives: [
+              "Select an end date for the recurring series",
+              "Choose a different event type if you want a one-time event",
+              "Consider the total number of sessions you want to create"
+            ],
+            conflictDetails: ""
+          }
+        });
         setIsLoading(false);
         return;
       }
 
       // Tournament validation
       if (createForm.eventType === "tournament" && !createForm.registrationDeadline) {
-        alert("Please set a registration deadline for tournaments");
+        setCreateError({
+          success: false,
+          message: "Tournament Error",
+          error: "Please set a registration deadline for tournaments",
+          conflicts: [],
+          suggestions: {
+            message: "Tournaments require a registration deadline to be set",
+            availableAlternatives: [
+              "Set a registration deadline for the tournament",
+              "Choose a different event type if you want a regular session",
+              "Consider when participants should register by"
+            ],
+            conflictDetails: ""
+          }
+        });
         setIsLoading(false);
         return;
       }
@@ -516,6 +585,7 @@ const OpenPlayPage: React.FC = () => {
       
       // Close form and reset
       setCreateOpen(false);
+      setCreateError(null); // Clear any errors
       setCreateForm({
         title: "",
         description: "",
@@ -533,9 +603,36 @@ const OpenPlayPage: React.FC = () => {
         levels: { Beginner: true, Intermediate: false, Advanced: false },
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating session:', error);
-      alert('Failed to create session. Please try again.');
+      
+      // Check if it's a structured API error (thrown from service)
+      if (error && typeof error === 'object' && error.success === false) {
+        console.log('Setting structured error:', error);
+        setCreateError(error as ApiError);
+        setCreateOpen(false); // Close the form modal
+        setErrorModalOpen(true); // Open the error modal
+      } else {
+        // Fallback for unexpected errors
+        console.log('Setting fallback error for:', error);
+        setCreateError({
+          success: false,
+          message: 'Failed to create session',
+          error: error?.message || 'An unexpected error occurred',
+          conflicts: [],
+          suggestions: {
+            message: 'Please try again with different parameters',
+            availableAlternatives: [
+              'Try booking at a different time',
+              'Use a different court if available',
+              'Check availability for a different date'
+            ],
+            conflictDetails: ''
+          }
+        });
+        setCreateOpen(false); // Close the form modal
+        setErrorModalOpen(true); // Open the error modal
+      }
     } finally {
       setIsLoading(false);
     }
@@ -543,6 +640,7 @@ const OpenPlayPage: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
+
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="space-y-1">
@@ -571,12 +669,44 @@ const OpenPlayPage: React.FC = () => {
             </Button>
           </div>
           <Button 
-            onClick={() => setCreateOpen(true)} 
+            onClick={() => {
+              setCreateOpen(true);
+              setCreateError(null); // Clear any previous errors when opening form
+            }} 
             className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Session
           </Button>
+          
+          {/* Debug: Test error display */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button 
+              onClick={() => {
+                setCreateError({
+                  success: false,
+                  message: "Test Error",
+                  error: "This is a test error to verify the display works",
+                  conflicts: [{
+                    occurrenceId: "test",
+                    sessionTitle: "Test Session",
+                    startTime: "09:00",
+                    endTime: "11:00"
+                  }],
+                  suggestions: {
+                    message: "Test suggestion",
+                    availableAlternatives: ["Try again", "Use different time"],
+                    conflictDetails: "Test conflict"
+                  }
+                });
+                setErrorModalOpen(true);
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Test Error
+            </Button>
+          )}
         </div>
       </div>
 
@@ -916,7 +1046,13 @@ const OpenPlayPage: React.FC = () => {
           <p className="text-muted-foreground mb-4">
             Create your first open play session to get started
           </p>
-          <Button onClick={() => setCreateOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25">
+          <Button 
+            onClick={() => {
+              setCreateOpen(true);
+              setCreateError(null); // Clear any previous errors when opening form
+            }} 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Create Session
           </Button>
@@ -941,7 +1077,10 @@ const OpenPlayPage: React.FC = () => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setCreateOpen(false)}
+                onClick={() => {
+                  setCreateOpen(false);
+                  setCreateError(null); // Clear errors when canceling
+                }}
                 className="h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/30"
               >
               Cancel
@@ -1355,6 +1494,7 @@ const OpenPlayPage: React.FC = () => {
                   endTime: format(slot.end, 'HH:mm'),
                 }));
                 setCreateOpen(true);
+                setCreateError(null); // Clear any previous errors when opening form
               }}
               onSelectEvent={(event: RBCEvent) => {
                 const session = (event as any).resource as OpenPlaySession;
@@ -1438,6 +1578,22 @@ const OpenPlayPage: React.FC = () => {
                 {isLoading ? 'Deleting...' : 'Delete'}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorModalOpen && createError && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-lg border w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <ErrorDisplay 
+              error={createError} 
+              onClose={() => {
+                setErrorModalOpen(false);
+                setCreateError(null);
+              }}
+              className="border-0 rounded-lg"
+            />
           </div>
         </div>
       )}

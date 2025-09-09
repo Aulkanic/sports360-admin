@@ -36,7 +36,7 @@ const PrivateLayout = () => {
           <div className="flex items-center gap-4">
             <MdNotificationsActive size={28} color="gray" />
             <Avatar className="w-8">
-              <AvatarImage sizes="10" src="https://github.com/shadcn.png" />
+              <AvatarImage sizes="10" src="/pickle.jpg" />
             </Avatar>
           </div>
         </header>
