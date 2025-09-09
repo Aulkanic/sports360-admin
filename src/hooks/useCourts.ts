@@ -215,9 +215,9 @@ const initialCourts: Court[] = [
 ];
 
 export const useCourts = () => {
-  const [items, setItems] = useState<Court[]>(initialCourts);
+  const [items, setItems] = useState<Court[]>([]);
   const [apiCourts, setApiCourts] = useState<APICourt[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadCourts = useCallback(async () => {
     try {
@@ -269,7 +269,8 @@ export const useCourts = () => {
       setItems(convertedCourts);
     } catch (error) {
       console.error('Error loading courts:', error);
-      // Keep existing mock data on error
+      // Fall back to dummy data on error
+      setItems(initialCourts);
     } finally {
       setIsLoading(false);
     }

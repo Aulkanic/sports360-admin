@@ -11,7 +11,9 @@ import {
   CourtForm, 
   BookingsModal, 
   ConflictsModal, 
-  AnalyticsModal 
+  AnalyticsModal,
+  StatsCardsSkeleton,
+  CourtsGridSkeleton
 } from "@/components/courts";
 
 // Import hooks
@@ -117,10 +119,14 @@ const CourtsPage: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <StatsCards courts={items} />
+      {isLoading ? (
+        <StatsCardsSkeleton />
+      ) : (
+        <StatsCards courts={items} />
+      )}
 
       {/* Fully Booked Courts Alert */}
-      {items.filter(c => c.status === 'Fully Booked').length > 0 && (
+      {!isLoading && items.filter(c => c.status === 'Fully Booked').length > 0 && (
         <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6 shadow-lg shadow-purple-200/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
@@ -165,20 +171,24 @@ const CourtsPage: React.FC = () => {
       )}
 
       {/* Courts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredCourts.map((court) => (
-          <CourtCard
-            key={court.id}
-            court={court}
-            onEdit={openEdit}
-            onDelete={openDeleteConfirm}
-            onViewBookings={openBookingsModal}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <CourtsGridSkeleton count={8} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredCourts.map((court) => (
+            <CourtCard
+              key={court.id}
+              court={court}
+              onEdit={openEdit}
+              onDelete={openDeleteConfirm}
+              onViewBookings={openBookingsModal}
+            />
+          ))}
+        </div>
+      )}
       
       {/* Enhanced Empty State */}
-      {filteredCourts.length === 0 && (
+      {!isLoading && filteredCourts.length === 0 && (
         <div className="text-center py-16">
           <div className="relative">
             <div className="h-20 w-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center mx-auto mb-6">

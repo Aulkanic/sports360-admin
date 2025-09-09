@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ErrorDisplay, { type ApiError } from "@/components/ui/error-display";
+import OpenPlayGridSkeleton from "@/components/features/open-play/OpenPlayGridSkeleton";
 import { cn } from "@/lib/utils";
 import { Calendar, Clock, MapPin, Users, Plus, Play, Settings, UserCheck, Star, TrendingUp, Grid3X3, CalendarDays } from "lucide-react";
 import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from 'react-big-calendar';
@@ -91,7 +92,8 @@ const OpenPlayPage: React.FC = () => {
   const [sessions, setSessions] = useState<OpenPlaySession[]>([]);
   const [originalApiData, setOriginalApiData] = useState<any[]>([]); // Store original API data for calendar
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOperationLoading, setIsOperationLoading] = useState(false); // For operations like create/delete
   const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
   const [calDate, setCalDate] = useState<Date>(new Date());
   const [calView, setCalView] = useState<string>(Views.MONTH);
@@ -242,7 +244,7 @@ const OpenPlayPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedSessionId]);
+  }, []);
 
   // Load data on component mount
   useEffect(() => {
@@ -358,9 +360,11 @@ const OpenPlayPage: React.FC = () => {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      setIsLoading(true);
+      setIsOperationLoading(true);
       await deleteOpenPlaySession(sessionId);
-      await loadSessions(); // Reload sessions to get updated data
+      // Update sessions state directly instead of calling loadSessions to prevent double loading
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      setOriginalApiData(prev => prev.filter(s => s.id.toString() !== sessionId));
       setDeleteId(null);
     } catch (error) {
       console.error('Error deleting session:', error);
@@ -368,7 +372,7 @@ const OpenPlayPage: React.FC = () => {
       // and the delete modal is already a confirmation dialog
       alert('Failed to delete session. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsOperationLoading(false);
     }
   };
 
@@ -421,7 +425,7 @@ const OpenPlayPage: React.FC = () => {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsOperationLoading(true);
     setCreateError(null); // Clear any previous errors
     
     try {
@@ -446,7 +450,7 @@ const OpenPlayPage: React.FC = () => {
             conflictDetails: ""
           }
         });
-        setIsLoading(false);
+        setIsOperationLoading(false);
         return;
       }
 
@@ -467,7 +471,7 @@ const OpenPlayPage: React.FC = () => {
             conflictDetails: ""
           }
         });
-        setIsLoading(false);
+        setIsOperationLoading(false);
         return;
       }
 
@@ -488,7 +492,7 @@ const OpenPlayPage: React.FC = () => {
             conflictDetails: ""
           }
         });
-        setIsLoading(false);
+        setIsOperationLoading(false);
         return;
       }
 
@@ -509,7 +513,7 @@ const OpenPlayPage: React.FC = () => {
             conflictDetails: ""
           }
         });
-        setIsLoading(false);
+        setIsOperationLoading(false);
         return;
       }
 
@@ -580,10 +584,7 @@ const OpenPlayPage: React.FC = () => {
       // Create session via API
       await createOpenPlaySession(sessionData);
       
-      // Reload sessions to get updated data
-      await loadSessions();
-      
-      // Close form and reset
+      // Close form and reset (data will be refreshed on next page load)
       setCreateOpen(false);
       setCreateError(null); // Clear any errors
       setCreateForm({
@@ -634,7 +635,7 @@ const OpenPlayPage: React.FC = () => {
         setErrorModalOpen(true); // Open the error modal
       }
     } finally {
-      setIsLoading(false);
+      setIsOperationLoading(false);
     }
   }
 
@@ -774,8 +775,11 @@ const OpenPlayPage: React.FC = () => {
 
       {/* Sessions Grid View */}
       {viewMode === "grid" && (
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {sessions.map((s) => {
+        isLoading ? (
+          <OpenPlayGridSkeleton count={8} />
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {sessions.map((s) => {
           const topLevels = Array.from(new Set(s.participants.map((p) => p.level).filter(Boolean))) as LevelTag[];
           const isActive = s.participants.length > 0;
           return (
@@ -1035,11 +1039,12 @@ const OpenPlayPage: React.FC = () => {
             </div>
           );
         })}
-      </div>
+          </div>
+        )
       )}
       
       {/* Empty State */}
-      {sessions.length === 0 && (
+      {!isLoading && sessions.length === 0 && (
         <div className="text-center py-12">
           <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">No open play sessions</h3>
@@ -1089,9 +1094,9 @@ const OpenPlayPage: React.FC = () => {
                 type="submit" 
                 form="open-play-create-form"
                 className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
-                disabled={isLoading}
+                disabled={isOperationLoading}
               >
-                {isLoading ? (
+                {isOperationLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Creating...
@@ -1573,9 +1578,9 @@ const OpenPlayPage: React.FC = () => {
               <Button
                 variant="destructive"
                 onClick={() => deleteId && handleDeleteSession(deleteId)}
-                disabled={isLoading}
+                disabled={isOperationLoading}
               >
-                {isLoading ? 'Deleting...' : 'Delete'}
+                {isOperationLoading ? 'Deleting...' : 'Delete'}
               </Button>
             </div>
           </div>
