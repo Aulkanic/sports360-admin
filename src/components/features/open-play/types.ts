@@ -10,6 +10,10 @@ export type Participant = {
   paymentStatus: "Paid" | "Pending" | "Rejected";
   isApproved: boolean;
   waitlistReason?: string;
+  // Game history for matchmaking
+  gamesPlayed?: number;
+  readyTime?: number;
+  skillScore?: number;
 };
 
 export type Court = {

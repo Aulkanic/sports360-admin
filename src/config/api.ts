@@ -3,7 +3,7 @@ import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosErr
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://sports360.fun/api',
   ENDPOINTS: {
     ADMIN_LOGIN: '/auth/login',
     ADMIN_REFRESH_TOKEN: '/auth/refresh-token',

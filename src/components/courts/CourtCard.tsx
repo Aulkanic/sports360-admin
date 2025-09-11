@@ -19,7 +19,7 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, onEdit, onDelete, onViewBo
       {/* Enhanced Image Section */}
       <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
           <img
-            src={court.images && court.images[0] ? getImagePreview(court.images[0]) : '/logo.png'}
+            src={court.images && court.images[0] ? getImagePreview(court.images[0]) : '/pickle.jpg'}
             alt={court.name}
             className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
           />

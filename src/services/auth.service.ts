@@ -30,8 +30,8 @@ class AuthService {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post(API_CONFIG.ENDPOINTS.ADMIN_LOGIN, credentials);
-      const data: LoginResponse = response.data;
-      
+      const data: LoginResponse = response.data.data;
+    
       // Store tokens in localStorage
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);

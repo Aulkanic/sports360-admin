@@ -78,6 +78,7 @@ export interface CreateOpenPlaySessionData {
   description?: string;
   maxPlayers: number;
   pricePerPlayer?: number;
+  isFreeJoin?: boolean;
   skillLevels: string[];
   courtId: string;
   hubId: string;

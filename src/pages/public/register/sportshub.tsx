@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { urls } from "@/routes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FaLocationArrow, FaRegBuilding, FaEye, FaEyeSlash, FaArrowUp } from "react-icons/fa";
+import { FaLocationArrow, FaRegBuilding, FaArrowUp } from "react-icons/fa";
 import { MdEmail, MdLocalPhone, MdMap, MdBusiness } from "react-icons/md";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -18,6 +18,10 @@ import {
   validateSportsHubName,
   type SportsHubRegistrationData 
 } from "@/services/sportshub-registration.service";
+import ResponseMessage, { type MessageType } from "@/components/ui/response-message";
+import LoadingOverlay from "@/components/ui/loading-overlay";
+import EnhancedInput from "@/components/ui/enhanced-input";
+import StepProgress from "@/components/ui/step-progress";
 
 const DefaultIcon = L.icon({
   iconUrl:
@@ -63,13 +67,44 @@ type FormState = {
   sportsId: string;
 };
 
-async function reverseGeocode({ lat, lng }: LatLng): Promise<string | null> {
+interface AddressComponents {
+  streetAddress?: string;
+  city?: string;
+  stateProvince?: string;
+  zipPostalCode?: string;
+  fullAddress: string;
+}
+
+async function reverseGeocode({ lat, lng }: LatLng): Promise<AddressComponents | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
     const res = await fetch(url, { headers: { "Accept-Language": "en" } });
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.display_name ?? null;
+    
+    if (!data?.address) return null;
+    
+    const address = data.address;
+    const fullAddress = data.display_name || '';
+    
+    // Extract address components
+    const streetAddress = [
+      address.house_number,
+      address.road,
+      address.suburb
+    ].filter(Boolean).join(' ') || '';
+    
+    const city = address.city || address.town || address.village || address.municipality || '';
+    const stateProvince = address.state || address.province || address.region || '';
+    const zipPostalCode = address.postcode || '';
+    
+    return {
+      streetAddress,
+      city,
+      stateProvince,
+      zipPostalCode,
+      fullAddress
+    };
   } catch {
     return null;
   }
@@ -87,7 +122,7 @@ const steps = [
   { key: "location", label: "Location", icon: <MdMap /> },
   { key: "business", label: "Business Info", icon: <MdBusiness /> },
   { key: "review", label: "Review", icon: "✓" },
-] as const;
+];
 
 const SportsHubRegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -95,10 +130,16 @@ const SportsHubRegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [point, setPoint] = useState<LatLng | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [showScrollToTop, setShowScrollToTop] = useState(false);
+  
+  // Response message state
+  const [responseMessage, setResponseMessage] = useState<{
+    type: MessageType;
+    title: string;
+    message: string;
+    details?: string;
+  } | null>(null);
 
   const sectionClass = useMemo(
     () =>
@@ -165,23 +206,104 @@ const SportsHubRegisterPage: React.FC = () => {
   };
 
   async function handleUseMyLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setResponseMessage({
+        type: 'error',
+        title: 'Geolocation Not Available',
+        message: 'Your browser does not support geolocation.',
+        details: 'Please manually select your location on the map.'
+      });
+      return;
+    }
+    
     setGeoLoading(true);
+    setResponseMessage(null);
+    
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setPoint(p);
-        const rev = await reverseGeocode(p);
-        setForm((f) => ({
-          ...f,
-          lat: String(p.lat),
-          lng: String(p.lng),
-          fullLoc: rev ?? f.fullLoc,
-        }));
+        try {
+          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setPoint(p);
+          const addressData = await reverseGeocode(p);
+          
+          if (addressData) {
+            setForm((f) => ({
+              ...f,
+              lat: String(p.lat),
+              lng: String(p.lng),
+              fullLoc: addressData.fullAddress,
+              // Auto-fill address fields
+              streetAddress: addressData.streetAddress || f.streetAddress,
+              city: addressData.city || f.city,
+              stateProvince: addressData.stateProvince || f.stateProvince,
+              zipPostalCode: addressData.zipPostalCode || f.zipPostalCode,
+            }));
+            
+            setResponseMessage({
+              type: 'success',
+              title: 'Location Found!',
+              message: 'Your location has been detected and address fields have been auto-filled.',
+              details: 'Please review and adjust the address information if needed.'
+            });
+          } else {
+            setForm((f) => ({
+              ...f,
+              lat: String(p.lat),
+              lng: String(p.lng),
+            }));
+            
+            setResponseMessage({
+              type: 'warning',
+              title: 'Location Detected',
+              message: 'Your coordinates have been set, but address details could not be retrieved.',
+              details: 'Please manually fill in the address fields.'
+            });
+          }
+        } catch (error) {
+          console.error('Error processing location:', error);
+          setResponseMessage({
+            type: 'error',
+            title: 'Location Error',
+            message: 'There was an error processing your location.',
+            details: 'Please try again or manually select your location on the map.'
+          });
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        let errorMessage = 'Unable to access your location.';
+        let errorDetails = 'Please check your browser permissions or manually select your location on the map.';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access denied.';
+            errorDetails = 'Please allow location access in your browser settings or manually select your location on the map.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable.';
+            errorDetails = 'Please check your internet connection or manually select your location on the map.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out.';
+            errorDetails = 'Please try again or manually select your location on the map.';
+            break;
+        }
+        
+        setResponseMessage({
+          type: 'error',
+          title: 'Location Access Failed',
+          message: errorMessage,
+          details: errorDetails
+        });
         setGeoLoading(false);
       },
-      () => setGeoLoading(false),
-      { enableHighAccuracy: true }
+      { 
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
     );
   }
 
@@ -290,9 +412,15 @@ const SportsHubRegisterPage: React.FC = () => {
   function next() {
     const errs = validateCurrentStep();
     if (errs.length) {
-      alert(errs.join("\n"));
+      setResponseMessage({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fix the following errors before proceeding:',
+        details: errs.join('\n')
+      });
       return;
     }
+    setResponseMessage(null); // Clear any previous messages
     setStep((s) => Math.min(s + 1, steps.length - 1));
     // Scroll to top of form when moving to next step
     setTimeout(() => {
@@ -316,11 +444,18 @@ const SportsHubRegisterPage: React.FC = () => {
     if (e) e.preventDefault();
     const errs = validateCurrentStep();
     if (errs.length) {
-      alert(errs.join("\n"));
+      setResponseMessage({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fix the following errors before submitting:',
+        details: errs.join('\n')
+      });
       return;
     }
     
     setLoading(true);
+    setResponseMessage(null); // Clear any previous messages
+    
     try {
       // Prepare data for API submission
       const registrationData: SportsHubRegistrationData = {
@@ -356,15 +491,34 @@ const SportsHubRegisterPage: React.FC = () => {
       const result = await registerSportsHub(registrationData);
       
       if (result.success) {
-        alert("Registration submitted successfully! You will be contacted for verification.");
-        navigate(urls.login);
+        setResponseMessage({
+          type: 'success',
+          title: 'Registration Successful!',
+          message: 'Your sports hub registration has been submitted successfully.',
+          details: 'You will be contacted within 2-3 business days for verification and approval. Please check your email for updates.'
+        });
+        
+        // Navigate to login after a delay to show success message
+        setTimeout(() => {
+          navigate(urls.login);
+        }, 3000);
       } else {
-        alert(`Registration failed: ${result.message || 'Unknown error'}`);
+        setResponseMessage({
+          type: 'error',
+          title: 'Registration Failed',
+          message: result.message || 'Unknown error occurred',
+          details: 'Please check your information and try again. If the problem persists, contact support.'
+        });
       }
     } catch (error: any) {
       console.error("Registration error:", error);
       const errorMessage = error.response?.data?.message || error.message || "Registration failed. Please try again.";
-      alert(`Registration failed: ${errorMessage}`);
+      setResponseMessage({
+        type: 'error',
+        title: 'Registration Failed',
+        message: errorMessage,
+        details: 'Please check your internet connection and try again. If the problem persists, contact support.'
+      });
     } finally {
       setLoading(false);
     }
@@ -397,29 +551,17 @@ const SportsHubRegisterPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="mb-3 sm:mb-4 flex items-center gap-2 overflow-x-auto">
-              {steps.map((s, i) => {
-                const active = i === step;
-                const done = i < step;
-                return (
-                  <button
-                    type="button"
-                    key={s.key}
-                    onClick={() => setStep(i)}
-                    className={[
-                      "flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full border text-xs sm:text-[13px] whitespace-nowrap",
-                      active
-                        ? "bg-gradient-to-br from-[#F2851E] to-[#D14125] text-white border-transparent"
-                        : done
-                        ? "bg-white text-gray-800 border-gray-300"
-                        : "bg-white text-gray-500 border-gray-200",
-                    ].join(" ")}
-                  >
-                    <span className="grid place-items-center">{s.icon}</span>
-                    <span className="font-medium">{s.label}</span>
-                  </button>
-                );
-              })}
+            <div className="mb-3 sm:mb-4">
+              <StepProgress
+                steps={steps}
+                currentStep={step}
+                onStepClick={(stepIndex) => {
+                  // Only allow going back to previous steps
+                  if (stepIndex < step) {
+                    setStep(stepIndex);
+                  }
+                }}
+              />
             </div>
 
             <div className="mb-4 h-1 w-full bg-gray-200 rounded-full">
@@ -432,6 +574,19 @@ const SportsHubRegisterPage: React.FC = () => {
               />
             </div>
 
+            {/* Response Message Display */}
+            {responseMessage && (
+              <div className="mb-4">
+                <ResponseMessage
+                  type={responseMessage.type}
+                  title={responseMessage.title}
+                  message={responseMessage.message}
+                  details={responseMessage.details}
+                  onClose={() => setResponseMessage(null)}
+                />
+              </div>
+            )}
+
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 overflow-y-auto">
               {step === 0 && (
                 <div className={sectionClass}>
@@ -443,135 +598,94 @@ const SportsHubRegisterPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-800 mb-2">
-                        Sports Hub Name *
-                      </label>
-                      <Input
-                        value={form.sportsHubName}
-                        onChange={(e) => {
-                          setForm((f) => ({ ...f, sportsHubName: e.target.value }));
-                          // Clear validation errors when user starts typing
-                          if (validationErrors.sportsHubName) {
-                            setValidationErrors(prev => ({ ...prev, sportsHubName: [] }));
-                          }
-                        }}
-                        placeholder="e.g., Downtown Sports Center"
-                        className={validationErrors.sportsHubName ? "border-red-500" : ""}
-                      />
-                      {validationErrors.sportsHubName && (
-                        <p className="text-xs text-red-600 mt-1">{validationErrors.sportsHubName[0]}</p>
-                      )}
-                      <p className="text-xs text-gray-600 mt-1">
-                        This will be visible to users and must be unique.
-                      </p>
-                    </div>
+                    <EnhancedInput
+                      label="Sports Hub Name"
+                      value={form.sportsHubName}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, sportsHubName: e.target.value }));
+                        // Clear validation errors when user starts typing
+                        if (validationErrors.sportsHubName) {
+                          setValidationErrors(prev => ({ ...prev, sportsHubName: [] }));
+                        }
+                      }}
+                      placeholder="e.g., Downtown Sports Center"
+                      error={validationErrors.sportsHubName?.[0]}
+                      success={form.sportsHubName.length > 0 && !validationErrors.sportsHubName}
+                      helpText="This will be visible to users and must be unique."
+                      required
+                      icon={<FaRegBuilding size={16} />}
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-800 mb-2">Email Address *</label>
-                      <div className="flex items-center gap-2 rounded-lg border bg-white px-3">
-                        <MdEmail className="text-gray-500" size={18} />
-                        <Input
-                          className="border-0 focus-visible:ring-0 focus:ring-0 flex-1"
-                          value={form.email}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, email: e.target.value }));
-                            if (validationErrors.email) {
-                              setValidationErrors(prev => ({ ...prev, email: [] }));
-                            }
-                          }}
-                          type="email"
-                          inputMode="email"
-                          placeholder="you@hub.com"
-                        />
-                      </div>
-                      {validationErrors.email && (
-                        <p className="text-xs text-red-600 mt-1">{validationErrors.email[0]}</p>
-                      )}
-                    </div>
+                    <EnhancedInput
+                      label="Email Address"
+                      value={form.email}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, email: e.target.value }));
+                        if (validationErrors.email) {
+                          setValidationErrors(prev => ({ ...prev, email: [] }));
+                        }
+                      }}
+                      type="email"
+                      inputMode="email"
+                      placeholder="you@hub.com"
+                      error={validationErrors.email?.[0]}
+                      success={form.email.length > 0 && !validationErrors.email && validateEmail(form.email)}
+                      required
+                      icon={<MdEmail size={18} />}
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-800 mb-2">Contact Number *</label>
-                      <div className="flex items-center gap-2 rounded-lg border bg-white px-3">
-                        <MdLocalPhone className="text-gray-500" size={18} />
-                        <Input
-                          className="border-0 focus-visible:ring-0 focus:ring-0 flex-1"
-                          value={form.contactNumber}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, contactNumber: e.target.value }));
-                            if (validationErrors.contactNumber) {
-                              setValidationErrors(prev => ({ ...prev, contactNumber: [] }));
-                            }
-                          }}
-                          type="tel"
-                          inputMode="tel"
-                          placeholder="+63 912 345 6789"
-                        />
-                      </div>
-                      {validationErrors.contactNumber && (
-                        <p className="text-xs text-red-600 mt-1">{validationErrors.contactNumber[0]}</p>
-                      )}
-                    </div>
+                    <EnhancedInput
+                      label="Contact Number"
+                      value={form.contactNumber}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, contactNumber: e.target.value }));
+                        if (validationErrors.contactNumber) {
+                          setValidationErrors(prev => ({ ...prev, contactNumber: [] }));
+                        }
+                      }}
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="+63 912 345 6789"
+                      error={validationErrors.contactNumber?.[0]}
+                      success={form.contactNumber.length > 0 && !validationErrors.contactNumber && validatePhoneNumber(form.contactNumber)}
+                      required
+                      icon={<MdLocalPhone size={18} />}
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-800 mb-2">Password *</label>
-                      <div className="flex items-center gap-2 rounded-lg border bg-white px-3">
-                        <Input
-                          className="border-0 focus-visible:ring-0 focus:ring-0 flex-1"
-                          value={form.password}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, password: e.target.value }));
-                            if (validationErrors.password) {
-                              setValidationErrors(prev => ({ ...prev, password: [] }));
-                            }
-                          }}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Create a strong password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                        </button>
-                      </div>
-                      {validationErrors.password && (
-                        <div className="mt-1">
-                          {validationErrors.password.map((error, index) => (
-                            <p key={index} className="text-xs text-red-600">{error}</p>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <EnhancedInput
+                      label="Password"
+                      value={form.password}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, password: e.target.value }));
+                        if (validationErrors.password) {
+                          setValidationErrors(prev => ({ ...prev, password: [] }));
+                        }
+                      }}
+                      type="password"
+                      placeholder="Create a strong password"
+                      error={validationErrors.password?.[0]}
+                      success={form.password.length > 0 && !validationErrors.password && validatePassword(form.password).isValid}
+                      showPasswordToggle
+                      helpText="Password must be at least 8 characters with uppercase, lowercase, number, and special character."
+                      required
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-800 mb-2">Confirm Password *</label>
-                      <div className="flex items-center gap-2 rounded-lg border bg-white px-3">
-                        <Input
-                          className="border-0 focus-visible:ring-0 focus:ring-0 flex-1"
-                          value={form.confirmPassword}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, confirmPassword: e.target.value }));
-                            if (validationErrors.confirmPassword) {
-                              setValidationErrors(prev => ({ ...prev, confirmPassword: [] }));
-                            }
-                          }}
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm your password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                        </button>
-                      </div>
-                      {validationErrors.confirmPassword && (
-                        <p className="text-xs text-red-600 mt-1">{validationErrors.confirmPassword[0]}</p>
-                      )}
-                    </div>
+                    <EnhancedInput
+                      label="Confirm Password"
+                      value={form.confirmPassword}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, confirmPassword: e.target.value }));
+                        if (validationErrors.confirmPassword) {
+                          setValidationErrors(prev => ({ ...prev, confirmPassword: [] }));
+                        }
+                      }}
+                      type="password"
+                      placeholder="Confirm your password"
+                      error={validationErrors.confirmPassword?.[0]}
+                      success={form.confirmPassword.length > 0 && !validationErrors.confirmPassword && form.password === form.confirmPassword}
+                      showPasswordToggle
+                      required
+                    />
                   </div>
                 </div>
               )}
@@ -592,7 +706,11 @@ const SportsHubRegisterPage: React.FC = () => {
                       disabled={geoLoading}
                       className="gap-2 h-9"
                     >
-                      <FaLocationArrow />
+                      {geoLoading ? (
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-[#F2851E] rounded-full animate-spin"></div>
+                      ) : (
+                        <FaLocationArrow />
+                      )}
                       <span className="hidden sm:inline">{geoLoading ? "Locating..." : "Use my location"}</span>
                       <span className="sm:hidden">{geoLoading ? "Locating..." : "Use GPS"}</span>
                     </Button>
@@ -602,8 +720,8 @@ const SportsHubRegisterPage: React.FC = () => {
                     {/* Address Fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-800 mb-2">Street Address *</label>
-                        <Input
+                        <EnhancedInput
+                          label="Street Address"
                           value={form.streetAddress}
                           onChange={(e) => {
                             setForm((f) => ({ ...f, streetAddress: e.target.value }));
@@ -612,110 +730,92 @@ const SportsHubRegisterPage: React.FC = () => {
                             }
                           }}
                           placeholder="123 Main Street"
-                          className={validationErrors.streetAddress ? "border-red-500" : ""}
+                          error={validationErrors.streetAddress?.[0]}
+                          success={form.streetAddress.length > 0 && !validationErrors.streetAddress}
+                          required
                         />
-                        {validationErrors.streetAddress && (
-                          <p className="text-xs text-red-600 mt-1">{validationErrors.streetAddress[0]}</p>
-                        )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">City *</label>
-                        <Input
-                          value={form.city}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, city: e.target.value }));
-                            if (validationErrors.city) {
-                              setValidationErrors(prev => ({ ...prev, city: [] }));
-                            }
-                          }}
-                          placeholder="Quezon City"
-                          className={validationErrors.city ? "border-red-500" : ""}
-                        />
-                        {validationErrors.city && (
-                          <p className="text-xs text-red-600 mt-1">{validationErrors.city[0]}</p>
-                        )}
-                      </div>
+                      <EnhancedInput
+                        label="City"
+                        value={form.city}
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, city: e.target.value }));
+                          if (validationErrors.city) {
+                            setValidationErrors(prev => ({ ...prev, city: [] }));
+                          }
+                        }}
+                        placeholder="Quezon City"
+                        error={validationErrors.city?.[0]}
+                        success={form.city.length > 0 && !validationErrors.city}
+                        required
+                      />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">State/Province *</label>
-                        <Input
-                          value={form.stateProvince}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, stateProvince: e.target.value }));
-                            if (validationErrors.stateProvince) {
-                              setValidationErrors(prev => ({ ...prev, stateProvince: [] }));
-                            }
-                          }}
-                          placeholder="Metro Manila"
-                          className={validationErrors.stateProvince ? "border-red-500" : ""}
-                        />
-                        {validationErrors.stateProvince && (
-                          <p className="text-xs text-red-600 mt-1">{validationErrors.stateProvince[0]}</p>
-                        )}
-                      </div>
+                      <EnhancedInput
+                        label="State/Province"
+                        value={form.stateProvince}
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, stateProvince: e.target.value }));
+                          if (validationErrors.stateProvince) {
+                            setValidationErrors(prev => ({ ...prev, stateProvince: [] }));
+                          }
+                        }}
+                        placeholder="Metro Manila"
+                        error={validationErrors.stateProvince?.[0]}
+                        success={form.stateProvince.length > 0 && !validationErrors.stateProvince}
+                        required
+                      />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">ZIP/Postal Code *</label>
-                        <Input
-                          value={form.zipPostalCode}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, zipPostalCode: e.target.value }));
-                            if (validationErrors.zipPostalCode) {
-                              setValidationErrors(prev => ({ ...prev, zipPostalCode: [] }));
-                            }
-                          }}
-                          placeholder="1100"
-                          className={validationErrors.zipPostalCode ? "border-red-500" : ""}
-                        />
-                        {validationErrors.zipPostalCode && (
-                          <p className="text-xs text-red-600 mt-1">{validationErrors.zipPostalCode[0]}</p>
-                        )}
-                      </div>
+                      <EnhancedInput
+                        label="ZIP/Postal Code"
+                        value={form.zipPostalCode}
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, zipPostalCode: e.target.value }));
+                          if (validationErrors.zipPostalCode) {
+                            setValidationErrors(prev => ({ ...prev, zipPostalCode: [] }));
+                          }
+                        }}
+                        placeholder="1100"
+                        error={validationErrors.zipPostalCode?.[0]}
+                        success={form.zipPostalCode.length > 0 && !validationErrors.zipPostalCode}
+                        required
+                      />
                     </div>
 
                     {/* Contact Person */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">Primary Contact Person *</label>
-                        <Input
-                          value={form.primaryContactPerson}
-                          onChange={(e) => {
-                            setForm((f) => ({ ...f, primaryContactPerson: e.target.value }));
-                            if (validationErrors.primaryContactPerson) {
-                              setValidationErrors(prev => ({ ...prev, primaryContactPerson: [] }));
-                            }
-                          }}
-                          placeholder="John Doe"
-                          className={validationErrors.primaryContactPerson ? "border-red-500" : ""}
-                        />
-                        {validationErrors.primaryContactPerson && (
-                          <p className="text-xs text-red-600 mt-1">{validationErrors.primaryContactPerson[0]}</p>
-                        )}
-                      </div>
+                      <EnhancedInput
+                        label="Primary Contact Person"
+                        value={form.primaryContactPerson}
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, primaryContactPerson: e.target.value }));
+                          if (validationErrors.primaryContactPerson) {
+                            setValidationErrors(prev => ({ ...prev, primaryContactPerson: [] }));
+                          }
+                        }}
+                        placeholder="John Doe"
+                        error={validationErrors.primaryContactPerson?.[0]}
+                        success={form.primaryContactPerson.length > 0 && !validationErrors.primaryContactPerson}
+                        required
+                      />
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">Contact Phone *</label>
-                        <div className="flex items-center gap-2 rounded-lg border bg-white px-3">
-                          <MdLocalPhone className="text-gray-500" size={18} />
-                          <Input
-                            className="border-0 focus-visible:ring-0 focus:ring-0 flex-1"
-                            value={form.contactPhone}
-                            onChange={(e) => {
-                              setForm((f) => ({ ...f, contactPhone: e.target.value }));
-                              if (validationErrors.contactPhone) {
-                                setValidationErrors(prev => ({ ...prev, contactPhone: [] }));
-                              }
-                            }}
-                            type="tel"
-                            inputMode="tel"
-                            placeholder="+63 912 345 6789"
-                          />
-                        </div>
-                        {validationErrors.contactPhone && (
-                          <p className="text-xs text-red-600 mt-1">{validationErrors.contactPhone[0]}</p>
-                        )}
-                      </div>
+                      <EnhancedInput
+                        label="Contact Phone"
+                        value={form.contactPhone}
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, contactPhone: e.target.value }));
+                          if (validationErrors.contactPhone) {
+                            setValidationErrors(prev => ({ ...prev, contactPhone: [] }));
+                          }
+                        }}
+                        type="tel"
+                        inputMode="tel"
+                        placeholder="+63 912 345 6789"
+                        error={validationErrors.contactPhone?.[0]}
+                        success={form.contactPhone.length > 0 && !validationErrors.contactPhone && validatePhoneNumber(form.contactPhone)}
+                        required
+                        icon={<MdLocalPhone size={18} />}
+                      />
                     </div>
 
                     {/* Map Section */}
@@ -737,13 +837,28 @@ const SportsHubRegisterPage: React.FC = () => {
                             <ClickToSetMarker
                               onPick={async (p) => {
                                 setPoint(p);
-                                const rev = await reverseGeocode(p);
-                                setForm((f) => ({
-                                  ...f,
-                                  lat: String(p.lat),
-                                  lng: String(p.lng),
-                                  fullLoc: rev ?? f.fullLoc,
-                                }));
+                                const addressData = await reverseGeocode(p);
+                                
+                                if (addressData) {
+                                  setForm((f) => ({
+                                    ...f,
+                                    lat: String(p.lat),
+                                    lng: String(p.lng),
+                                    fullLoc: addressData.fullAddress,
+                                    // Auto-fill address fields if they're empty
+                                    streetAddress: f.streetAddress || addressData.streetAddress || '',
+                                    city: f.city || addressData.city || '',
+                                    stateProvince: f.stateProvince || addressData.stateProvince || '',
+                                    zipPostalCode: f.zipPostalCode || addressData.zipPostalCode || '',
+                                  }));
+                                } else {
+                                  setForm((f) => ({
+                                    ...f,
+                                    lat: String(p.lat),
+                                    lng: String(p.lng),
+                                  }));
+                                }
+                                
                                 // Clear location validation errors
                                 if (validationErrors.location) {
                                   setValidationErrors(prev => ({ ...prev, location: [] }));
@@ -977,8 +1092,19 @@ const SportsHubRegisterPage: React.FC = () => {
                       Next
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={loading} className="h-10 w-full sm:w-auto">
-                      {loading ? "Creating account..." : "Submit"}
+                    <Button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="h-10 w-full sm:w-auto bg-gradient-to-r from-[#F2851E] to-[#D14125] hover:from-[#D14125] hover:to-[#F2851E] text-white"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Submitting...</span>
+                        </div>
+                      ) : (
+                        "Submit Registration"
+                      )}
                     </Button>
                   )}
                 </div>
@@ -1003,6 +1129,12 @@ const SportsHubRegisterPage: React.FC = () => {
           <FaArrowUp size={20} />
         </button>
       )}
+
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isLoading={loading} 
+        message={loading ? "Submitting your registration..." : "Loading..."}
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import type {
   ParticipantStatus,
 } from "@/components/features/open-play/types";
 import { buildBalancedTeams, initials } from "@/components/features/open-play/utils";
+import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -66,8 +67,27 @@ const OpenPlayDetailPage: React.FC = () => {
     [stateSession, id]
   );
 
+  // Convert skill level to numeric score for sorting
+  const getSkillScore = (level: string): number => {
+    switch (level) {
+      case 'Beginner': return 1;
+      case 'Intermediate': return 2;
+      case 'Advanced': return 3;
+      default: return 2;
+    }
+  };
+
   const [participants, setParticipants] = useState<Participant[]>(
-    () => (sessionById?.participants ?? []) as Participant[]
+    () => {
+      const initialParticipants = (sessionById?.participants ?? []) as Participant[];
+      // Initialize existing participants with game history data
+      return initialParticipants.map(participant => ({
+        ...participant,
+        gamesPlayed: participant.gamesPlayed ?? Math.floor(Math.random() * 15), // Mock data
+        readyTime: participant.readyTime ?? (participant.status === 'Ready' ? Date.now() - Math.random() * 3600000 : undefined),
+        skillScore: participant.skillScore ?? getSkillScore(participant.level)
+      }));
+    }
   );
 
   const [courts, setCourts] = useState<Court[]>([
@@ -82,6 +102,8 @@ const OpenPlayDetailPage: React.FC = () => {
   const [scoreEntry, setScoreEntry] = useState<Record<string, string>>({});
   const [showWinnerDialog, setShowWinnerDialog] = useState<string | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, { A: string; B: string }>>({});
+  const [addPlayerOpen, setAddPlayerOpen] = useState(false);
+  const [isAddingPlayer, setIsAddingPlayer] = useState(false);
 
   const inAnyTeam = useMemo(
     () =>
@@ -117,7 +139,15 @@ const OpenPlayDetailPage: React.FC = () => {
 
   function updateStatus(participantId: string, status: ParticipantStatus) {
     setParticipants((prev) =>
-      prev.map((p) => (p.id === participantId ? { ...p, status } : p))
+      prev.map((p) => 
+        p.id === participantId 
+          ? { 
+              ...p, 
+              status,
+              readyTime: status === 'Ready' ? Date.now() : p.readyTime
+            } 
+          : p
+      )
     );
   }
 
@@ -247,7 +277,19 @@ const OpenPlayDetailPage: React.FC = () => {
   function confirmGameEnd(courtId: string, winner: "A" | "B", score?: string) {
     setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
     const t = courtTeams[courtId] ?? { A: [], B: [] };
-    [...t.A, ...t.B].forEach((p) => updateStatus(p.id, "Resting"));
+    
+    // Update participants to resting and increment games played
+    [...t.A, ...t.B].forEach((p) => {
+      updateStatus(p.id, "Resting");
+      // Increment games played count
+      setParticipants(prev => 
+        prev.map(participant => 
+          participant.id === p.id 
+            ? { ...participant, gamesPlayed: (participant.gamesPlayed || 0) + 1 }
+            : participant
+        )
+      );
+    });
     
     // Create a match record for this completed game
     const newMatch: Match = {
@@ -286,12 +328,59 @@ const OpenPlayDetailPage: React.FC = () => {
 
     const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
     const need = perTeam * 2;
-    const pool = [...readyList].slice(0, need);
-    if (pool.length < 2) return;
-    const { A, B } = buildBalancedTeams(pool, perTeam);
+    
+    // Enhanced player selection algorithm
+    const selectedPlayers = selectPlayersForMatch(readyList, need);
+    
+    if (selectedPlayers.length < 2) {
+      alert("Need at least 2 ready players to start a match");
+      return;
+    }
+
+    const { A, B } = buildBalancedTeams(selectedPlayers, perTeam);
     setCourtTeams((prev) => ({ ...prev, [courtId]: { A, B } }));
     [...A, ...B].forEach((p) => updateStatus(p.id, "In-Game"));
   }
+
+  // Enhanced player selection algorithm
+  function selectPlayersForMatch(availablePlayers: Participant[], needed: number): Participant[] {
+    if (availablePlayers.length <= needed) {
+      return availablePlayers;
+    }
+
+    // Create enhanced player data with game history and skill scoring
+    const enhancedPlayers = availablePlayers.map(player => ({
+      ...player,
+      // Mock game history - in real app, this would come from database
+      gamesPlayed: Math.floor(Math.random() * 20), // Random for demo
+      skillScore: getSkillScore(player.level),
+      readyTime: Date.now() // When they became ready
+    }));
+
+    // Sort by priority: Ready first, then by games played (ascending), then by skill level
+    const sortedPlayers = enhancedPlayers.sort((a, b) => {
+      // First priority: Ready status (already filtered, but for safety)
+      if (a.status !== b.status) {
+        return a.status === 'Ready' ? -1 : 1;
+      }
+      
+      // Second priority: Fewer games played (give new players a chance)
+      if (a.gamesPlayed !== b.gamesPlayed) {
+        return a.gamesPlayed - b.gamesPlayed;
+      }
+      
+      // Third priority: Skill level (Beginner < Intermediate < Advanced)
+      if (a.skillScore !== b.skillScore) {
+        return a.skillScore - b.skillScore;
+      }
+      
+      // Fourth priority: Time ready (first come, first served)
+      return a.readyTime - b.readyTime;
+    });
+
+    return sortedPlayers.slice(0, needed);
+  }
+
 
   // Validation functions
   function canStartGame(courtId: string): boolean {
@@ -316,7 +405,6 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   function viewMatchupScreen(courtId: string) {
-    const court = courts.find(c => c.id === courtId);
     const teams = courtTeams[courtId] ?? { A: [], B: [] };
     
     if (teams.A.length === 0 && teams.B.length === 0) {
@@ -324,27 +412,48 @@ const OpenPlayDetailPage: React.FC = () => {
       return;
     }
 
+    // Save the active court to localStorage
+    localStorage.setItem('activeCourtId', courtId);
+
+    // Create matchup data with all courts from the hub
     const matchupData = {
-      id: `${courtId}-${Date.now()}`,
+      id: `matchup-${Date.now()}`,
       sport: session?.title || "Open Play",
-      courtName: court?.name || "Unknown Court",
-      teamA: teams.A,
-      teamB: teams.B,
-      teamAName: teamNames[courtId]?.A,
-      teamBName: teamNames[courtId]?.B,
-      status: court?.status === "In-Game" ? "In-Progress" : "Scheduled",
-      startTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      endTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      focusedCourtId: courtId, // This will be the court to focus on
+      courts: courts.map(c => ({
+        id: c.id,
+        name: c.name,
+        capacity: c.capacity,
+        status: c.status,
+        teamA: courtTeams[c.id]?.A || [],
+        teamB: courtTeams[c.id]?.B || [],
+        teamAName: teamNames[c.id]?.A,
+        teamBName: teamNames[c.id]?.B,
+        startTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        endTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        score: undefined,
+        winner: undefined
+      }))
     };
 
-    // Open TV Display in a new tab
-    const newWindow = window.open(`/matchup/${courtId}`, '_blank');
-    
-    // Pass the matchup data to the new window
-    if (newWindow) {
-      newWindow.addEventListener('load', () => {
-        newWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
-      });
+    // Check if matchup window is already open
+    const existingWindow = window.open('', 'matchupWindow');
+    if (existingWindow && !existingWindow.closed) {
+      // Update existing window
+      existingWindow.location.href = `/matchup-multi/${courtId}`;
+      existingWindow.focus();
+      // Send updated data
+      existingWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
+    } else {
+      // Open new Multi-Court TV Display window
+      const newWindow = window.open(`/matchup-multi/${courtId}`, 'matchupWindow', 'width=1920,height=1080');
+      
+      // Pass the matchup data to the new window
+      if (newWindow) {
+        newWindow.addEventListener('load', () => {
+          newWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
+        });
+      }
     }
   }
 
@@ -419,6 +528,48 @@ const OpenPlayDetailPage: React.FC = () => {
         return "bg-red-100 text-red-800 border-red-200";
     }
   }
+
+  // Handle adding new player
+  const handleAddPlayer = async (playerData: PlayerFormData) => {
+    setIsAddingPlayer(true);
+    try {
+      // Create new participant from form data
+      const newParticipant: Participant = {
+        id: `player-${Date.now()}`,
+        name: `${playerData.firstName} ${playerData.lastName}`,
+        level: playerData.level,
+        status: playerData.paymentStatus === 'Paid' ? 'Ready' : 'Waitlist',
+        avatar: undefined,
+        paymentStatus: playerData.paymentStatus,
+        isApproved: playerData.paymentStatus === 'Paid',
+        waitlistReason: playerData.paymentStatus === 'Pending' ? 'Payment pending - ₱' + playerData.amount.toFixed(2) : undefined,
+        // Initialize game history for new players
+        gamesPlayed: 0,
+        readyTime: playerData.paymentStatus === 'Paid' ? Date.now() : undefined,
+        skillScore: getSkillScore(playerData.level)
+      };
+
+      // Add to participants list
+      setParticipants(prev => [...prev, newParticipant]);
+      
+      // Close modal
+      setAddPlayerOpen(false);
+      
+      // Show success message (you could add a toast notification here)
+      console.log('Player added successfully:', newParticipant);
+      
+      // Show success message based on payment status
+      if (playerData.paymentStatus === 'Paid') {
+        console.log('✅ Player added as "Ready to Play"');
+      } else if (playerData.paymentStatus === 'Pending') {
+        console.log('⚠️ Player added to Waitlist - Payment pending');
+      }
+    } catch (error) {
+      console.error('Error adding player:', error);
+    } finally {
+      setIsAddingPlayer(false);
+    }
+  };
 
   if (!id || !session) {
     return (
@@ -541,8 +692,17 @@ const OpenPlayDetailPage: React.FC = () => {
                         <Users className="h-5 w-5 text-primary" />
                         <h2 className="text-lg font-semibold">Participants</h2>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span>Total: {participants.length}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-gray-600">
+                          <span>Total: {participants.length}</span>
+                        </div>
+                        <Button
+                          onClick={() => setAddPlayerOpen(true)}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Add Player
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -736,6 +896,11 @@ const OpenPlayDetailPage: React.FC = () => {
                                   {getStatusIcon(participant.status)}
                                   <span className="text-xs text-gray-600">{participant.status}</span>
                                 </div>
+                                {participant.gamesPlayed !== undefined && (
+                                  <Badge variant="outline" className="text-xs text-blue-700 border-blue-300 bg-blue-50">
+                                    {participant.gamesPlayed} games
+                                  </Badge>
+                                )}
                                 {participant.paymentStatus !== "Paid" && (
                                   <Badge
                                     variant="outline"
@@ -1016,7 +1181,7 @@ const OpenPlayDetailPage: React.FC = () => {
                           className="bg-primary text-white hover:bg-primary/90"
                         >
                           <Trophy className="h-4 w-4 mr-2" />
-                          View Matchup Screen
+                          Play Screen
                         </Button>
                       </div>
                     </div>
@@ -1060,7 +1225,7 @@ const OpenPlayDetailPage: React.FC = () => {
                                     className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
                                   >
                                     <Trophy className="h-3 w-3 mr-1" />
-                                    TV Display
+                                    Play Screen
                                   </Button>
                                 )}
                               </div>
@@ -1296,6 +1461,16 @@ const OpenPlayDetailPage: React.FC = () => {
           </div>
         </DndContext>
       )}
+
+      {/* Add Player Modal */}
+      <AddPlayerModal
+        open={addPlayerOpen}
+        onOpenChange={setAddPlayerOpen}
+        sessionTitle={session.title}
+        sessionPrice={150} // Default price in pesos - you can get this from session data if available
+        onAddPlayer={handleAddPlayer}
+        isLoading={isAddingPlayer}
+      />
     </div>
   );
 };

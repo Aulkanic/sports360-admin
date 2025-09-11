@@ -1,6 +1,7 @@
 import { PrivateLayout, PublicLayout, SportsHubLayout } from "@/layout";
 import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, SportsFormPage, CourtsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, OpenPlayDetailPage, BookingsExplorePage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
 import MatchupScreen from "@/pages/private/bookings/matchup-screen";
+import MatchupScreenMulti from "@/pages/private/bookings/matchup-screen-multi";
 import SportsHubRegisterPage from "@/pages/public/register/sportshub";
 import SportsHubDashboardPage from "@/pages/private/sportshub/dashboard";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -26,6 +27,7 @@ export const urls = {
 	openPlay: '/super-admin/bookings/open-play',
 	openPlayDetail: '/open-play/:id',
 	matchupScreen: '/matchup/:id',
+	matchupScreenMulti: '/matchup-multi/:id',
 	communities: '/super-admin/communities-clubs',
 	profile: '/super-admin/profile',
 	settings: '/super-admin/settings',
@@ -75,6 +77,7 @@ export const routeList = {
 		layout: null,
 		routes: [
 			{ path: urls.matchupScreen, element: <MatchupScreen /> },
+			{ path: urls.matchupScreenMulti, element: <MatchupScreenMulti /> },
 		]
 	}
 };

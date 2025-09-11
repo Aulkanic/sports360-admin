@@ -110,6 +110,7 @@ const OpenPlayPage: React.FC = () => {
     endTime: "",
     maxPlayers: 10,
     price: 0,
+    isFreeJoin: false,
     eventType: "one-time" as "one-time" | "recurring" | "tournament",
     // Recurring fields
     frequency: "weekly" as "daily" | "weekly" | "monthly",
@@ -570,7 +571,8 @@ const OpenPlayPage: React.FC = () => {
         endTime: createForm.endTime,
         description: createForm.description.trim(),
         maxPlayers: createForm.maxPlayers || 10,
-        pricePerPlayer: createForm.price || 0,
+        pricePerPlayer: createForm.isFreeJoin ? 0 : (createForm.price || 0),
+        isFreeJoin: createForm.isFreeJoin,
         skillLevels: levels.map(level => level.toLowerCase()), // Convert to lowercase for API
         courtId: "1", // TODO: Get from user context or selection
         hubId: "1", // TODO: Get from user context or selection
@@ -595,6 +597,7 @@ const OpenPlayPage: React.FC = () => {
         endTime: "",
         maxPlayers: 10,
         price: 0,
+        isFreeJoin: false,
         eventType: "one-time",
         frequency: "weekly",
         endDate: "",
@@ -809,6 +812,11 @@ const OpenPlayPage: React.FC = () => {
                 >
                   {isActive ? "🟢 Active" : "🔵 Open"}
                 </Badge>
+                {(s as any).isFreeJoin || (s as any).pricePerPlayer === 0 ? (
+                  <Badge className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 border-green-200">
+                    🆓 Free
+                  </Badge>
+                ) : null}
                 {s.participants.length >= 8 && (
                   <Badge className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
                     🔥 Popular
@@ -916,7 +924,11 @@ const OpenPlayPage: React.FC = () => {
                   </div>
                     </div>
                     <div className="text-xs font-medium text-foreground">
-                      ₱{(s as any).pricePerPlayer || 150} per player
+                      {(s as any).isFreeJoin || (s as any).pricePerPlayer === 0 ? (
+                        <span className="text-green-600 font-semibold">🆓 Free to Join</span>
+                      ) : (
+                        `₱${(s as any).pricePerPlayer || 150} per player`
+                      )}
                     </div>
                   </div>
               </div>
@@ -1417,7 +1429,35 @@ const OpenPlayPage: React.FC = () => {
                   onChange={(e) => setCreateForm((p) => ({ ...p, price: Number(e.target.value) }))}
                   placeholder="0.00"
                   className="h-11"
+                  disabled={createForm.isFreeJoin}
                 />
+              </div>
+            </div>
+            
+            {/* Free Join Checkbox */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-4 border rounded-lg bg-gradient-to-r from-green-50/50 to-emerald-50/50 border-green-200/50">
+                <input
+                  type="checkbox"
+                  id="isFreeJoin"
+                  checked={createForm.isFreeJoin}
+                  onChange={(e) => {
+                    setCreateForm((p) => ({ 
+                      ...p, 
+                      isFreeJoin: e.target.checked,
+                      price: e.target.checked ? 0 : p.price // Reset price to 0 when free join is checked
+                    }));
+                  }}
+                  className="h-4 w-4 text-green-600 rounded border-green-300 focus:ring-green-200"
+                />
+                <div className="flex-1">
+                  <label htmlFor="isFreeJoin" className="text-sm font-medium text-green-800 cursor-pointer">
+                    🆓 Free to Join
+                  </label>
+                  <p className="text-xs text-green-700 mt-1">
+                    Players can join this session without any payment. When enabled, the price per player will be set to ₱0.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
