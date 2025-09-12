@@ -2,6 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import React from "react";
 import type { Participant } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { getStatusString } from "../types";
 
 const BenchPill: React.FC<{ participant: Participant }> = ({ participant }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -31,10 +32,10 @@ const BenchPill: React.FC<{ participant: Participant }> = ({ participant }) => {
         <p className="text-xs text-white/90 font-medium truncate">
           {participant.name}
         </p>
-        <p className="text-[10px] text-white/60 truncate">{participant.level}</p>
+        <p className="text-[10px] text-white/60 truncate">{participant.skillLevel}</p>
       </div>
       <Badge variant="outline" className="h-5 text-[10px] px-2 text-white/90 border-white/25">
-        {participant.status}
+        {getStatusString(participant.status)}
       </Badge>
     </div>
   );

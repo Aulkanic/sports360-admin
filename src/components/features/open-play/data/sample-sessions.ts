@@ -28,7 +28,7 @@ const ATHLETE_PHOTOS = [
   "https://images.freeimages.com/images/premium/previews/1657/16575334-portrait-of-businesswoman-with-crossed-arms.jpg",
 ];
 
-function makePlayers(status: ParticipantStatus[] = ["Ready", "Resting", "Reserve"]) {
+function makePlayers(status: ParticipantStatus[] = ["READY", "RESTING", "RESERVE"]) {
   return people.map(([name, lvl, idx]) => {
     const i = (idx as number) - 1; // zero-based
     const currentStatus = status[(idx as number) % status.length];
@@ -38,13 +38,25 @@ function makePlayers(status: ParticipantStatus[] = ["Ready", "Resting", "Reserve
       name,
       level: lvl as Level,
       status: currentStatus,
-      avatarUrl: ATHLETE_PHOTOS[i % ATHLETE_PHOTOS.length],
-      paymentStatus: currentStatus === "Waitlist" ? "Pending" : "Paid",
-      isApproved: currentStatus !== "Waitlist",
-      waitlistReason: currentStatus === "Waitlist" ? 
+      avatar: ATHLETE_PHOTOS[i % ATHLETE_PHOTOS.length],
+      paymentStatus: currentStatus === "WAITLIST" ? "Pending" : "Paid",
+      isApproved: currentStatus !== "WAITLIST",
+      waitlistReason: currentStatus === "WAITLIST" ? 
         (idx % 3 === 0 ? "Payment pending" : 
          idx % 3 === 1 ? "Registration incomplete" : 
          "Awaiting admin approval") : undefined,
+      playerStatus: { id: 1, description: currentStatus },
+      skillLevel: lvl as Level,
+      user: {
+        id: `u${idx}`,
+        userName: name.toLowerCase().replace(' ', '.'),
+        email: `${name.toLowerCase().replace(' ', '.')}@example.com`,
+        personalInfo: {
+          firstName: name.split(' ')[0],
+          lastName: name.split(' ')[1],
+          contactNo: `+123456789${idx}`
+        }
+      }
     };
   });
 }
@@ -58,7 +70,7 @@ export const SAMPLE_SESSIONS: OpenPlaySession[] = [
     level: ["Beginner", "Intermediate"],
     rules: "Games to 11, win by 2.",
     format: "Rolling queue, doubles preferred.",
-    participants: makePlayers(["Ready", "Resting", "Reserve"]) as Participant[],
+    participants: makePlayers(["READY", "RESTING", "RESERVE"]) as Participant[],
   },
   {
     id: "op-2",
@@ -68,6 +80,6 @@ export const SAMPLE_SESSIONS: OpenPlaySession[] = [
     level: ["Intermediate", "Advanced"],
     rules: "First to 4 games, no-ad.",
     format: "Singles or doubles based on turnout.",
-    participants: makePlayers(["Ready", "Resting", "Reserve"]) as Participant[],
+    participants: makePlayers(["READY", "RESTING", "RESERVE"]) as Participant[],
   },
 ];

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { addPlayerToSession, type AddPlayerRequest } from '@/services/open-play.service';
 import { 
   User, 
   UserPlus, 
@@ -14,7 +15,6 @@ import {
   CheckCircle,
   Phone,
   Mail,
-  MapPin,
   Calendar,
   Clock,
   DollarSign
@@ -43,7 +43,10 @@ interface AddPlayerModalProps {
   onOpenChange: (open: boolean) => void;
   sessionTitle: string;
   sessionPrice: number;
+  occurrenceId: string;
   onAddPlayer: (playerData: PlayerFormData) => void;
+  onSuccess?: () => void;
+  onError?: (error: any) => void;
   isLoading?: boolean;
 }
 
@@ -52,7 +55,10 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   onOpenChange,
   sessionTitle,
   sessionPrice,
+  occurrenceId,
   onAddPlayer,
+  onSuccess,
+  onError,
   isLoading = false
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -70,18 +76,23 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
     paymentStatus: 'Pending'
   });
 
-  const [errors, setErrors] = useState<Partial<PlayerFormData>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: keyof PlayerFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
   const validateStep1 = (): boolean => {
-    const newErrors: Partial<PlayerFormData> = {};
+    const newErrors: Record<string, string> = {};
     
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
@@ -92,7 +103,7 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
     if (formData.playerType === 'user' && !formData.email.trim()) {
       newErrors.email = 'Email is required for registered users';
     }
-    if (formData.playerType === 'user' && !formData.accountId.trim()) {
+    if (formData.playerType === 'user' && !formData.accountId?.trim()) {
       newErrors.accountId = 'Account ID is required for registered users';
     }
     if (!formData.phone.trim()) {
@@ -104,7 +115,7 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   };
 
   const validateStep2 = (): boolean => {
-    const newErrors: Partial<PlayerFormData> = {};
+    const newErrors: Record<string, string> = {};
     
     if (formData.amount <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
@@ -126,25 +137,71 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (currentStep === 2 && validateStep2()) {
-      onAddPlayer(formData);
-      // Reset form after successful submission
-      setFormData({
-        playerType: 'guest',
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        accountId: '',
-        level: 'Intermediate',
-        notes: '',
-        paymentMethod: 'walkin',
-        amount: sessionPrice,
-        paymentStatus: 'Pending'
-      });
-      setCurrentStep(1);
-      setErrors({});
+      setIsSubmitting(true);
+      
+      try {
+        // Map form data to API format
+        const apiData: AddPlayerRequest = {
+          occurrenceId,
+          playerType: formData.playerType === 'user' ? 'registered' : 'guest',
+          userId: formData.playerType === 'user' ? formData.accountId : undefined,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          skillLevel: formData.level.toLowerCase() as 'beginner' | 'intermediate' | 'advanced',
+          additionalNotes: formData.notes,
+          paymentMethodId: formData.paymentMethod === 'walkin' ? 1 : 2, // 1 = walk-in, 2 = QR
+          paymentAmount: formData.amount,
+          paymentStatus: formData.paymentStatus.toLowerCase() as 'pending' | 'confirmed' | 'rejected'
+        };
+
+        // Call the API
+        await addPlayerToSession(apiData);
+        
+        // Call the original onAddPlayer callback with form data
+        onAddPlayer(formData);
+        
+        // Call success callback if provided
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        // Reset form after successful submission
+        setFormData({
+          playerType: 'guest',
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          accountId: '',
+          level: 'Intermediate',
+          notes: '',
+          paymentMethod: 'walkin',
+          amount: sessionPrice,
+          paymentStatus: 'Pending'
+        });
+        setCurrentStep(1);
+        setErrors({});
+        
+        // Close modal
+        onOpenChange(false);
+        
+      } catch (error) {
+        console.error('Error adding player:', error);
+        
+        // Call error callback if provided
+        if (onError) {
+          onError(error);
+        }
+        
+        // Set error message
+        setErrors({ submit: 'Failed to add player. Please try again.' });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -206,10 +263,10 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
               <Button 
                 type="button" 
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
                 className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
               >
-                {isLoading ? (
+                {(isLoading || isSubmitting) ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Adding Player...
@@ -599,6 +656,19 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
                 }
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {errors.submit && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-red-600 text-sm font-bold">!</span>
+              </div>
+              <p className="text-red-800 font-medium">Error</p>
+            </div>
+            <p className="text-red-700 mt-1">{errors.submit}</p>
           </div>
         )}
       </div>

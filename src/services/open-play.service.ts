@@ -6,7 +6,7 @@
 import apiClient from "@/config/api";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced";
-export type ParticipantStatus = "Ready" | "Resting" | "Reserve" | "In-Game" | "Waitlist";
+export type ParticipantStatus = "READY" | "RESTING" | "RESERVE" | "IN-GAME" | "WAITLIST" | "PENDING" | "ONGOING" | "COMPLETED";
 
 export interface OpenPlayParticipant {
   id: string;
@@ -21,6 +21,21 @@ export interface OpenPlayParticipant {
   checkedInAt?: string;
   joinedAt?: string;
   notes?: string;
+  // Additional fields for compatibility
+  gamesPlayed?: number;
+  skillScore?: number;
+  readyTime?: number;
+  // API structure
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo: string;
+    };
+  };
 }
 
 export interface OpenPlaySession {
@@ -59,14 +74,26 @@ export interface OpenPlayOccurrence {
   endTime: string;
   currentParticipants: number;
   sessionType: string;
-  status: string;
+  statusId: number;
+  status?: string; // Keep for backward compatibility
   court?: {
     id: string;
     courtName: string;
     capacity: number;
-    status: string;
+    status: {
+      id: number;
+      description: string;
+      createdAt: string;
+    };
   };
   participants?: OpenPlayParticipant[];
+  organizerNotes?: string | null;
+  equipmentProvided?: any[];
+  registrationDeadline?: string | null;
+  cancellationDeadline?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  paymentMethodId?: number | null;
 }
 
 export interface CreateOpenPlaySessionData {
@@ -107,6 +134,21 @@ export interface OpenPlayLookup {
   statuses: Array<{ id: number; description: string }>;
   occurrenceStatuses: Array<{ id: number; description: string }>;
   participantStatuses: Array<{ id: number; description: string }>;
+}
+
+export interface AddPlayerRequest {
+  occurrenceId: string;
+  playerType: 'registered' | 'guest';
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  additionalNotes?: string;
+  paymentMethodId: number;
+  paymentAmount: number;
+  paymentStatus: 'pending' | 'confirmed' | 'rejected';
 }
 
 export interface OpenPlayStats {
@@ -298,6 +340,27 @@ export const updateParticipantStatus = async (
 };
 
 /**
+ * Admin function to update participant player status for a specific participant in a specific occurrence
+ */
+export const updateParticipantPlayerStatusByAdmin = async (
+  participantId: string,
+  occurrenceId: string,
+  playerStatusId: number | null
+): Promise<any> => {
+  try {
+    const response = await apiClient.put('/participant-status/admin/update-player-status', {
+      participantId: parseInt(participantId),
+      occurrenceId: parseInt(occurrenceId),
+      playerStatusId: playerStatusId
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating participant player status by admin:', error);
+    throw error;
+  }
+};
+
+/**
  * Get open-play statistics
  */
 export const getOpenPlayStats = async (hubId?: string): Promise<OpenPlayStats> => {
@@ -354,6 +417,62 @@ export const checkCourtAvailability = async (params: {
   }
 };
 
+/**
+ * Add a player to an open play session occurrence
+ */
+export const addPlayerToSession = async (playerData: AddPlayerRequest): Promise<any> => {
+  try {
+    const response = await apiClient.post('/openplay/add-player', playerData);
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error adding player to session:', error);
+    
+    // Check if the error has the expected structure
+    if (error.response?.data && typeof error.response.data === 'object') {
+      const errorData = error.response.data;
+      
+      // If it's already in the expected format, throw it as is
+      if (errorData.success === false && errorData.message && errorData.error) {
+        throw errorData;
+      }
+      
+      // If it's a different structure, format it
+      throw {
+        success: false,
+        message: errorData.message || 'Failed to add player to session',
+        error: errorData.error || error.message || 'An unexpected error occurred',
+        conflicts: errorData.conflicts || [],
+        suggestions: errorData.suggestions || {
+          message: 'Please try again with different parameters',
+          availableAlternatives: [
+            'Check if the session is still available',
+            'Verify the player information is correct',
+            'Try adding the player to a different session'
+          ],
+          conflictDetails: ''
+        }
+      };
+    }
+    
+    // Fallback for unexpected error formats
+    throw {
+      success: false,
+      message: 'Failed to add player to session',
+      error: error.message || 'An unexpected error occurred',
+      conflicts: [],
+      suggestions: {
+        message: 'Please try again with different parameters',
+        availableAlternatives: [
+          'Check if the session is still available',
+          'Verify the player information is correct',
+          'Try adding the player to a different session'
+        ],
+        conflictDetails: ''
+      }
+    };
+  }
+};
+
 // ==============================
 // UTILITY FUNCTIONS
 // ==============================
@@ -365,19 +484,19 @@ export const mapParticipantStatus = (status: string): ParticipantStatus => {
   switch (status.toUpperCase()) {
     case 'CONFIRMED':
     case 'READY':
-      return 'Ready';
+      return 'READY';
     case 'CHECKED_IN':
     case 'IN_GAME':
-      return 'In-Game';
+      return 'IN-GAME';
     case 'RESTING':
-      return 'Resting';
+      return 'RESTING';
     case 'RESERVE':
-      return 'Reserve';
+      return 'RESERVE';
     case 'WAITLIST':
     case 'PENDING':
-      return 'Waitlist';
+      return 'WAITLIST';
     default:
-      return 'Ready';
+      return 'READY';
   }
 };
 
@@ -386,18 +505,38 @@ export const mapParticipantStatus = (status: string): ParticipantStatus => {
  */
 export const mapParticipantStatusToAPI = (status: ParticipantStatus): number => {
   switch (status) {
-    case 'Ready':
+    case 'READY':
       return 1; // CONFIRMED
-    case 'In-Game':
+    case 'IN-GAME':
       return 3; // CHECKED_IN
-    case 'Resting':
+    case 'RESTING':
       return 4; // RESTING
-    case 'Reserve':
+    case 'RESERVE':
       return 5; // RESERVE
-    case 'Waitlist':
+    case 'WAITLIST':
       return 2; // PENDING
     default:
       return 1; // CONFIRMED
+  }
+};
+
+/**
+ * Map participant status to player status ID for admin API
+ */
+export const mapParticipantStatusToPlayerStatusId = (status: ParticipantStatus): number | null => {
+  switch (status) {
+    case 'READY':
+      return 1; // Ready player status
+    case 'IN-GAME':
+      return 2; // Playing player status
+    case 'RESTING':
+      return 3; // Resting player status
+    case 'RESERVE':
+      return 4; // Reserve player status
+    case 'WAITLIST':
+      return null; // No player status for waitlist
+    default:
+      return 1; // Ready player status
   }
 };
 
@@ -495,6 +634,9 @@ export const convertOccurrenceFromAPI = (apiOccurrence: any): OpenPlayOccurrence
     sessionId: apiOccurrence.sessionId.toString(),
     courtId: apiOccurrence.courtId?.toString(),
     occurrenceDate: apiOccurrence.occurrenceDate,
+    statusId: apiOccurrence.statusId?.toString(),
+    createdAt: apiOccurrence.createdAt,
+    updatedAt: apiOccurrence.updatedAt,
     startTime: apiOccurrence.startTime,
     endTime: apiOccurrence.endTime,
     currentParticipants: apiOccurrence.currentParticipants,
@@ -514,22 +656,103 @@ export const convertOccurrenceFromAPI = (apiOccurrence: any): OpenPlayOccurrence
  * Convert backend participant data to frontend format
  */
 export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticipant => {
+  console.log('Converting participant from API:', apiParticipant);
+  
+  // Map skill level from API
+  const mapSkillLevel = (skillLevel: string): Level => {
+    switch (skillLevel?.toLowerCase()) {
+      case 'beginner':
+        return 'Beginner';
+      case 'intermediate':
+        return 'Intermediate';
+      case 'advanced':
+        return 'Advanced';
+      default:
+        return 'Intermediate';
+    }
+  };
+
+  // Map payment status from API
+  const mapPaymentStatus = (paymentStatus: string): 'Paid' | 'Pending' | 'Rejected' => {
+    switch (paymentStatus?.toLowerCase()) {
+      case 'paid':
+      case 'confirmed':
+        return 'Paid';
+      case 'pending':
+        return 'Pending';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'Paid';
+    }
+  };
+
+  // Map participant status from statusId (general status)
+  const mapStatusFromId = (statusId: number): ParticipantStatus => {
+    switch (statusId) {
+      case 1: // CONFIRMED
+        return 'READY';
+      case 2: // PENDING
+        return 'WAITLIST';
+      case 3: // CHECKED_IN
+        return 'IN-GAME';
+      case 4: // RESTING
+        return 'RESTING';
+      case 5: // RESERVE
+        return 'RESERVE';
+      default:
+        return 'READY';
+    }
+  };
+
+  // Map player status from playerStatusId (specific player status)
+  const mapPlayerStatusFromId = (playerStatusId: number | null): ParticipantStatus => {
+    if (!playerStatusId) {
+      return 'READY'; // Default when no player status is set
+    }
+    
+    switch (playerStatusId) {
+      case 1: // READY
+        return 'READY';
+      case 2: // REST
+        return 'RESTING';
+      case 3: // WAITLIST
+        return 'WAITLIST';
+      case 6: // RESERVE
+        return 'RESERVE';
+      case 12: // ONGOING
+        return 'IN-GAME';
+      default:
+        return 'READY';
+    }
+  };
+
+  const participantName = apiParticipant.user?.personalInfo ? 
+    `${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}`.trim() :
+    apiParticipant.user?.userName || 'Unknown Player';
+
+  console.log('Converted participant name:', participantName);
+
   return {
     id: apiParticipant.id.toString(),
-    name: apiParticipant.user?.personalInfo ? 
-      `${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}` :
-      apiParticipant.user?.userName || 'Unknown',
-    level: 'Intermediate', // Default level, should be mapped from API
-    status: mapParticipantStatus(apiParticipant.status),
+    name: participantName,
+    level: mapSkillLevel(apiParticipant.skillLevel),
+    status: mapPlayerStatusFromId(apiParticipant.playerStatusId) || mapStatusFromId(apiParticipant.statusId),
     avatar: undefined,
     initials: apiParticipant.user?.personalInfo ? 
       generateInitials(`${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}`) :
-      undefined,
-    paymentStatus: 'Paid', // Default, should be mapped from API
-    isApproved: apiParticipant.status === 'confirmed',
+      generateInitials(apiParticipant.user?.userName || 'Unknown'),
+    paymentStatus: mapPaymentStatus(apiParticipant.paymentStatus),
+    isApproved: apiParticipant.statusId === 1, // CONFIRMED
     checkedInAt: apiParticipant.checkedInAt,
     joinedAt: apiParticipant.registeredAt,
-    notes: apiParticipant.notes
+    notes: apiParticipant.notes,
+    // Add additional fields for compatibility
+    gamesPlayed: apiParticipant.gamesPlayed || 0,
+    skillScore: apiParticipant.skillScore || 2,
+    readyTime: apiParticipant.readyTime,
+    // API structure
+    user: apiParticipant.user
   };
 };
 

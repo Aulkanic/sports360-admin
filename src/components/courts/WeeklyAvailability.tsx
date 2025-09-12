@@ -35,8 +35,15 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({ form, setForm }
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [enabledDays, setEnabledDays] = useState<Set<string>>(new Set());
   
-  // Initialize availability if not present
-  const availability = form.availability || [];
+  // Initialize availability if not present - convert from object to array format
+  const availability = form.availability ? Object.entries(form.availability).flatMap(([dayName, dayData]) => 
+    dayData.timeSlots.map(slot => ({
+      weekday: DAYS.find(d => d.name === dayName)?.weekday || 0,
+      startTime: slot.start,
+      endTime: slot.end,
+      isAvailable: slot.available
+    }))
+  ) : [];
 
   // Initialize enabled days from existing availability
   React.useEffect(() => {
@@ -88,9 +95,24 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({ form, setForm }
       isAvailable: slot.available
     }));
 
+    // Convert array back to object format for CourtFormData
+    const newAvailabilityArray = [...otherDaysSlots, ...newDaySlots];
+    const newAvailabilityObject = DAYS.reduce((acc, day) => {
+      const daySlots = newAvailabilityArray.filter(slot => slot.weekday === day.weekday);
+      acc[day.name] = {
+        available: daySlots.length > 0,
+        timeSlots: daySlots.map(slot => ({
+          start: slot.startTime,
+          end: slot.endTime,
+          available: slot.isAvailable
+        }))
+      };
+      return acc;
+    }, {} as any);
+
     setForm(prev => ({
       ...prev,
-      availability: [...otherDaysSlots, ...newDaySlots]
+      availability: newAvailabilityObject
     }));
   };
 
@@ -112,9 +134,22 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({ form, setForm }
       
       // Remove all time slots for this day
       const otherDaysSlots = availability.filter(slot => slot.weekday !== weekday);
+      const newAvailabilityObject = DAYS.reduce((acc, day) => {
+        const daySlots = otherDaysSlots.filter(slot => slot.weekday === day.weekday);
+        acc[day.name] = {
+          available: daySlots.length > 0,
+          timeSlots: daySlots.map(slot => ({
+            start: slot.startTime,
+            end: slot.endTime,
+            available: slot.isAvailable
+          }))
+        };
+        return acc;
+      }, {} as any);
+
       setForm(prev => ({
         ...prev,
-        availability: otherDaysSlots
+        availability: newAvailabilityObject
       }));
     } else {
       // Enable the day - add to enabled days
@@ -218,13 +253,12 @@ const WeeklyAvailability: React.FC<WeeklyAvailabilityProps> = ({ form, setForm }
   };
 
   // Helper function to get total slots (available for future use)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const getTotalSlots = () => {
-    return DAYS.reduce((total, day) => {
-      const dayAvailability = getDayAvailability(day.name);
-      return total + dayAvailability.timeSlots.length;
-    }, 0);
-  };
+  // const getTotalSlots = () => {
+  //   return DAYS.reduce((total, day) => {
+  //     const dayAvailability = getDayAvailability(day.name);
+  //     return total + dayAvailability.timeSlots.length;
+  //   }, 0);
+  // };
 
   return (
     <div className="space-y-6">

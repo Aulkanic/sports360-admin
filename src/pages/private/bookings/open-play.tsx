@@ -6,7 +6,7 @@ import PlayerStatusPanel, { type PlayerItem } from "@/components/player-status-p
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import ErrorDisplay, { type ApiError } from "@/components/ui/error-display";
 import OpenPlayGridSkeleton from "@/components/features/open-play/OpenPlayGridSkeleton";
 import { cn } from "@/lib/utils";
@@ -23,8 +23,10 @@ import {
   getOpenPlayLookup,
   type CreateOpenPlaySessionData,
   type OpenPlayStats,
+  type OpenPlayOccurrence,
   // type OpenPlayLookup
 } from "@/services/open-play.service";
+import OccurrenceSelector from "@/components/features/open-play/OccurrenceSelector";
 
 type LevelTag = "Beginner" | "Intermediate" | "Advanced";
 
@@ -41,6 +43,16 @@ type OpenPlaySession = {
     initials?: string;
     level?: LevelTag;
   })[];
+  occurrenceId?: string;
+  occurrences?: any[]; // OpenPlayOccurrence[] - occurrences for recurring sessions
+  maxParticipants?: number;
+  pricePerPlayer?: number;
+  sessionType?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  hub?: any;
+  sport?: any;
+  totalOccurrences?: number;
 };
 
 // Removed dummy participant data - now using real API data
@@ -72,8 +84,7 @@ function AvatarsStrip({
           className="ring-2 ring-white shadow-sm"
           style={{ width: size, height: size }}
         >
-          <AvatarImage src={p.avatar} alt={p.name} />
-          <AvatarFallback className="text-[10px]">{p.initials ?? "?"}</AvatarFallback>
+          <AvatarImage src={p.avatar ?? '/default_avatar.png'} alt={p.name} />
         </Avatar>
       ))}
       {overflow > 0 && (
@@ -98,6 +109,8 @@ const OpenPlayPage: React.FC = () => {
   const [calDate, setCalDate] = useState<Date>(new Date());
   const [calView, setCalView] = useState<string>(Views.MONTH);
   const [stats, setStats] = useState<OpenPlayStats | null>(null);
+  const [showOccurrenceSelector, setShowOccurrenceSelector] = useState(false);
+  const [selectedSessionForOccurrence, setSelectedSessionForOccurrence] = useState<OpenPlaySession | null>(null);
   // const [lookup, setLookup] = useState<OpenPlayLookup | null>(null);
   const navigate = useNavigate();
 
@@ -204,18 +217,41 @@ const OpenPlayPage: React.FC = () => {
           location: firstOccurrence?.court?.courtName || 'TBD',
           eventType: apiSession.occurrences?.length > 1 ? 'recurring' : 'one-time', // Map based on occurrences count
           level: ['Beginner', 'Intermediate', 'Advanced'], // Default levels
-          participants: firstOccurrence?.participants?.map((p: any) => ({
-            id: p.id.toString(),
-            name: p.user?.personalInfo ? 
-              `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}` :
-              p.user?.userName || 'Unknown',
-            status: p.status === 'confirmed' ? 'In-Game' : 'Resting', // Map to PlayerItem status
-            avatar: undefined,
-            initials: p.user?.personalInfo ? 
-              `${p.user.personalInfo.firstName?.[0]}${p.user.personalInfo.lastName?.[0]}` :
-              p.user?.userName?.[0] || '?',
-            level: 'Intermediate' as LevelTag // Default level
-          })) || [],
+          participants: firstOccurrence?.participants?.map((p: any) => {
+            // Map statusId to PlayerItem status
+            const getParticipantStatus = (statusId: number, paymentStatus: string) => {
+              if (paymentStatus === 'paid' && statusId === 5) return 'Ready'; // Assuming statusId 5 with paid = Ready
+              if (paymentStatus === 'pending') return 'Waitlist';
+              if (paymentStatus === 'rejected') return 'Reserve';
+              return 'Ready'; // Default
+            };
+
+            // Map skill level
+            const getSkillLevel = (skillLevel: string): LevelTag => {
+              switch (skillLevel?.toLowerCase()) {
+                case 'beginner': return 'Beginner';
+                case 'intermediate': return 'Intermediate';
+                case 'advanced': return 'Advanced';
+                default: return 'Intermediate';
+              }
+            };
+
+            return {
+              id: p.id.toString(),
+              name: p.user?.personalInfo ? 
+                `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}` :
+                p.user?.userName || 'Unknown',
+              status: getParticipantStatus(p.statusId, p.paymentStatus),
+              avatar: undefined,
+              initials: p.user?.personalInfo ? 
+                `${p.user.personalInfo.firstName?.[0]}${p.user.personalInfo.lastName?.[0]}` :
+                p.user?.userName?.[0] || '?',
+              level: getSkillLevel(p.skillLevel),
+              paymentStatus: p.paymentStatus,
+              paymentAmount: p.paymentAmount,
+              notes: p.notes
+            };
+          }) || [],
           // Add additional data for more informative cards
           maxParticipants: apiSession.maxParticipants || 10,
           pricePerPlayer: apiSession.pricePerPlayer || 150,
@@ -224,7 +260,8 @@ const OpenPlayPage: React.FC = () => {
           createdAt: apiSession.createdAt,
           hub: apiSession.hub,
           sport: apiSession.sport,
-          totalOccurrences: apiSession.occurrences?.length || 0
+          totalOccurrences: apiSession.occurrences?.length || 0,
+          occurrences: apiSession.occurrences || [] // Include occurrences for recurring sessions
         };
       });
       
@@ -358,6 +395,38 @@ const OpenPlayPage: React.FC = () => {
     setParticipantsSessionId(sessionId);
     setParticipantsOpen(true);
   }
+
+  const handleManageSession = (session: OpenPlaySession) => {
+    // Check if this is a recurring session with multiple occurrences
+    if (session.eventType === 'recurring' && (session as any).occurrences && (session as any).occurrences.length > 1) {
+      setSelectedSessionForOccurrence(session);
+      setShowOccurrenceSelector(true);
+    } else {
+      // For single sessions or recurring sessions with only one occurrence, go directly to management
+      navigate(`/open-play/${session.id}`, { state: { session } });
+    }
+  };
+
+  const handleSelectOccurrence = (occurrence: OpenPlayOccurrence) => {
+    if (selectedSessionForOccurrence) {
+      // Create a session object with the selected occurrence
+      const sessionWithOccurrence = {
+        ...selectedSessionForOccurrence,
+        // Override session data with occurrence-specific data
+        when: `${occurrence.occurrenceDate} • ${occurrence.startTime}–${occurrence.endTime}`,
+        location: occurrence.court?.courtName || selectedSessionForOccurrence.location,
+        participants: occurrence.participants || selectedSessionForOccurrence.participants,
+        occurrenceId: occurrence.id
+      };
+      
+      navigate(`/open-play/${selectedSessionForOccurrence.id}`, { 
+        state: { 
+          session: sessionWithOccurrence,
+          occurrence: occurrence
+        } 
+      });
+    }
+  };
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
@@ -789,7 +858,7 @@ const OpenPlayPage: React.FC = () => {
             <div
               key={s.id}
               className={cn(
-                "group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300",
+                "group relative overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300",
                 "hover:shadow-xl hover:shadow-primary/15 hover:scale-[1.02] hover:border-primary/40",
                 "hover:-translate-y-1",
                 selectedSessionId === s.id ? "ring-2 ring-primary/70 shadow-xl shadow-primary/25 scale-[1.02]" : "",
@@ -1014,7 +1083,7 @@ const OpenPlayPage: React.FC = () => {
                     className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/open-play/${s.id}`, { state: { session: s } });
+                    handleManageSession(s);
                   }}
                 >
                     <Settings className="h-4 w-4 mr-2" />
@@ -1641,6 +1710,17 @@ const OpenPlayPage: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Occurrence Selector Modal */}
+      {selectedSessionForOccurrence && (
+        <OccurrenceSelector
+          open={showOccurrenceSelector}
+          onOpenChange={setShowOccurrenceSelector}
+          sessionTitle={selectedSessionForOccurrence.title}
+          occurrences={(selectedSessionForOccurrence as any).occurrences || []}
+          onSelectOccurrence={handleSelectOccurrence}
+        />
       )}
     </div>
   );

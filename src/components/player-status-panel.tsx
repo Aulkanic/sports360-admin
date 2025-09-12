@@ -9,7 +9,13 @@ import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-
 export interface PlayerItem {
 	id: string;
 	name: string;
-	status: "In-Game" | "Resting";
+	status: "In-Game" | "Resting" | "Ready" | "Waitlist" | "Reserve";
+	avatar?: string;
+	initials?: string;
+	level?: string;
+	paymentStatus?: string;
+	paymentAmount?: string;
+	notes?: string;
 }
 
 interface PlayerStatusPanelProps {

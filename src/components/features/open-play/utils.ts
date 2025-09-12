@@ -6,7 +6,10 @@ export const LVL_SCORE: Record<Level, number> = {
   Advanced: 3,
 };
 
-export function initials(name: string) {
+export function initials(name: string | undefined | null) {
+  if (!name || typeof name !== 'string') {
+    return '??';
+  }
   return name
     .split(" ")
     .map((s) => s[0])

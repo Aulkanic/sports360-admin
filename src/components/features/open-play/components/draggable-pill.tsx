@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { useDraggable } from "@dnd-kit/core";
 import React from "react";
 import type { Participant } from "../types";
+import { getStatusString } from "../types";
 
 const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -13,21 +15,26 @@ const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) 
     opacity: isDragging ? 0.65 : 1,
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } as React.CSSProperties;
-
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
-      className="rounded-lg border max-h-16 bg-card p-2 flex items-center gap-3 hover:shadow-sm transition"
+      className="rounded-lg border bg-card p-3 flex items-center gap-3 hover:shadow-sm transition"
     >
-      <img src={participant.avatar ?? "https://tse3.mm.bing.net/th/id/OIP.Cgu701azNx8XXf5cSrAnyAHaHa?r=0&cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3"} className="h-8 w-8 rounded-full" alt="" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{participant.name}</p>
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarImage src={participant.avatar || '/default_avatar.png'} />
+      </Avatar>
+      <div className="flex flex-col gap-2 min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">{participant.user?.personalInfo?.firstName} {participant.user?.personalInfo?.lastName}</p>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-[10px]">{participant.status}</Badge>
-          <Badge variant="outline" className="text-[10px]">{participant.level}</Badge>
+          <Badge variant="secondary" className="text-[10px]">
+            {getStatusString(participant.playerStatus?.description)}
+          </Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {participant.skillLevel ?? 'No Skill'}
+          </Badge>
         </div>
       </div>
     </div>

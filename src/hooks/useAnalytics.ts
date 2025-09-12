@@ -10,7 +10,7 @@ export const useAnalytics = (apiCourts: APICourt[]) => {
       if (apiCourts.length > 0) {
         setIsLoading(true);
         const hubId = apiCourts[0].hubId;
-        const analyticsData = await getHubCourtAnalytics(hubId);
+        const analyticsData = await getHubCourtAnalytics(hubId?.toString() || '');
         setAnalytics(analyticsData);
       }
     } catch (error) {

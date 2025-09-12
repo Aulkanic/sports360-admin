@@ -1,12 +1,20 @@
 export type Level = "Beginner" | "Intermediate" | "Advanced";
-export type ParticipantStatus = "Ready" | "Resting" | "Reserve" | "In-Game" | "Waitlist";
+export type ParticipantStatus = "READY" | "RESTING" | "RESERVE" | "IN-GAME" | "WAITLIST" | "PENDING" | "ONGOING" | "COMPLETED";
+
+export type StatusObject = {
+  id: number;
+  description: string;
+};
 
 export type Participant = {
+  playerStatus: any;
+  skillLevel: any;
   id: string;
   name: string;
   level: Level;
-  status: ParticipantStatus;
+  status: ParticipantStatus | StatusObject;
   avatar?: string;
+  initials?: string;
   paymentStatus: "Paid" | "Pending" | "Rejected";
   isApproved: boolean;
   waitlistReason?: string;
@@ -14,13 +22,24 @@ export type Participant = {
   gamesPlayed?: number;
   readyTime?: number;
   skillScore?: number;
+  // API structure
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo: string;
+    };
+  };
 };
 
 export type Court = {
   id: string;
   name: string;
   capacity: number; // total across both teams
-  status: "Open" | "In-Game" | "Closed";
+  status: "Open" | "IN-GAME" | "Closed";
 };
 
 export type Match = {
@@ -45,4 +64,17 @@ export type OpenPlaySession = {
   rules?: string;
   format?: string;
   participants: Participant[];
+  occurrenceId?: string;
+};
+
+// Helper function to extract status string from status object or string
+export const getStatusString = (status: ParticipantStatus | StatusObject | any): string => {
+
+  if (typeof status === 'string') {
+    return status;
+  }
+  if (status && typeof status === 'object' && status.description) {
+    return status.description;
+  }
+  return 'Unknown';
 };
