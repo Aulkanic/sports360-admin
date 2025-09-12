@@ -14,6 +14,7 @@ import { getStatusString } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, convertSessionFromAPI, convertParticipantFromAPI, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId } from "@/services/open-play.service";
+import { createGameMatch } from "@/services/game-match.service";
 import { useCourts } from "@/hooks";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
@@ -110,6 +111,7 @@ const OpenPlayDetailPage: React.FC = () => {
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastStatusUpdate, setLastStatusUpdate] = useState<number>(0);
+  const [isCreatingGameMatch, setIsCreatingGameMatch] = useState(false);
 
   const inAnyTeam = useMemo(
     () =>
@@ -361,7 +363,7 @@ const OpenPlayDetailPage: React.FC = () => {
 
   /* Controls */
 
-  function addCourt(data: {
+  async function addCourt(data: {
     courtId: string;
     team1Name: string;
     team2Name: string;
@@ -370,25 +372,50 @@ const OpenPlayDetailPage: React.FC = () => {
     const selectedCourt = availableCourts.find(c => c.id === data.courtId);
     if (!selectedCourt) return;
 
-    // Create a new court instance for the game management
-    const newCourt: Court = {
-      id: `${data.courtId}-${Date.now()}`, // Unique ID for this game instance
-      name: `${selectedCourt.name} - ${data.matchName}`,
-      capacity: selectedCourt.capacity || 4, // Default to 4 if not specified
-      status: "Open"
-    };
-
-    setCourts((prev) => [...prev, newCourt]);
-    setCourtTeams((prev) => ({ ...prev, [newCourt.id]: { A: [], B: [] } }));
+    setIsCreatingGameMatch(true);
     
-    // Set team names
-    setTeamNames((prev) => ({
-      ...prev,
-      [newCourt.id]: {
-        A: data.team1Name,
-        B: data.team2Name
-      }
-    }));
+    try {
+      // Create game match record in the backend
+      const gameMatchData = {
+        occurrenceId: occurrence?.id || sessionById?.occurrenceId || '1', // Use occurrence ID or fallback
+        courtId: data.courtId,
+        matchName: data.matchName,
+        requiredPlayers: selectedCourt.capacity || 4,
+        team1Name: data.team1Name,
+        team2Name: data.team2Name,
+        organizerNotes: `Game match created for ${selectedCourt.name}`
+      };
+
+      const createdMatch = await createGameMatch(gameMatchData);
+
+      // Create a new court instance for the game management UI
+      const newCourt: Court = {
+        id: createdMatch.id, // Use the API-created match ID
+        name: `${selectedCourt.name} - ${data.matchName}`,
+        capacity: selectedCourt.capacity || 4,
+        status: "Open"
+      };
+
+      setCourts((prev) => [...prev, newCourt]);
+      setCourtTeams((prev) => ({ ...prev, [newCourt.id]: { A: [], B: [] } }));
+      
+      // Set team names
+      setTeamNames((prev) => ({
+        ...prev,
+        [newCourt.id]: {
+          A: data.team1Name,
+          B: data.team2Name
+        }
+      }));
+
+      console.log('Game match created successfully:', createdMatch);
+    } catch (error) {
+      console.error('Error creating game match:', error);
+      // Show error to user (you might want to add a toast notification here)
+      alert('Failed to create game match. Please try again.');
+    } finally {
+      setIsCreatingGameMatch(false);
+    }
   }
 
   function renameCourt(courtId: string) {
@@ -897,6 +924,7 @@ const OpenPlayDetailPage: React.FC = () => {
           availableCourts={availableCourts}
           onDragEnd={onDragEnd}
           onAddCourt={addCourt}
+          isCreatingGameMatch={isCreatingGameMatch}
           onRenameCourt={renameCourt}
           onToggleCourtOpen={toggleCourtOpen}
           onStartGame={startGame}

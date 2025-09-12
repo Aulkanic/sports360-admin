@@ -8,6 +8,15 @@ export const API_CONFIG = {
     ADMIN_LOGIN: '/auth/login',
     ADMIN_REFRESH_TOKEN: '/auth/refresh-token',
     ADMIN_ME: '/auth/get-personal-info',
+    // Game Match endpoints
+    GAME_MATCH_CREATE: '/game-match/create',
+    GAME_MATCH_GET_ALL: '/game-match/matches',
+    GAME_MATCH_GET_BY_ID: '/game-match/matches',
+    GAME_MATCH_GET_BY_OCCURRENCE: '/game-match/occurrence',
+    GAME_MATCH_UPDATE: '/game-match/matches',
+    GAME_MATCH_ADD_PLAYER: '/game-match/matches',
+    GAME_MATCH_UPDATE_PLAYER_STATUS: '/game-match/participants',
+    GAME_MATCH_REMOVE_PLAYER: '/game-match/participants',
   },
   TIMEOUT: 10000, // 10 seconds
 } as const;

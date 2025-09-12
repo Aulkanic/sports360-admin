@@ -11,7 +11,7 @@ interface AddCourtModalProps {
     team1Name: string;
     team2Name: string;
     matchName: string;
-  }) => void;
+  }) => Promise<void>;
   availableCourts: Court[];
 }
 
@@ -29,6 +29,7 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -65,20 +66,28 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      onAddCourt(formData);
-      // Reset form
-      setFormData({
-        courtId: '',
-        team1Name: '',
-        team2Name: '',
-        matchName: ''
-      });
-      setErrors({});
-      onClose();
+      setIsSubmitting(true);
+      try {
+        await onAddCourt(formData);
+        // Reset form
+        setFormData({
+          courtId: '',
+          team1Name: '',
+          team2Name: '',
+          matchName: ''
+        });
+        setErrors({});
+        onClose();
+      } catch (error) {
+        console.error('Error creating game match:', error);
+        // Error is already handled in the parent component
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -168,11 +177,19 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button type="submit">
-              Add Court Match
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Add Court Match'}
             </Button>
           </div>
         </form>

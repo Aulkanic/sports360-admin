@@ -31,7 +31,7 @@ interface GameManagementTabProps {
     team1Name: string;
     team2Name: string;
     matchName: string;
-  }) => void;
+  }) => Promise<void>;
   onRenameCourt: (courtId: string) => void;
   onToggleCourtOpen: (courtId: string) => void;
   onStartGame: (courtId: string) => Promise<void>;
@@ -46,6 +46,7 @@ interface GameManagementTabProps {
   canStartGame: (courtId: string) => boolean;
   canEndGame: (courtId: string) => boolean;
   canCloseCourt: (courtId: string) => boolean;
+  isCreatingGameMatch?: boolean;
 }
 
 const GameManagementTab: React.FC<GameManagementTabProps> = ({
@@ -76,6 +77,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   canStartGame,
   canEndGame,
   canCloseCourt,
+  isCreatingGameMatch = false,
 }) => {
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   return (
@@ -157,9 +159,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
               <div className="bg-white rounded-xl border shadow-sm p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" onClick={() => setShowAddCourtModal(true)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowAddCourtModal(true)}
+                      disabled={isCreatingGameMatch}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Court
+                      {isCreatingGameMatch ? 'Creating...' : 'Add Court'}
                     </Button>
                     <Button 
                       variant="outline" 
