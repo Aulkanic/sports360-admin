@@ -1,15 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react";
+import React, { useState } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { CourtCanvas } from "@/components/features/open-play/components/court-canvas";
 import CourtMatchmakingCard from "@/components/features/open-play/components/court-matching-card";
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
+import AddCourtModal from "@/components/features/open-play/AddCourtModal";
 import type { Court, Match, Participant } from "@/components/features/open-play/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trophy } from "lucide-react";
+import { Trophy, Plus, Users } from "lucide-react";
 
 interface GameManagementTabProps {
   participants: Participant[];
@@ -23,8 +24,14 @@ interface GameManagementTabProps {
   restingList: Participant[];
   reserveList: Participant[];
   waitlistList: Participant[];
+  availableCourts: Court[];
   onDragEnd: (e: DragEndEvent) => Promise<void>;
-  onAddCourt: () => void;
+  onAddCourt: (data: {
+    courtId: string;
+    team1Name: string;
+    team2Name: string;
+    matchName: string;
+  }) => void;
   onRenameCourt: (courtId: string) => void;
   onToggleCourtOpen: (courtId: string) => void;
   onStartGame: (courtId: string) => Promise<void>;
@@ -52,6 +59,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   restingList,
   reserveList,
   waitlistList,
+  availableCourts,
   onDragEnd,
   onAddCourt,
   onRenameCourt,
@@ -69,6 +77,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   canEndGame,
   canCloseCourt,
 }) => {
+  const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   return (
     <DndContext onDragEnd={onDragEnd}>
       <div className="flex-1 overflow-y-auto">
@@ -148,7 +157,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
               <div className="bg-white rounded-xl border shadow-sm p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" onClick={onAddCourt}>
+                    <Button variant="outline" onClick={() => setShowAddCourtModal(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
                       Add Court
                     </Button>
                     <Button 
@@ -172,49 +182,66 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
 
               {/* Court canvas */}
               <CourtCanvas>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {courts.map((c) => {
-                    const teams = courtTeams[c.id] ?? { A: [], B: [] };
-                    const perTeam = Math.floor(c.capacity / 2);
+                {courts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-6">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Users className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Courts Added Yet</h3>
+                    <p className="text-gray-500 text-center mb-6 max-w-md">
+                      Get started by adding your first court match. You'll be able to select a court, 
+                      name the teams, and set up the match details.
+                    </p>
+                    <Button onClick={() => setShowAddCourtModal(true)} className="bg-primary text-white hover:bg-primary/90">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Court
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {courts.map((c) => {
+                      const teams = courtTeams[c.id] ?? { A: [], B: [] };
+                      const perTeam = Math.floor(c.capacity / 2);
 
-                    return (
-                      <div key={c.id}>
-                        <div className="p-2">
-                          <CourtMatchmakingCard
-                            court={c}
-                            teamA={teams.A}
-                            teamB={teams.B}
-                            capacity={c.capacity}
-                            onStart={() => onStartGame(c.id)}
-                            onEnd={() => onEndGame(c.id)}
-                            onRename={() => onRenameCourt(c.id)}
-                            onToggleOpen={() => onToggleCourtOpen(c.id)}
-                            onRandomPick={() => onMatchMakeCourt(c.id)}
-                            canStartGame={canStartGame(c.id)}
-                            canEndGame={canEndGame(c.id)}
-                            canCloseCourt={canCloseCourt(c.id)}
-                          />
-                          <div className="flex flex-col items-center gap-2 mt-2">
-                            <p className="text-[11px] text-muted-foreground text-center">
-                              Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
-                            </p>
-                            {(teams.A.length > 0 || teams.B.length > 0) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => onViewMatchupScreen(c.id)}
-                                className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-                              >
-                                <Trophy className="h-3 w-3 mr-1" />
-                                Play Screen
-                              </Button>
-                            )}
+                      return (
+                        <div key={c.id}>
+                          <div className="p-2">
+                            <CourtMatchmakingCard
+                              court={c}
+                              teamA={teams.A}
+                              teamB={teams.B}
+                              capacity={c.capacity}
+                              onStart={() => onStartGame(c.id)}
+                              onEnd={() => onEndGame(c.id)}
+                              onRename={() => onRenameCourt(c.id)}
+                              onToggleOpen={() => onToggleCourtOpen(c.id)}
+                              onRandomPick={() => onMatchMakeCourt(c.id)}
+                              canStartGame={canStartGame(c.id)}
+                              canEndGame={canEndGame(c.id)}
+                              canCloseCourt={canCloseCourt(c.id)}
+                            />
+                            <div className="flex flex-col items-center gap-2 mt-2">
+                              <p className="text-[11px] text-muted-foreground text-center">
+                                Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
+                              </p>
+                              {(teams.A.length > 0 || teams.B.length > 0) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => onViewMatchupScreen(c.id)}
+                                  className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                                >
+                                  <Trophy className="h-3 w-3 mr-1" />
+                                  Play Screen
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CourtCanvas>
 
               {/* Matches */}
@@ -419,6 +446,14 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Add Court Modal */}
+      <AddCourtModal
+        open={showAddCourtModal}
+        onClose={() => setShowAddCourtModal(false)}
+        onAddCourt={onAddCourt}
+        availableCourts={availableCourts}
+      />
     </DndContext>
   );
 };

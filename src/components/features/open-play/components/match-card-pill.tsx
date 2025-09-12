@@ -20,7 +20,7 @@ const MatchDraggablePill: React.FC<{ participant: Participant }> = ({ participan
       style={style}
       {...listeners}
       {...attributes}
-      className="relative m-0 flex-1 flex flex-col h-full bg-white/10 backdrop-blur-[1px] border border-white/20 rounded-lg overflow-hidden"
+      className="relative m-0 flex-1 flex h-full bg-white/10 backdrop-blur-[1px] border border-white/20 rounded-lg overflow-hidden"
     >
       <img
         className="h-24 w-24 object-cover"
@@ -32,8 +32,8 @@ const MatchDraggablePill: React.FC<{ participant: Participant }> = ({ participan
       />
 
       {/* bottom overlay */}
-      <div className="absolute w-full inset-x-0 bottom-0 px-2 py-1 bg-gradient-to-t from-black/70 via-black/25 to-transparent">
-        <p className="text-white text-xs font-semibold truncate">{participant.user?.personalInfo?.firstName} {participant.user?.personalInfo?.lastName}</p>
+      <div className=" w-full bottom-0 px-2 py-1 bg-gradient-to-t from-black/70 via-black/25 to-transparent">
+        <p className="text-white text-md font-semibold truncate">{participant.user?.personalInfo?.firstName} {participant.user?.personalInfo?.lastName}</p>
         {!!(participant as any).level && (
           <p className="text-white/80 text-[10px] leading-none truncate">
             {participant.skillLevel ?? 'No Skill'}

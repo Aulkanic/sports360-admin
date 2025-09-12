@@ -14,6 +14,7 @@ import { getStatusString } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, convertSessionFromAPI, convertParticipantFromAPI, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId } from "@/services/open-play.service";
+import { useCourts } from "@/hooks";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
 
@@ -84,9 +85,18 @@ const OpenPlayDetailPage: React.FC = () => {
     }
   );
 
-  const [courts, setCourts] = useState<Court[]>([
-    { id: "court-1", name: "Court 1", capacity: 4, status: "Open" },
-  ]);
+  const [courts, setCourts] = useState<Court[]>([]);
+  
+  // Use the Court Management hook to get available courts
+  const { items: courtManagementCourts } = useCourts();
+  
+  // Convert Court Management courts to Game Management format
+  const availableCourts: Court[] = courtManagementCourts.map(court => ({
+    id: court.id,
+    name: court.name,
+    capacity: court.capacity || 4,
+    status: "Open" as const
+  }));
 
   const [courtTeams, setCourtTeams] = useState<
     Record<string, { A: Participant[]; B: Participant[] }>
@@ -140,6 +150,7 @@ const OpenPlayDetailPage: React.FC = () => {
     if (sessionById) return { ...sessionById, participants };
     return null;
   }, [sessionById, participants]);
+
 
   // Auto-refresh functionality - TEMPORARILY DISABLED FOR DEBUGGING
   useEffect(() => {
@@ -350,11 +361,34 @@ const OpenPlayDetailPage: React.FC = () => {
 
   /* Controls */
 
-  function addCourt() {
-    const idx = courts.length + 1;
-    const id = `court-${idx}`;
-    setCourts((prev) => [...prev, { id, name: `Court ${idx}`, capacity: 4, status: "Open" }]);
-    setCourtTeams((prev) => ({ ...prev, [id]: { A: [], B: [] } }));
+  function addCourt(data: {
+    courtId: string;
+    team1Name: string;
+    team2Name: string;
+    matchName: string;
+  }) {
+    const selectedCourt = availableCourts.find(c => c.id === data.courtId);
+    if (!selectedCourt) return;
+
+    // Create a new court instance for the game management
+    const newCourt: Court = {
+      id: `${data.courtId}-${Date.now()}`, // Unique ID for this game instance
+      name: `${selectedCourt.name} - ${data.matchName}`,
+      capacity: selectedCourt.capacity || 4, // Default to 4 if not specified
+      status: "Open"
+    };
+
+    setCourts((prev) => [...prev, newCourt]);
+    setCourtTeams((prev) => ({ ...prev, [newCourt.id]: { A: [], B: [] } }));
+    
+    // Set team names
+    setTeamNames((prev) => ({
+      ...prev,
+      [newCourt.id]: {
+        A: data.team1Name,
+        B: data.team2Name
+      }
+    }));
   }
 
   function renameCourt(courtId: string) {
@@ -860,6 +894,7 @@ const OpenPlayDetailPage: React.FC = () => {
           restingList={restingList}
           reserveList={reserveList}
           waitlistList={waitlistList}
+          availableCourts={availableCourts}
           onDragEnd={onDragEnd}
           onAddCourt={addCourt}
           onRenameCourt={renameCourt}
