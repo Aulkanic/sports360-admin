@@ -49,6 +49,8 @@ interface GameManagementTabProps {
   isCreatingGameMatch?: boolean;
   isAddingPlayersToMatch?: Set<string>;
   isLoadingGameMatches?: boolean;
+  isStartingGame?: Set<string>;
+  isEndingGame?: Set<string>;
 }
 
 const GameManagementTab: React.FC<GameManagementTabProps> = ({
@@ -81,8 +83,10 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   isCreatingGameMatch = false,
   isAddingPlayersToMatch = new Set(),
   isLoadingGameMatches = false,
+  isStartingGame = new Set(),
+  isEndingGame = new Set(),
 }) => {
-  console.log(courts)
+  console.log(courtTeams)
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   return (
     <DndContext onDragEnd={onDragEnd}>
@@ -248,6 +252,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                               onToggleOpen={() => onToggleCourtOpen(c.id)}
                               onRandomPick={() => onMatchMakeCourt(c.id)}
                               canStartGame={canStartGame(c.id)}
+                              isStartingGame={isStartingGame.has(c.id)}
+                              isEndingGame={isEndingGame.has(c.id)}
                               canEndGame={canEndGame(c.id)}
                               canCloseCourt={canCloseCourt(c.id)}
                               isAddingPlayers={isAddingPlayersToMatch.size > 0}

@@ -21,6 +21,16 @@ interface Participant {
   initials: string;
   level: string;
   status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo?: string;
+    };
+  };
 }
 
 interface Court {
@@ -54,6 +64,10 @@ const MatchupScreenMulti: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
+  
+  // Get occurrence ID from URL params
+  const urlParams = new URLSearchParams(location.search);
+  const occurrenceId = urlParams.get('occurrenceId');
   const [matchup, setMatchup] = useState<MatchupData | null>(null);
   const [focusedCourtId, setFocusedCourtId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -62,6 +76,99 @@ const MatchupScreenMulti: React.FC = () => {
   const [pendingCourtId, setPendingCourtId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionData, setSessionData] = useState<any>(null);
+
+  // Debug session data changes
+  useEffect(() => {
+    console.log('🔍 SESSION DATA CHANGED:', sessionData);
+    if (sessionData?.occurrences) {
+      console.log('📊 SESSION DATA OCCURRENCES:', sessionData.occurrences);
+      sessionData.occurrences.forEach((occ: any, index: number) => {
+        console.log(`🏟️ OCCURRENCE ${index}:`, {
+          id: occ.id,
+          participantsCount: occ.participants?.length,
+          participants: occ.participants?.map((p: any) => ({
+            id: p.id,
+            participantId: p.id,
+            name: p.user?.personalInfo?.firstName,
+            email: p.user?.email,
+            userId: p.user?.id
+          }))
+        });
+      });
+    } else {
+      console.log('❌ NO SESSION DATA OCCURRENCES FOUND');
+    }
+  }, [sessionData]);
+
+  // Get full participant information by matching participant ID
+  const getFullParticipantInfo = (participantId: string) => {
+    console.log('🔍 LOOKING FOR PARTICIPANT ID:', participantId, 'Type:', typeof participantId);
+    console.log('📊 SESSION DATA AVAILABLE:', !!sessionData);
+    console.log('🏟️ SESSION DATA OCCURRENCES COUNT:', sessionData?.occurrences?.length);
+    
+    // First check if we have session data with occurrence participants
+    if (sessionData?.occurrences) {
+      console.log('✅ SESSION DATA HAS OCCURRENCES, SEARCHING...');
+      for (const occurrence of sessionData.occurrences) {
+        console.log(`🏟️ CHECKING OCCURRENCE ${occurrence.id}:`, {
+          id: occurrence.id,
+          participantsCount: occurrence.participants?.length,
+          participants: occurrence.participants?.map((p: any) => ({
+            id: p.id,
+            idType: typeof p.id,
+            name: p.user?.personalInfo?.firstName
+          }))
+        });
+        
+        if (occurrence.participants) {
+          console.log('👥 OCCURRENCE PARTICIPANTS:', occurrence.participants.map((p: any) => ({ 
+            id: p.id, 
+            idString: p.id.toString(),
+            name: p.user?.personalInfo?.firstName 
+          })));
+          
+          const fullParticipant = occurrence.participants.find((p: any) => {
+            const match = p.id.toString() === participantId;
+            console.log(`🔍 COMPARING: ${p.id} (${typeof p.id}) === ${participantId} (${typeof participantId}) = ${match}`);
+            return match;
+          });
+          
+          if (fullParticipant) {
+            console.log('✅ FOUND FULL PARTICIPANT:', {
+              id: fullParticipant.id,
+              name: fullParticipant.user?.personalInfo?.firstName,
+              email: fullParticipant.user?.email,
+              user: fullParticipant.user
+            });
+            
+            const enrichedParticipant = {
+              id: fullParticipant.id.toString(),
+              name: fullParticipant.user?.personalInfo ? 
+                `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
+                fullParticipant.user?.userName || 'Unknown Player',
+              avatar: fullParticipant.user?.personalInfo?.photoUrl || '',
+              initials: fullParticipant.user?.personalInfo ? 
+                `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
+                fullParticipant.user?.userName?.[0] || '?',
+              level: (fullParticipant.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+              status: 'In-Game' as any,
+              user: fullParticipant.user
+            };
+            
+            console.log('🎯 RETURNING ENRICHED PARTICIPANT:', enrichedParticipant);
+            return enrichedParticipant;
+          }
+        }
+      }
+    } else {
+      console.log('❌ NO SESSION DATA OCCURRENCES AVAILABLE');
+    }
+    
+    console.log('❌ NO FULL PARTICIPANT FOUND FOR ID:', participantId);
+    console.log('📊 AVAILABLE SESSION DATA:', sessionData);
+    return null;
+  };
 
   // Log state changes (reduced logging)
   useEffect(() => {
@@ -80,22 +187,61 @@ const MatchupScreenMulti: React.FC = () => {
 
   // Fetch real data based on occurrence ID
   const fetchMatchupData = async (occurrenceId: string) => {
+    console.log('🚀 FETCHING MATCHUP DATA FOR OCCURRENCE:', occurrenceId);
     setIsLoading(true);
     setError(null);
     
     try {
-      console.log('Fetching matchup data for occurrence:', occurrenceId);
-      
       // First, get session info to get the hub ID
       let sessionInfo = null;
       let hubId = null;
       
+      let gameMatches: any[] = [];
+      
       try {
-        // Try to get session info from the occurrence
-        const gameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
+        // First fetch game matches to get session ID
+        console.log('📡 CALLING getGameMatchesByOccurrenceId...');
+        gameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
+        console.log('📊 FETCHED GAME MATCHES:', {
+          occurrenceId,
+          matchesCount: gameMatches.length,
+          matches: gameMatches.map((match, index) => ({
+            index,
+            id: match.id,
+            occurrenceId: match.occurrenceId,
+            courtId: match.courtId,
+            participantsCount: match.participants?.length,
+            participants: match.participants?.map((p: any) => ({
+              id: p.id,
+              participantId: p.participantId,
+              teamNumber: p.teamNumber,
+              hasUser: !!p.user
+            }))
+          }))
+        });
+        
         if (gameMatches.length > 0 && gameMatches[0]?.occurrence?.sessionId) {
-          sessionInfo = await getOpenPlaySessionById(gameMatches[0].occurrence.sessionId);
+          const sessionId = gameMatches[0].occurrence.sessionId;
+          console.log('📡 CALLING getOpenPlaySessionById with sessionId:', sessionId);
+          // Fetch session info using the session ID from the occurrence
+          sessionInfo = await getOpenPlaySessionById(sessionId);
           hubId = (sessionInfo as any)?.hubId;
+          // Store session data for participant matching
+          setSessionData(sessionInfo);
+          console.log('✅ FETCHED SESSION INFO:', {
+            sessionId,
+            hubId,
+            occurrencesCount: sessionInfo?.occurrences?.length,
+            firstOccurrenceParticipants: sessionInfo?.occurrences?.[0]?.participants?.length,
+            participants: sessionInfo?.occurrences?.[0]?.participants?.map((p: any) => ({
+              id: p.id,
+              name: p.user?.personalInfo?.firstName,
+              email: p.user?.email,
+              userId: p.user?.id
+            }))
+          });
+        } else {
+          console.warn('❌ NO SESSION ID FOUND IN GAME MATCHES');
         }
       } catch (sessionError) {
         console.warn('Could not fetch session info:', sessionError);
@@ -112,9 +258,8 @@ const MatchupScreenMulti: React.FC = () => {
       const allCourts = await getAllCourts({ hubId: hubId });
       console.log('Fetched all courts from /courts/get-all-courts:', allCourts);
       
-      // Fetch game matches for the occurrence
-      const gameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
-      console.log('Fetched game matches:', gameMatches);
+      // Use the game matches we already fetched
+      console.log('Using game matches already fetched:', gameMatches);
       
       // Create a map of courtId to match for quick lookup
       const courtToMatchMap = new Map();
@@ -134,9 +279,24 @@ const MatchupScreenMulti: React.FC = () => {
           const teamB: Participant[] = [];
           
           if (match.participants && match.participants.length > 0) {
+            console.log(`🎮 PROCESSING MATCH ${match.id} PARTICIPANTS:`, match.participants.length);
             match.participants.forEach((participant: any, index: number) => {
-              const player: Participant = {
-                id: participant.id?.toString() || `p${index}`,
+              // Use participantId instead of id for matching
+              const participantId = (participant as any).participantId?.toString() || participant.id?.toString() || `p${index}`;
+              console.log(`👤 PROCESSING PARTICIPANT ${index}:`, {
+                participantId,
+                teamNumber: participant.teamNumber,
+                hasUser: !!participant.user,
+                user: participant.user
+              });
+              
+              // Try to get full participant info from session data
+              console.log(`🔍 CALLING getFullParticipantInfo for participantId: ${participantId}`);
+              const fullParticipantInfo = getFullParticipantInfo(participantId);
+              console.log(`📊 getFullParticipantInfo result:`, fullParticipantInfo);
+              
+              const player: Participant = fullParticipantInfo || {
+                id: participantId,
                 name: participant.user?.personalInfo ? 
                   `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}`.trim() :
                   participant.user?.userName || 'Unknown Player',
@@ -148,11 +308,29 @@ const MatchupScreenMulti: React.FC = () => {
                 status: match.gameStatus === 'in_progress' ? 'In-Game' : 'Ready' as any
               };
               
-              // Distribute players between teams (simple alternating)
-              if (index % 2 === 0) {
+              console.log(`🎯 CREATED PLAYER OBJECT:`, {
+                id: player.id,
+                name: player.name,
+                teamNumber: participant.teamNumber,
+                hasUser: !!player.user
+              });
+              
+              // Distribute players between teams based on teamNumber (1 = Team A, 2 = Team B)
+              if ((participant as any).teamNumber === 1) {
                 teamA.push(player);
-              } else {
+                console.log(`✅ ADDED TO TEAM A:`, player.name);
+              } else if ((participant as any).teamNumber === 2) {
                 teamB.push(player);
+                console.log(`✅ ADDED TO TEAM B:`, player.name);
+              } else {
+                // Fallback to alternating if no teamNumber
+                if (index % 2 === 0) {
+                  teamA.push(player);
+                  console.log(`✅ ADDED TO TEAM A (fallback):`, player.name);
+                } else {
+                  teamB.push(player);
+                  console.log(`✅ ADDED TO TEAM B (fallback):`, player.name);
+                }
               }
             });
           }
@@ -253,14 +431,17 @@ const MatchupScreenMulti: React.FC = () => {
     const activeCourtId = localStorage.getItem('activeCourtId');
     const activeOccurrenceId = localStorage.getItem('activeOccurrenceId');
     
+    // Prioritize occurrence ID from URL params
+    const finalOccurrenceId = occurrenceId || activeOccurrenceId;
+    
     if (location.state?.matchup) {
       // Use data passed from parent window
       setMatchup(location.state.matchup);
       setFocusedCourtId(location.state.matchup.focusedCourtId || activeCourtId);
-    } else if (activeOccurrenceId) {
-      // Fetch real data based on occurrence ID
-      console.log('Fetching real data for occurrence:', activeOccurrenceId);
-      fetchMatchupData(activeOccurrenceId);
+    } else if (finalOccurrenceId) {
+      // Fetch real data based on occurrence ID (from URL params or localStorage)
+      console.log('Fetching real data for occurrence:', finalOccurrenceId);
+      fetchMatchupData(finalOccurrenceId);
     } else {
       // Fallback to sample data if no occurrence ID available
       console.log('No occurrence ID found, using sample data');
@@ -273,7 +454,7 @@ const MatchupScreenMulti: React.FC = () => {
         setFocusedCourtId(activeCourtId);
       }
     }
-  }, [id, location.state]);
+  }, [id, location.state, occurrenceId]);
 
   // Listen for postMessage data from parent window
   useEffect(() => {

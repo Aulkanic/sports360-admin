@@ -1,5 +1,5 @@
 import { PrivateLayout, PublicLayout, SportsHubLayout } from "@/layout";
-import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, SportsFormPage, CourtsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, OpenPlayDetailPage, BookingsExplorePage, CommunitiesClubsAdminPage, ProfilePage, SettingsPage } from "@/pages";
+import { LoginPage, SuperAdminDashboardPage, MembersPage, MembershipPlansPage, SportsPage, SportsFormPage, CourtsPage, EventsPage, BookingsCalendarPage, BookingsAdminPage, EquipmentPage, CalendarDashboardPage, OpenPlayPage, OpenPlayDetailPage, BookingsExplorePage, CommunitiesClubsAdminPage, UsersPage, ProfilePage, SettingsPage } from "@/pages";
 import MatchupScreen from "@/pages/private/bookings/matchup-screen";
 import MatchupScreenMulti from "@/pages/private/bookings/matchup-screen-multi";
 import SportsHubRegisterPage from "@/pages/public/register/sportshub";
@@ -29,6 +29,7 @@ export const urls = {
 	matchupScreen: '/matchup/:id',
 	matchupScreenMulti: '/matchup-multi/:id',
 	communities: '/super-admin/communities-clubs',
+	users: '/super-admin/users',
 	profile: '/super-admin/profile',
 	settings: '/super-admin/settings',
 };
@@ -59,6 +60,7 @@ export const routeList = {
 			{ path: urls.openPlay, element: <ProtectedRoute><OpenPlayPage /></ProtectedRoute> },
 			{ path: urls.openPlayDetail, element: <ProtectedRoute><OpenPlayDetailPage /></ProtectedRoute> },
 			{ path: urls.communities, element: <ProtectedRoute><CommunitiesClubsAdminPage /></ProtectedRoute> },
+			{ path: urls.users, element: <ProtectedRoute><UsersPage /></ProtectedRoute> },
 			{ path: urls.profile, element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
 			{ path: urls.settings, element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
 		]

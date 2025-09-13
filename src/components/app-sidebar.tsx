@@ -12,6 +12,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 import { urls } from "@/routes";
 import { ChevronRight, Crown, Shield } from "lucide-react";
 import * as React from "react";
@@ -24,11 +25,9 @@ import {
   FaRegCalendar,
   FaSignOutAlt,
   FaTachometerAlt,
-  FaUserAlt,
-  FaUsers,
+  FaUserAlt
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   Collapsible,
@@ -76,10 +75,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           },
         ],
       },
+      // {
+      //   title: "Members",
+      //   url: urls.members,
+      //   icon: <FaUsers className="w-5 h-5" />,
+      // },
       {
-        title: "Members",
-        url: urls.members,
-        icon: <FaUsers className="w-5 h-5" />,
+        title: "Users",
+        url: urls.users,
+        icon: <FaUserAlt className="w-5 h-5" />,
       },
       {
         title: "Membership Plans",

@@ -264,3 +264,16 @@ export const removePlayerFromMatch = async (participantId: string): Promise<void
     throw error;
   }
 };
+
+/**
+ * Set winner for game match
+ */
+export const setGameMatchWinner = async (matchId: string, winner: "team1" | "team2"): Promise<any> => {
+  try {
+    const response = await apiClient.put(`/game-match/matches/${matchId}/winner`, { winner });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error setting game match winner:', error);
+    throw error;
+  }
+};

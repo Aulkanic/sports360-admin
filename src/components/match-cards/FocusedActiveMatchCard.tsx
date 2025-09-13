@@ -8,6 +8,20 @@ interface Participant {
   initials: string;
   level: string;
   status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo?: string;
+      photoUrl?: string;
+    };
+  };
+  email?: string;
+  contactNo?: string;
+  paymentStatus?: 'Paid' | 'Pending' | 'Rejected';
 }
 
 interface Court {
@@ -139,7 +153,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
         {/* Team A */}
         <div ref={teamACardsRef} className='flex flex-nowrap gap-4'>
         <div
-         className='p-4 py-3 z-50'
+         className='p-4 py-3 z-50 relative'
           style={{
             minHeight: '350px',
             width: '350px',
@@ -152,10 +166,37 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
             backgroundRepeat: 'no-repeat'
           }}
         >
-          <img src={court.teamA[0]?.avatar || 'https://pickleballfact.com/wp-content/uploads/2023/09/what-does-a-30-pickleball-player-look-like.jpg'} className='w-full rounded-4xl h-full object-cover' />
+          <img src={court.teamA[0]?.avatar || '/default_avatar.png'} className='w-full rounded-4xl h-full object-cover' />
+          {/* Player Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3 rounded-b-4xl">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white mb-1">
+                {court.teamA[0]?.name || 'Unknown Player'}
+              </h3>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-sm text-gray-300">
+                  {court.teamA[0]?.level || 'Intermediate'}
+                </span>
+                {court.teamA[0]?.paymentStatus && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    court.teamA[0].paymentStatus === 'Paid' ? 'bg-green-500' :
+                    court.teamA[0].paymentStatus === 'Pending' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}>
+                    {court.teamA[0].paymentStatus}
+                  </span>
+                )}
+              </div>
+              {(court.teamA[0] as any)?.email && (
+                <p className="text-xs text-gray-400 truncate">
+                  {(court.teamA[0] as any).email}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         <div
-         className='p-4 py-3 z-50'
+         className='p-4 py-3 z-50 relative'
           style={{
             minHeight: '350px',
             width: '350px',
@@ -168,7 +209,34 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
             backgroundRepeat: 'no-repeat'
           }}
         >
-          <img src={court.teamA[1]?.avatar || 'https://pickleballfact.com/wp-content/uploads/2023/09/what-does-a-30-pickleball-player-look-like.jpg'} className='w-full rounded-4xl h-full object-cover' />
+          <img src={court.teamA[1]?.avatar || '/default_avatar.png'} className='w-full rounded-4xl h-full object-cover' />
+          {/* Player Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3 rounded-b-4xl">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white mb-1">
+                {court.teamA[1]?.name || 'Unknown Player'}
+              </h3>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-sm text-gray-300">
+                  {court.teamA[1]?.level || 'Intermediate'}
+                </span>
+                {court.teamA[1]?.paymentStatus && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    court.teamA[1].paymentStatus === 'Paid' ? 'bg-green-500' :
+                    court.teamA[1].paymentStatus === 'Pending' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}>
+                    {court.teamA[1].paymentStatus}
+                  </span>
+                )}
+              </div>
+              {(court.teamA[1] as any)?.email && (
+                <p className="text-xs text-gray-400 truncate">
+                  {(court.teamA[1] as any).email}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         </div>
         <div className='z-50 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
@@ -177,7 +245,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
         {/* Team b */}
         <div ref={teamBCardsRef} className='flex flex-nowrap gap-4'>
         <div
-         className='p-4 py-3 z-40'
+         className='p-4 py-3 z-40 relative'
           style={{
             minHeight: '350px',
             width: '350px',
@@ -190,10 +258,37 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
             backgroundRepeat: 'no-repeat'
           }}
         >
-          <img src={court.teamB[0]?.avatar || 'https://pickleballfact.com/wp-content/uploads/2023/09/what-does-a-30-pickleball-player-look-like.jpg'} className='w-full rounded-4xl h-full object-cover' />
+          <img src={court.teamB[0]?.avatar || '/default_avatar.png'} className='w-full rounded-4xl h-full object-cover' />
+          {/* Player Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3 rounded-b-4xl">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white mb-1">
+                {court.teamB[0]?.name || 'Unknown Player'}
+              </h3>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-sm text-gray-300">
+                  {court.teamB[0]?.level || 'Intermediate'}
+                </span>
+                {court.teamB[0]?.paymentStatus && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    court.teamB[0].paymentStatus === 'Paid' ? 'bg-green-500' :
+                    court.teamB[0].paymentStatus === 'Pending' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}>
+                    {court.teamB[0].paymentStatus}
+                  </span>
+                )}
+              </div>
+              {(court.teamB[0] as any)?.email && (
+                <p className="text-xs text-gray-400 truncate">
+                  {(court.teamB[0] as any).email}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         <div
-         className='p-4 py-3 z-50'
+         className='p-4 py-3 z-50 relative'
           style={{
             minHeight: '350px',
             width: '350px',
@@ -206,7 +301,34 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
             backgroundRepeat: 'no-repeat'
           }}
         >
-          <img src={court.teamB[1]?.avatar || 'https://pickleballfact.com/wp-content/uploads/2023/09/what-does-a-30-pickleball-player-look-like.jpg'} className='w-full rounded-4xl h-full object-cover' />
+          <img src={court.teamB[1]?.avatar || '/default_avatar.png'} className='w-full rounded-4xl h-full object-cover' />
+          {/* Player Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3 rounded-b-4xl">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white mb-1">
+                {court.teamB[1]?.name || 'Unknown Player'}
+              </h3>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-sm text-gray-300">
+                  {court.teamB[1]?.level || 'Intermediate'}
+                </span>
+                {court.teamB[1]?.paymentStatus && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    court.teamB[1].paymentStatus === 'Paid' ? 'bg-green-500' :
+                    court.teamB[1].paymentStatus === 'Pending' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}>
+                    {court.teamB[1].paymentStatus}
+                  </span>
+                )}
+              </div>
+              {(court.teamB[1] as any)?.email && (
+                <p className="text-xs text-gray-400 truncate">
+                  {(court.teamB[1] as any).email}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
         </div>
       </div>

@@ -13,7 +13,7 @@ import { getStatusString } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
-import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, type GameMatch } from "@/services/game-match.service";
+import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, setGameMatchWinner, type GameMatch } from "@/services/game-match.service";
 import { useCourts } from "@/hooks";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
@@ -112,17 +112,172 @@ const OpenPlayDetailPage: React.FC = () => {
   const [isCreatingGameMatch, setIsCreatingGameMatch] = useState(false);
   const [isAddingPlayersToMatch, setIsAddingPlayersToMatch] = useState<Set<string>>(new Set());
   const [isLoadingGameMatches, setIsLoadingGameMatches] = useState(false);
+  const [isStartingGame, setIsStartingGame] = useState<Set<string>>(new Set());
+  const [isEndingGame, setIsEndingGame] = useState<Set<string>>(new Set());
   const hasFetchedGameMatches = useRef(false);
+
+  // Helper function to map player status from description
+  const mapPlayerStatusFromDescription = (playerStatusDescription: string): any => {
+    switch (playerStatusDescription?.toUpperCase()) {
+      case 'READY':
+        return 'READY';
+      case 'REST':
+      case 'RESTING':
+        return 'RESTING';
+      case 'WAITLIST':
+        return 'WAITLIST';
+      case 'RESERVE':
+        return 'RESERVE';
+      case 'REJECTED':
+        return 'REJECTED';
+      case 'ONGOING':
+        return 'IN-GAME';
+      default:
+        return 'READY';
+    }
+  };
   const [currentOccurrenceId, setCurrentOccurrenceId] = useState<string>("");
   const [rawSessionData, setRawSessionData] = useState<any>(null);
+  
+  // Check if the current session is dummy data
+  const isDummySession = useMemo(() => {
+    return sessionById?.isDummy || rawSessionData?.isDummy || false;
+  }, [sessionById, rawSessionData]);
+
+  // Get full participant information by matching participant ID
+  const getFullParticipantInfo = useMemo(() => {
+    return (participantId: string) => {
+      console.log('🔍 OPEN-PLAY-DETAIL: Looking for participant ID:', participantId, 'Type:', typeof participantId);
+      console.log('📊 OPEN-PLAY-DETAIL: Raw session data available:', !!rawSessionData);
+      console.log('🏟️ OPEN-PLAY-DETAIL: Raw session occurrences count:', rawSessionData?.occurrences?.length);
+      
+      // First check if we have raw session data with occurrence participants
+      if (rawSessionData?.occurrences) {
+        console.log('✅ OPEN-PLAY-DETAIL: Raw session data has occurrences, searching...');
+        for (const occurrence of rawSessionData.occurrences) {
+          console.log(`🏟️ OPEN-PLAY-DETAIL: Checking occurrence ${occurrence.id}:`, {
+            id: occurrence.id,
+            participantsCount: occurrence.participants?.length,
+            participants: occurrence.participants?.map((p: any) => ({
+              id: p.id,
+              idType: typeof p.id,
+              name: p.user?.personalInfo?.firstName
+            }))
+          });
+          
+          if (occurrence.participants) {
+            console.log('👥 OPEN-PLAY-DETAIL: Occurrence participants:', occurrence.participants.map((p: any) => ({ 
+              id: p.id, 
+              idString: p.id.toString(),
+              name: p.user?.personalInfo?.firstName 
+            })));
+            
+            const fullParticipant = occurrence.participants.find((p: any) => {
+              const match = p.id.toString() === participantId;
+              console.log(`🔍 OPEN-PLAY-DETAIL: Comparing: ${p.id} (${typeof p.id}) === ${participantId} (${typeof participantId}) = ${match}`);
+              return match;
+            });
+            
+            if (fullParticipant) {
+              console.log('✅ OPEN-PLAY-DETAIL: Found full participant:', {
+                id: fullParticipant.id,
+                name: fullParticipant.user?.personalInfo?.firstName,
+                email: fullParticipant.user?.email
+              });
+              return {
+                id: fullParticipant.id.toString(),
+                name: fullParticipant.user?.personalInfo ? 
+                  `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
+                  fullParticipant.user?.userName || 'Unknown Player',
+                level: (fullParticipant.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+                status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || fullParticipant.status?.description || 'READY',
+                playerStatus: fullParticipant.playerStatus,
+                skillLevel: fullParticipant.skillLevel,
+                avatar: fullParticipant.user?.personalInfo?.photoUrl || undefined,
+                initials: fullParticipant.user?.personalInfo ? 
+                  `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
+                  fullParticipant.user?.userName?.[0] || '?',
+                paymentStatus: fullParticipant.paymentStatus as 'Paid' | 'Pending' | 'Rejected',
+                paymentAmount: fullParticipant.paymentAmount,
+                notes: fullParticipant.notes,
+                user: fullParticipant.user,
+                isApproved: fullParticipant.statusId === 5, // Assuming statusId 5 means approved
+                // Add additional fields that might be useful
+                email: fullParticipant.user?.email,
+                contactNo: fullParticipant.user?.personalInfo?.contactNo,
+                address: fullParticipant.user?.personalInfo?.address,
+                gender: fullParticipant.user?.personalInfo?.gender,
+                birthday: fullParticipant.user?.personalInfo?.birthday,
+                country: fullParticipant.user?.personalInfo?.country
+              } as Participant & {
+                email?: string;
+                contactNo?: string;
+                address?: string;
+                gender?: string;
+                birthday?: string;
+                country?: string;
+              };
+            }
+          }
+        }
+      }
+      
+      // Fallback to current participants list
+      const fallbackParticipant = participants.find(p => p.id === participantId);
+      console.log('Fallback participant found:', fallbackParticipant);
+      return fallbackParticipant;
+    };
+  }, [rawSessionData, participants]);
+
+  // Enrich court teams with full participant information
+  const enrichedCourtTeams = useMemo(() => {
+    console.log('🏟️ ENRICHING COURT TEAMS:', courtTeams);
+    const enriched: Record<string, { A: Participant[]; B: Participant[] }> = {};
+    
+    Object.entries(courtTeams).forEach(([courtId, teams]) => {
+      console.log(`🏟️ PROCESSING COURT ${courtId}:`, {
+        teamA: teams.A.map(p => ({ id: p.id, name: p.name })),
+        teamB: teams.B.map(p => ({ id: p.id, name: p.name }))
+      });
+      
+      enriched[courtId] = {
+        A: teams.A.map(participant => {
+          console.log(`🔍 ENRICHING TEAM A PARTICIPANT:`, participant.id, participant.name);
+          const enriched = getFullParticipantInfo(participant.id) || participant;
+          console.log(`📊 ENRICHED RESULT:`, enriched.name, enriched.user ? 'HAS_USER' : 'NO_USER');
+          return enriched;
+        }),
+        B: teams.B.map(participant => {
+          console.log(`🔍 ENRICHING TEAM B PARTICIPANT:`, participant.id, participant.name);
+          const enriched = getFullParticipantInfo(participant.id) || participant;
+          console.log(`📊 ENRICHED RESULT:`, enriched.name, enriched.user ? 'HAS_USER' : 'NO_USER');
+          return enriched;
+        })
+      };
+    });
+    
+    console.log('✅ ENRICHED COURT TEAMS RESULT:', enriched);
+    return enriched;
+  }, [courtTeams, getFullParticipantInfo]);
 
   const inAnyTeam = useMemo(
-    () =>
-      new Set(
+    () => {
+      const teamPlayerIds = new Set(
         Object.values(courtTeams)
           .flatMap((t) => [...t.A, ...t.B])
           .map((p) => p.id)
-      ),
+      );
+      console.log('🏟️ IN ANY TEAM CALCULATION:', {
+        courtTeams: Object.keys(courtTeams),
+        teamPlayerIds: Array.from(teamPlayerIds),
+        courtTeamsData: Object.entries(courtTeams).map(([courtId, teams]) => ({
+          courtId,
+          teamA: teams.A.map(p => ({ id: p.id, name: p.name })),
+          teamB: teams.B.map(p => ({ id: p.id, name: p.name }))
+        }))
+      });
+      return teamPlayerIds;
+    },
     [courtTeams]
   );
 
@@ -143,7 +298,17 @@ const OpenPlayDetailPage: React.FC = () => {
     [participants, inAnyTeam]
   );
   const restingList = useMemo(
-    () => participants.filter((p) => getStatusString(p.status)?.toUpperCase() === "RESTING" && !inAnyTeam.has(p.id)),
+    () => {
+      const resting = participants.filter((p) => {
+        const statusString = getStatusString(p.status)?.toUpperCase();
+        const isResting = statusString === "RESTING";
+        const notInTeam = !inAnyTeam.has(p.id);
+        console.log(`Player ${p.id} (${p.name}): status=${statusString}, isResting=${isResting}, notInTeam=${notInTeam}`);
+        return isResting && notInTeam;
+      });
+      console.log('🛌 RESTING LIST:', resting.map(p => ({ id: p.id, name: p.name, status: getStatusString(p.status) })));
+      return resting;
+    },
     [participants, inAnyTeam]
   );
   const reserveList = useMemo(
@@ -225,14 +390,21 @@ const OpenPlayDetailPage: React.FC = () => {
     const teamB: Participant[] = [];
     
     if (gameMatch.participants) {
+      console.log('Processing participants for match:', gameMatch.id, gameMatch.participants);
+      
       gameMatch.participants.forEach(participant => {
+        console.log('Processing participant:', participant);
+        
+        // Use participantId instead of userId for the ID
+        const participantId = (participant as any).participantId?.toString() || participant.userId?.toString();
+        
         const participantData: Participant = {
-          id: participant.userId,
+          id: participantId,
           name: participant.user ? 
             (participant.user.personalInfo ? 
               `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
               participant.user.userName) : 
-            `User ${participant.userId}`,
+            `User ${participantId}`,
           skillLevel: 'Intermediate' as const,
           level: 'Intermediate' as const,
           status: 'IN-GAME',
@@ -251,17 +423,27 @@ const OpenPlayDetailPage: React.FC = () => {
               lastName: participant.user.personalInfo.lastName,
               contactNo: participant.user.personalInfo.contactNo
             } : undefined
-          } : undefined
+          } : undefined,
+          avatar: undefined,
+          initials: participant.user ? 
+            (participant.user.personalInfo ? 
+              `${participant.user.personalInfo.firstName?.[0]}${participant.user.personalInfo.lastName?.[0]}` : 
+              participant.user.userName?.[0]) : 
+            '?'
         };
         
-        if (participant.team === 'A') {
+        console.log('Created participant data:', participantData);
+        
+        // Assign to team based on teamNumber (1 = Team A, 2 = Team B)
+        if ((participant as any).teamNumber === 1) {
           teamA.push(participantData);
-        } else {
+        } else if ((participant as any).teamNumber === 2) {
           teamB.push(participantData);
         }
       });
     }
     
+    console.log('Final teams for match', gameMatch.id, ':', { A: teamA, B: teamB });
     return { A: teamA, B: teamB };
   };
 
@@ -274,6 +456,17 @@ const OpenPlayDetailPage: React.FC = () => {
       // If no raw session data, fetch it using the ID from URL
       const fetchInitialSessionData = async () => {
         try {
+          // Check if this is dummy data first
+          if (sessionById?.isDummy) {
+            console.log('Dummy session detected, skipping API call');
+            // For dummy data, use the session data directly
+            setRawSessionData(sessionById);
+            if (sessionById.occurrences && sessionById.occurrences.length > 0) {
+              setCurrentOccurrenceId(sessionById.occurrences[0].id);
+            }
+            return;
+          }
+          
           const sessionData = await getOpenPlaySessionById(id);
           setRawSessionData(sessionData);
           if (sessionData.occurrences && sessionData.occurrences.length > 0) {
@@ -285,7 +478,88 @@ const OpenPlayDetailPage: React.FC = () => {
       };
       fetchInitialSessionData();
     }
-  }, [occurrence?.id, id, rawSessionData]);
+  }, [occurrence?.id, id, rawSessionData, sessionById]);
+
+  // Process participants when rawSessionData changes (for initial load)
+  useEffect(() => {
+    if (!rawSessionData) return;
+    
+    console.log('Processing participants from rawSessionData:', rawSessionData);
+    
+    // If we have occurrence-specific data, find the matching occurrence
+    if (occurrence?.id && rawSessionData.occurrences) {
+      const matchingOccurrence = rawSessionData.occurrences.find((occ: any) => occ.id === occurrence.id);
+      if (matchingOccurrence?.participants) {
+        console.log('Using occurrence-specific participants (initial load):', matchingOccurrence.participants);
+        
+        // Use raw participants data without conversion
+        const freshParticipants = matchingOccurrence.participants.map((p: any) => ({
+          id: p.id.toString(),
+          name: p.user?.personalInfo ? 
+            `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
+            p.user?.userName || 'Unknown Player',
+          level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+          status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
+          playerStatus: p.playerStatus,
+          skillLevel: p.skillLevel,
+          avatar: undefined,
+          initials: p.user?.personalInfo ? 
+            `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
+            p.user?.userName?.[0] || 'U',
+          paymentStatus: (p.paymentStatus === 'pending' ? 'Pending' : 
+                        p.paymentStatus === 'confirmed' ? 'Paid' : 'Rejected') as 'Paid' | 'Pending' | 'Rejected',
+          isApproved: p.statusId === 1, // CONFIRMED
+          checkedInAt: p.checkedInAt,
+          joinedAt: p.registeredAt,
+          notes: p.notes,
+          gamesPlayed: 0,
+          skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
+          readyTime: undefined,
+          user: p.user
+        }));
+        
+        // Update participants with fresh data from server
+        setParticipants(freshParticipants);
+        console.log('Updated participants from occurrence (initial load):', freshParticipants);
+      }
+    } else if (rawSessionData.occurrences && rawSessionData.occurrences.length > 0) {
+      // Use first occurrence participants if no specific occurrence
+      const firstOccurrence = rawSessionData.occurrences[0];
+      if (firstOccurrence?.participants) {
+        console.log('Using first occurrence participants (initial load):', firstOccurrence.participants);
+        
+        // Use raw participants data without conversion
+        const freshParticipants = firstOccurrence.participants.map((p: any) => ({
+          id: p.id.toString(),
+          name: p.user?.personalInfo ? 
+            `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
+            p.user?.userName || 'Unknown Player',
+          level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+          status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
+          playerStatus: p.playerStatus,
+          skillLevel: p.skillLevel,
+          avatar: undefined,
+          initials: p.user?.personalInfo ? 
+            `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
+            p.user?.userName?.[0] || 'U',
+          paymentStatus: (p.paymentStatus === 'pending' ? 'Pending' : 
+                        p.paymentStatus === 'confirmed' ? 'Paid' : 'Rejected') as 'Paid' | 'Pending' | 'Rejected',
+          isApproved: p.statusId === 1, // CONFIRMED
+          checkedInAt: p.checkedInAt,
+          joinedAt: p.registeredAt,
+          notes: p.notes,
+          gamesPlayed: 0,
+          skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
+          readyTime: undefined,
+          user: p.user
+        }));
+        
+        // Update participants with fresh data from server
+        setParticipants(freshParticipants);
+        console.log('Updated participants from first occurrence (initial load):', freshParticipants);
+      }
+    }
+  }, [rawSessionData, occurrence?.id]);
 
   // Fetch game matches on component mount and when occurrence changes
   useEffect(() => {
@@ -326,9 +600,13 @@ const OpenPlayDetailPage: React.FC = () => {
   async function updateStatus(participantId: string, status: any) {
     console.log(`Updating participant ${participantId} to status: ${status}`);
     
+    // Get the current occurrence ID
+    const occurrenceId = currentOccurrenceId || occurrence?.id;
+
     // Check if we have occurrence data
-    if (!occurrence?.id) {
+    if (!occurrenceId) {
       console.warn('No occurrence ID available for status update');
+      alert('No occurrence ID available. Please refresh the page and try again.');
       return;
     }
 
@@ -336,13 +614,32 @@ const OpenPlayDetailPage: React.FC = () => {
     setIsUpdatingStatus(prev => new Set(prev).add(participantId));
 
     try {
+      // Check if this is dummy data
+      if (isDummySession) {
+        console.log('Dummy session detected, skipping API call for status update');
+        // For dummy data, just update the local state
+        setParticipants(prev => prev.map(p => 
+          p.id === participantId 
+            ? { ...p, status: status }
+            : p
+        ));
+        setIsUpdatingStatus(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(participantId);
+          return newSet;
+        });
+        return;
+      }
+
       // Map status to player status ID
       const playerStatusId = mapParticipantStatusToPlayerStatusId(status);
+      console.log(`Mapped status "${status}" to playerStatusId: ${playerStatusId}`);
       
       // Call admin API
+      console.log(`Calling API with participantId: ${participantId}, occurrenceId: ${occurrenceId}, playerStatusId: ${playerStatusId}`);
       await updateParticipantPlayerStatusByAdmin(
         participantId,
-        occurrence.id,
+        occurrenceId,
         playerStatusId
       );
 
@@ -442,6 +739,17 @@ const OpenPlayDetailPage: React.FC = () => {
     // Call API to add player to match
     setIsAddingPlayersToMatch(prev => new Set(prev).add(participant.id));
     try {
+      // Check if this is dummy data
+      if (isDummySession) {
+        console.log('Dummy session detected, skipping API call for player assignment');
+        setIsAddingPlayersToMatch(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(participant.id);
+          return newSet;
+        });
+        return;
+      }
+
       // Convert team key to team number (A = 1, B = 2)
       const teamNumber = teamKey === 'A' ? 1 : 2;
       
@@ -552,6 +860,21 @@ const OpenPlayDetailPage: React.FC = () => {
     setIsCreatingGameMatch(true);
     
     try {
+      // Check if this is dummy data
+      if (isDummySession) {
+        console.log('Dummy session detected, skipping API call for game match creation');
+        // For dummy data, just add the court to local state
+        const newCourt: Court = {
+          id: data.courtId,
+          name: selectedCourt.name,
+          capacity: selectedCourt.capacity || 4,
+          status: "Open" as const
+        };
+        setCourts(prev => [...prev, newCourt]);
+        setIsCreatingGameMatch(false);
+        return;
+      }
+
       // Create game match record in the backend
       const gameMatchData = {
         occurrenceId: currentOccurrenceId || occurrence?.id || sessionById?.occurrenceId || '1', // Use current occurrence ID first
@@ -596,9 +919,41 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   async function startGame(courtId: string) {
+    try {
+      console.log('🚀 STARTING GAME for court/match ID:', courtId);
+      
+      // Set loading state
+      setIsStartingGame(prev => new Set(prev).add(courtId));
+      
+      // Call API to update game match status
+      const updateData = {
+        matchStatus: "in_progress",
+        gameStatus: "in_progress",
+        startTime: new Date().toISOString()
+      };
+      
+      console.log('📡 CALLING updateGameMatch API with data:', updateData);
+      await updateGameMatch(courtId, updateData);
+      console.log('✅ GAME MATCH UPDATED SUCCESSFULLY');
+      
+      // Update local state
     setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "IN-GAME" } : c)));
     const t = courtTeams[courtId] ?? { A: [], B: [] };
     await Promise.all([...t.A, ...t.B].map((p) => updateStatus(p.id, "IN-GAME")));
+      
+      console.log('✅ GAME STARTED SUCCESSFULLY');
+    } catch (error) {
+      console.error('❌ ERROR STARTING GAME:', error);
+      // You might want to show a toast notification or error message to the user
+      alert('Failed to start game. Please try again.');
+    } finally {
+      // Clear loading state
+      setIsStartingGame(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(courtId);
+        return newSet;
+      });
+    }
   }
 
   function endGame(courtId: string) {
@@ -607,13 +962,40 @@ const OpenPlayDetailPage: React.FC = () => {
   }
 
   async function confirmGameEnd(courtId: string, winner: "A" | "B", score?: string) {
+    try {
+      console.log('🏁 ENDING GAME for court/match ID:', courtId, 'Winner:', winner, 'Score:', score);
+      
+      // Set loading state
+      setIsEndingGame(prev => new Set(prev).add(courtId));
+      
+      // First, update game match status to completed
+      const updateData = {
+        matchStatus: "completed",
+        gameStatus: "completed",
+        endTime: new Date().toISOString()
+      };
+      
+      console.log('📡 CALLING updateGameMatch API with data:', updateData);
+      await updateGameMatch(courtId, updateData);
+      console.log('✅ GAME MATCH STATUS UPDATED SUCCESSFULLY');
+      
+      // Then, set the winner using the dedicated winner API
+      const winnerTeam = winner === "A" ? "team1" : "team2";
+      console.log('🏆 CALLING setGameMatchWinner API with winner:', winnerTeam);
+      await setGameMatchWinner(courtId, winnerTeam);
+      console.log('✅ GAME MATCH WINNER SET SUCCESSFULLY');
+      
+      // Update local state
     setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
     const t = courtTeams[courtId] ?? { A: [], B: [] };
     
-    // Update participants to resting
+      // Update participants to resting
+      console.log('🔄 UPDATING PARTICIPANTS TO RESTING:', t.A.concat(t.B).map(p => ({ id: p.id, name: p.name })));
     await Promise.all([...t.A, ...t.B].map(async (p) => {
+        console.log(`🔄 UPDATING PARTICIPANT ${p.id} (${p.name}) TO RESTING`);
       await updateStatus(p.id, "RESTING");
-    }));
+      }));
+      console.log('✅ ALL PARTICIPANTS UPDATED TO RESTING');
     
     // Create a match record for this completed game
     const newMatch: Match = {
@@ -632,6 +1014,20 @@ const OpenPlayDetailPage: React.FC = () => {
     setMatches(prev => [...prev, newMatch]);
     setCourtTeams((prev) => ({ ...prev, [courtId]: { A: [], B: [] } }));
     setShowWinnerDialog(null);
+      
+      console.log('✅ GAME ENDED SUCCESSFULLY');
+    } catch (error) {
+      console.error('❌ ERROR ENDING GAME:', error);
+      // You might want to show a toast notification or error message to the user
+      alert('Failed to end game. Please try again.');
+    } finally {
+      // Clear loading state
+      setIsEndingGame(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(courtId);
+        return newSet;
+      });
+    }
   }
 
   async function matchMakeCourt(courtId: string) {
@@ -670,6 +1066,17 @@ const OpenPlayDetailPage: React.FC = () => {
     setIsAddingPlayersToMatch(prev => new Set([...prev, ...allPlayers.map(p => p.id)]));
     
     try {
+      // Check if this is dummy data
+      if (isDummySession) {
+        console.log('Dummy session detected, skipping API call for random pick');
+        setIsAddingPlayersToMatch(prev => {
+          const newSet = new Set(prev);
+          allPlayers.forEach(player => newSet.delete(player.id));
+          return newSet;
+        });
+        return;
+      }
+
       // Assign each player to their respective team using the new API
       const teamAAssignments = A.map(player => assignPlayerToTeam(courtId, player.id, 1));
       const teamBAssignments = B.map(player => assignPlayerToTeam(courtId, player.id, 2));
@@ -803,33 +1210,36 @@ const OpenPlayDetailPage: React.FC = () => {
       courts: courts.map(c => {
         const teams = courtTeams[c.id] ?? { A: [], B: [] };
         return {
-          id: c.id,
-          name: c.name,
-          capacity: c.capacity,
-          status: c.status,
+        id: c.id,
+        name: c.name,
+        capacity: c.capacity,
+        status: c.status,
           teamA: teams.A || [],
           teamB: teams.B || [],
-          teamAName: teamNames[c.id]?.A,
-          teamBName: teamNames[c.id]?.B,
+        teamAName: teamNames[c.id]?.A,
+        teamBName: teamNames[c.id]?.B,
           startTime: currentOccurrence?.startTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           endTime: currentOccurrence?.endTime || new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          score: undefined,
-          winner: undefined
+        score: undefined,
+        winner: undefined
         };
       })
     };
 
+    // Get the occurrence ID
+    const occurrenceId = currentOccurrenceId || occurrence?.id;
+
     // Check if matchup window is already open
     const existingWindow = window.open('', 'matchupWindow');
     if (existingWindow && !existingWindow.closed) {
-      // Update existing window
-      existingWindow.location.href = `/matchup-multi/${courtId}`;
+      // Update existing window with occurrence ID
+      existingWindow.location.href = `/matchup-multi/${courtId}?occurrenceId=${occurrenceId}`;
       existingWindow.focus();
       // Send updated data
       existingWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
     } else {
-      // Open new Multi-Court TV Display window
-      const newWindow = window.open(`/matchup-multi/${courtId}`, 'matchupWindow', 'width=1920,height=1080');
+      // Open new Multi-Court TV Display window with occurrence ID
+      const newWindow = window.open(`/matchup-multi/${courtId}?occurrenceId=${occurrenceId}`, 'matchupWindow', 'width=1920,height=1080');
       
       // Pass the matchup data to the new window
       if (newWindow) {
@@ -918,6 +1328,18 @@ const OpenPlayDetailPage: React.FC = () => {
 
     setIsLoadingGameMatches(true);
     try {
+      // Check if this is dummy data
+      if (isDummySession) {
+        console.log('Dummy session detected, skipping API call for game matches');
+        // For dummy data, just set empty state
+        setMatches([]);
+        setCourtTeams({});
+        setTeamNames({});
+        setCourts([]);
+        setIsLoadingGameMatches(false);
+        return;
+      }
+
       console.log('Fetching game matches for occurrence:', occurrenceId);
       const fetchedGameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
       console.log('Fetched game matches:', fetchedGameMatches);
@@ -989,6 +1411,13 @@ const OpenPlayDetailPage: React.FC = () => {
         return;
       }
       
+      // Check if this is dummy data
+      if (isDummySession) {
+        console.log('Dummy session detected, skipping API call for refresh');
+        setIsRefreshing(false);
+        return;
+      }
+      
       const sessionId = session.id || session.id;
       
       const updatedSessionData = await getOpenPlaySessionById(sessionId);
@@ -1015,7 +1444,7 @@ const OpenPlayDetailPage: React.FC = () => {
               `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
               p.user?.userName || 'Unknown Player',
             level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-            status: p.status?.description || 'READY',
+            status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
             skillLevel: p.skillLevel,
             avatar: undefined,
@@ -1051,7 +1480,7 @@ const OpenPlayDetailPage: React.FC = () => {
               `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
               p.user?.userName || 'Unknown Player',
             level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-            status: p.status?.description || 'READY',
+            status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
             skillLevel: p.skillLevel,
             avatar: undefined,
@@ -1147,6 +1576,11 @@ const OpenPlayDetailPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold">{session.sessionName || session.title}</h1>
+                {isDummySession && (
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+                    🧪 DUMMY DATA
+                  </Badge>
+                )}
                 {occurrence && (
                   <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                     Specific Occurrence
@@ -1273,7 +1707,7 @@ const OpenPlayDetailPage: React.FC = () => {
         <GameManagementTab
           participants={participants}
           courts={courts}
-          courtTeams={courtTeams}
+          courtTeams={enrichedCourtTeams}
           matches={matches}
           scoreEntry={scoreEntry}
           showWinnerDialog={showWinnerDialog}
@@ -1287,6 +1721,8 @@ const OpenPlayDetailPage: React.FC = () => {
           onAddCourt={addCourt}
           isCreatingGameMatch={isCreatingGameMatch}
           isAddingPlayersToMatch={isAddingPlayersToMatch}
+          isStartingGame={isStartingGame}
+          isEndingGame={isEndingGame}
           onRenameCourt={renameCourt}
           onToggleCourtOpen={toggleCourtOpen}
           onStartGame={startGame}

@@ -20,7 +20,6 @@ import {
   createOpenPlaySession,
   deleteOpenPlaySession,
   getOpenPlayStats,
-  getOpenPlayLookup,
   type CreateOpenPlaySessionData,
   type OpenPlayStats,
   type OpenPlayOccurrence,
@@ -53,11 +52,385 @@ type OpenPlaySession = {
   hub?: any;
   sport?: any;
   totalOccurrences?: number;
+  isDummy?: boolean; // Flag to indicate dummy data
 };
 
-// Removed dummy participant data - now using real API data
-
-// Removed dummy data - now using real API data
+// Dummy data for testing
+const dummySessionData: OpenPlaySession = {
+  id: "dummy-session-001",
+  title: "🏆 Championship Pickleball Tournament",
+  description: "Monthly championship tournament with prizes for top performers. All skill levels welcome!",
+  when: "Sat • 14:00–18:00",
+  location: "Tournament Court A",
+  eventType: "tournament",
+  level: ["Beginner", "Intermediate", "Advanced"],
+  participants: [
+    {
+      id: "dummy-player-001",
+      name: "Sarah Johnson",
+      status: "Ready",
+      avatar: "/default_avatar.png",
+      initials: "SJ",
+      level: "Advanced",
+      paymentStatus: "paid",
+      paymentAmount: "250",
+      notes: "Tournament favorite"
+    },
+    {
+      id: "dummy-player-002", 
+      name: "Mike Chen",
+      status: "Ready",
+      avatar: "/default_avatar.png",
+      initials: "MC",
+      level: "Intermediate",
+      paymentStatus: "paid",
+      paymentAmount: "250",
+      notes: "Consistent performer"
+    },
+    {
+      id: "dummy-player-003",
+      name: "Emma Rodriguez",
+      status: "Waitlist",
+      avatar: "/default_avatar.png",
+      initials: "ER",
+      level: "Beginner",
+      paymentStatus: "pending",
+      paymentAmount: "250",
+      notes: "First tournament"
+    },
+    {
+      id: "dummy-player-004",
+      name: "David Kim",
+      status: "Ready",
+      avatar: "/default_avatar.png",
+      initials: "DK",
+      level: "Advanced",
+      paymentStatus: "paid",
+      paymentAmount: "250",
+      notes: "Former champion"
+    },
+    {
+      id: "dummy-player-005",
+      name: "Lisa Wang",
+      status: "Reserve",
+      avatar: "/default_avatar.png",
+      initials: "LW",
+      level: "Intermediate",
+      paymentStatus: "paid",
+      paymentAmount: "250",
+      notes: "Backup player"
+    },
+    {
+      id: "dummy-player-006",
+      name: "Alex Thompson",
+      status: "Ready",
+      avatar: "/default_avatar.png",
+      initials: "AT",
+      level: "Advanced",
+      paymentStatus: "paid",
+      paymentAmount: "250",
+      notes: "Rising star"
+    }
+  ],
+  occurrenceId: "dummy-occurrence-001",
+  occurrences: [
+    {
+      id: "dummy-occurrence-001",
+      sessionId: "dummy-session-001",
+      courtId: "dummy-court-001",
+      occurrenceDate: "2025-01-18T00:00:00.000Z",
+      startTime: "14:00",
+      endTime: "18:00",
+      currentParticipants: 6,
+      sessionType: "tournament",
+      organizerNotes: "Championship tournament with prizes",
+      equipmentProvided: ["paddles", "pickleballs", "nets", "scoreboards"],
+      registrationDeadline: "2025-01-17T12:00:00.000Z",
+      cancellationDeadline: "2025-01-17T18:00:00.000Z",
+      createdAt: "2025-01-10T10:00:00.000Z",
+      updatedAt: "2025-01-10T10:00:00.000Z",
+      statusId: 5,
+      paymentMethodId: null,
+      court: {
+        id: "dummy-court-001",
+        courtName: "Tournament Court A",
+        capacity: 8,
+        status: {
+          id: 1,
+          description: "READY",
+          createdAt: "2025-01-10T10:00:00.000Z"
+        }
+      },
+      participants: [
+        {
+          id: "dummy-participant-001",
+          playerStatusId: 1,
+          registeredAt: "2025-01-10T10:30:00.000Z",
+          notes: "Tournament favorite",
+          statusId: 5,
+          paymentAmount: "250",
+          paymentStatus: "paid",
+          skillLevel: "advanced",
+          user: {
+            id: "dummy-user-001",
+            userName: "sarah.johnson",
+            email: "sarah.johnson@email.com",
+            personalInfo: {
+              id: "dummy-personal-001",
+              accountId: "dummy-user-001",
+              firstName: "Sarah",
+              lastName: "Johnson",
+              middleName: null,
+              address: "123 Main St",
+              gender: "Female",
+              birthday: "1990-05-15T00:00:00.000Z",
+              country: "US",
+              contactNo: "555-0101",
+              photoUrl: null,
+              createdAt: "2025-01-10T10:00:00.000Z",
+              updatedAt: "2025-01-10T10:00:00.000Z",
+              userTypeId: 2,
+              uploadId: null,
+              upload: null
+            }
+          },
+          status: {
+            id: 5,
+            description: "READY"
+          },
+          playerStatus: {
+            id: 1,
+            description: "READY"
+          }
+        },
+        {
+          id: "dummy-participant-002",
+          playerStatusId: 1,
+          registeredAt: "2025-01-10T11:00:00.000Z",
+          notes: "Consistent performer",
+          statusId: 5,
+          paymentAmount: "250",
+          paymentStatus: "paid",
+          skillLevel: "intermediate",
+          user: {
+            id: "dummy-user-002",
+            userName: "mike.chen",
+            email: "mike.chen@email.com",
+            personalInfo: {
+              id: "dummy-personal-002",
+              accountId: "dummy-user-002",
+              firstName: "Mike",
+              lastName: "Chen",
+              middleName: null,
+              address: "456 Oak Ave",
+              gender: "Male",
+              birthday: "1985-08-22T00:00:00.000Z",
+              country: "US",
+              contactNo: "555-0102",
+              photoUrl: null,
+              createdAt: "2025-01-10T10:00:00.000Z",
+              updatedAt: "2025-01-10T10:00:00.000Z",
+              userTypeId: 2,
+              uploadId: null,
+              upload: null
+            }
+          },
+          status: {
+            id: 5,
+            description: "READY"
+          },
+          playerStatus: {
+            id: 1,
+            description: "READY"
+          }
+        },
+        {
+          id: "dummy-participant-003",
+          playerStatusId: 3,
+          registeredAt: "2025-01-10T12:00:00.000Z",
+          notes: "First tournament",
+          statusId: 8,
+          paymentAmount: "250",
+          paymentStatus: "pending",
+          skillLevel: "beginner",
+          user: {
+            id: "dummy-user-003",
+            userName: "emma.rodriguez",
+            email: "emma.rodriguez@email.com",
+            personalInfo: {
+              id: "dummy-personal-003",
+              accountId: "dummy-user-003",
+              firstName: "Emma",
+              lastName: "Rodriguez",
+              middleName: null,
+              address: "789 Pine St",
+              gender: "Female",
+              birthday: "1995-03-10T00:00:00.000Z",
+              country: "US",
+              contactNo: "555-0103",
+              photoUrl: null,
+              createdAt: "2025-01-10T10:00:00.000Z",
+              updatedAt: "2025-01-10T10:00:00.000Z",
+              userTypeId: 2,
+              uploadId: null,
+              upload: null
+            }
+          },
+          status: {
+            id: 8,
+            description: "WAITLIST"
+          },
+          playerStatus: {
+            id: 3,
+            description: "WAITLIST"
+          }
+        },
+        {
+          id: "dummy-participant-004",
+          playerStatusId: 1,
+          registeredAt: "2025-01-10T13:00:00.000Z",
+          notes: "Former champion",
+          statusId: 5,
+          paymentAmount: "250",
+          paymentStatus: "paid",
+          skillLevel: "advanced",
+          user: {
+            id: "dummy-user-004",
+            userName: "david.kim",
+            email: "david.kim@email.com",
+            personalInfo: {
+              id: "dummy-personal-004",
+              accountId: "dummy-user-004",
+              firstName: "David",
+              lastName: "Kim",
+              middleName: null,
+              address: "321 Elm St",
+              gender: "Male",
+              birthday: "1988-12-05T00:00:00.000Z",
+              country: "US",
+              contactNo: "555-0104",
+              photoUrl: null,
+              createdAt: "2025-01-10T10:00:00.000Z",
+              updatedAt: "2025-01-10T10:00:00.000Z",
+              userTypeId: 2,
+              uploadId: null,
+              upload: null
+            }
+          },
+          status: {
+            id: 5,
+            description: "READY"
+          },
+          playerStatus: {
+            id: 1,
+            description: "READY"
+          }
+        },
+        {
+          id: "dummy-participant-005",
+          playerStatusId: 5,
+          registeredAt: "2025-01-10T14:00:00.000Z",
+          notes: "Backup player",
+          statusId: 5,
+          paymentAmount: "250",
+          paymentStatus: "paid",
+          skillLevel: "intermediate",
+          user: {
+            id: "dummy-user-005",
+            userName: "lisa.wang",
+            email: "lisa.wang@email.com",
+            personalInfo: {
+              id: "dummy-personal-005",
+              accountId: "dummy-user-005",
+              firstName: "Lisa",
+              lastName: "Wang",
+              middleName: null,
+              address: "654 Maple Dr",
+              gender: "Female",
+              birthday: "1992-07-18T00:00:00.000Z",
+              country: "US",
+              contactNo: "555-0105",
+              photoUrl: null,
+              createdAt: "2025-01-10T10:00:00.000Z",
+              updatedAt: "2025-01-10T10:00:00.000Z",
+              userTypeId: 2,
+              uploadId: null,
+              upload: null
+            }
+          },
+          status: {
+            id: 5,
+            description: "RESERVE"
+          },
+          playerStatus: {
+            id: 5,
+            description: "RESERVE"
+          }
+        },
+        {
+          id: "dummy-participant-006",
+          playerStatusId: 1,
+          registeredAt: "2025-01-10T15:00:00.000Z",
+          notes: "Rising star",
+          statusId: 5,
+          paymentAmount: "250",
+          paymentStatus: "paid",
+          skillLevel: "advanced",
+          user: {
+            id: "dummy-user-006",
+            userName: "alex.thompson",
+            email: "alex.thompson@email.com",
+            personalInfo: {
+              id: "dummy-personal-006",
+              accountId: "dummy-user-006",
+              firstName: "Alex",
+              lastName: "Thompson",
+              middleName: null,
+              address: "987 Cedar Ln",
+              gender: "Male",
+              birthday: "1993-11-30T00:00:00.000Z",
+              country: "US",
+              contactNo: "555-0106",
+              photoUrl: null,
+              createdAt: "2025-01-10T10:00:00.000Z",
+              updatedAt: "2025-01-10T10:00:00.000Z",
+              userTypeId: 2,
+              uploadId: null,
+              upload: null
+            }
+          },
+          status: {
+            id: 5,
+            description: "READY"
+          },
+          playerStatus: {
+            id: 1,
+            description: "READY"
+          }
+        }
+      ]
+    }
+  ],
+  maxParticipants: 8,
+  pricePerPlayer: 250,
+  sessionType: "tournament",
+  isActive: true,
+  createdAt: "2025-01-10T10:00:00.000Z",
+  hub: {
+    id: "dummy-hub-001",
+    sportsHubName: "Championship Sports Center",
+    streetAddress: "1000 Tournament Blvd",
+    city: "Sports City",
+    stateProvince: "CA",
+    zipPostalCode: "90210"
+  },
+  sport: {
+    id: "dummy-sport-001",
+    name: "Pickleball"
+  },
+  totalOccurrences: 1,
+  isDummy: true // Flag to indicate this is dummy data
+};
 
 const levelColor: Record<LevelTag, string> = {
   Beginner: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -154,7 +527,7 @@ const OpenPlayPage: React.FC = () => {
       setIsLoading(true);
       console.log('Loading open play sessions...');
       
-      const [sessionsData, statsData, lookupData] = await Promise.all([
+      const [sessionsData, statsData] = await Promise.all([
         getAllOpenPlaySessions().catch(err => {
           console.error('Failed to fetch sessions:', err);
           return []; // Return empty array on error
@@ -163,10 +536,6 @@ const OpenPlayPage: React.FC = () => {
           console.error('Failed to fetch stats:', err);
           return null; // Return null on error
         }),
-        getOpenPlayLookup().catch(err => {
-          console.error('Failed to fetch lookup:', err);
-          return null; // Return null on error
-        })
       ]);
       
       // Ensure sessionsData is an array
@@ -261,7 +630,10 @@ const OpenPlayPage: React.FC = () => {
       });
       
       console.log('Converted sessions:', convertedSessions);
-      setSessions(convertedSessions);
+      
+      // Add dummy data to the sessions array
+      const sessionsWithDummy = [...convertedSessions, dummySessionData];
+      setSessions(sessionsWithDummy);
       
       // Set first session as selected if none selected
       if (!selectedSessionId && convertedSessions.length > 0) {
@@ -426,6 +798,18 @@ const OpenPlayPage: React.FC = () => {
   const handleDeleteSession = async (sessionId: string) => {
     try {
       setIsOperationLoading(true);
+      
+      // Check if it's dummy data
+      const sessionToDelete = sessions.find(s => s.id === sessionId);
+      if (sessionToDelete?.isDummy) {
+        // For dummy data, just update state without API call
+        console.log('Deleting dummy session:', sessionId);
+        setSessions(prev => prev.filter(s => s.id !== sessionId));
+        setDeleteId(null);
+        return;
+      }
+      
+      // For real data, call API
       await deleteOpenPlaySession(sessionId);
       // Update sessions state directly instead of calling loadSessions to prevent double loading
       setSessions(prev => prev.filter(s => s.id !== sessionId));
@@ -863,7 +1247,8 @@ const OpenPlayPage: React.FC = () => {
                 "hover:shadow-xl hover:shadow-primary/15 hover:scale-[1.02] hover:border-primary/40",
                 "hover:-translate-y-1",
                 selectedSessionId === s.id ? "ring-2 ring-primary/70 shadow-xl shadow-primary/25 scale-[1.02]" : "",
-                isActive ? "border-green-200/50 bg-green-50/30" : "border-primary/10"
+                isActive ? "border-green-200/50 bg-green-50/30" : "border-primary/10",
+                s.isDummy ? "border-dashed border-orange-300 bg-orange-50/20" : ""
               )}
               onClick={() => navigate(`/open-play/${s.id}`, { state: { session: s } })}
               role="button"
@@ -873,6 +1258,11 @@ const OpenPlayPage: React.FC = () => {
               
               {/* Status indicator */}
               <div className="absolute top-3 right-3 flex flex-col gap-1">
+                {s.isDummy && (
+                  <Badge className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
+                    🧪 DUMMY
+                  </Badge>
+                )}
                 <Badge 
                   className={`px-3 py-1 text-xs font-medium ${
                     isActive 
@@ -1629,10 +2019,17 @@ const OpenPlayPage: React.FC = () => {
           </div>
           <div className="space-y-2">
             {sessions.map((session) => (
-              <div key={session.id} className="rounded-lg border bg-card p-3 flex flex-col gap-2">
+              <div key={session.id} className={`rounded-lg border bg-card p-3 flex flex-col gap-2 ${session.isDummy ? 'border-dashed border-orange-300 bg-orange-50/30' : ''}`}>
                 <div className="flex items-center justify-between">
                   <div>
+                    <div className="flex items-center gap-2">
                     <h3 className="text-sm font-semibold">{session.title}</h3>
+                      {session.isDummy && (
+                        <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300">
+                          DUMMY
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{session.description}</p>
                   </div>
                   <Badge variant={session.eventType === 'tournament' ? 'success' : session.eventType === 'recurring' ? 'warning' : 'muted'}>{session.eventType}</Badge>

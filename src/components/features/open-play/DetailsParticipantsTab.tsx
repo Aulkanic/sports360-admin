@@ -322,7 +322,12 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
 
               {/* All Participants */}
               <div className="p-6">
-                <h3 className="font-semibold mb-4">All Participants</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">All Participants</h3>
+                  <div className="text-sm text-gray-500 bg-blue-50 px-3 py-1 rounded-lg">
+                    💡 Click buttons to change player status: Ready • Resting • Waitlist • Reserve • Reject (Endgame status cannot be changed)
+                  </div>
+                </div>
                 <div className="space-y-3">
                     {participants.map((participant) => {
                       console.log(participant)
@@ -378,13 +383,16 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                         <Badge className={getStatusColor(getStatusString(participant.status ?? participant.status?.description))}>
                           {getStatusString(participant.status ?? participant.status?.description)}
                         </Badge>
-                        <div className="flex items-center gap-1">
-                          {!["READY", "COMPLETED","PENDING"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {/* Ready Button - Show if not already Ready and not Endgame */}
+                          {!["READY"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
                             participant.paymentStatus !== "Rejected" && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={async () => {
+                                  console.log(`Ready button clicked for participant ${participant.id}`);
                                   onRemoveFromAllTeams(participant.id);
                                   await onUpdateStatus(participant.id, "READY");
                                 }}
@@ -395,12 +403,36 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                 {isUpdatingStatus.has(participant.id) ? "Updating..." : "Ready"}
                               </Button>
                             )}
-                          {!["WAITLIST", "COMPLETED"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                          
+                          {/* Resting Button - Show if not already Resting and not Endgame */}
+                          {!["REST", "RESTING"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
                             participant.paymentStatus !== "Rejected" && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={async () => {
+                                  console.log(`Resting button clicked for participant ${participant.id}`);
+                                  onRemoveFromAllTeams(participant.id);
+                                  await onUpdateStatus(participant.id, "RESTING");
+                                }}
+                                disabled={isUpdatingStatus.has(participant.id)}
+                                className="text-orange-700 border-orange-300 hover:bg-orange-50"
+                              >
+                                <Pause className="h-3 w-3 mr-1" />
+                                {isUpdatingStatus.has(participant.id) ? "Updating..." : "Resting"}
+                              </Button>
+                            )}
+                          
+                          {/* Waitlist Button - Show if not already Waitlist and not Endgame */}
+                          {!["WAITLIST"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            participant.paymentStatus !== "Rejected" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  console.log(`Waitlist button clicked for participant ${participant.id}`);
                                   onRemoveFromAllTeams(participant.id);
                                   await onUpdateStatus(participant.id, "WAITLIST");
                                 }}
@@ -411,12 +443,16 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                 {isUpdatingStatus.has(participant.id) ? "Updating..." : "Waitlist"}
                               </Button>
                             )}
-                          {!["RESERVE", "COMPLETED"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                          
+                          {/* Reserve Button - Show if not already Reserve and not Endgame */}
+                          {!["RESERVE"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
                             participant.paymentStatus !== "Rejected" && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={async () => {
+                                  console.log(`Reserve button clicked for participant ${participant.id}`);
                                   onRemoveFromAllTeams(participant.id);
                                   await onUpdateStatus(participant.id, "RESERVE");
                                 }}
@@ -425,6 +461,25 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               >
                                 <RotateCcw className="h-3 w-3 mr-1" />
                                 {isUpdatingStatus.has(participant.id) ? "Updating..." : "Reserve"}
+                              </Button>
+                            )}
+                          
+                          {/* Reject Button - Show if not already Rejected and not Endgame */}
+                          {!["REJECTED"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  console.log(`Reject button clicked for participant ${participant.id}`);
+                                  onRemoveFromAllTeams(participant.id);
+                                  await onUpdateStatus(participant.id, "REJECTED");
+                                }}
+                                disabled={isUpdatingStatus.has(participant.id)}
+                                className="text-red-700 border-red-300 hover:bg-red-50"
+                              >
+                                <UserX className="h-3 w-3 mr-1" />
+                                {isUpdatingStatus.has(participant.id) ? "Updating..." : "Reject"}
                               </Button>
                             )}
                         </div>

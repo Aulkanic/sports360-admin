@@ -545,6 +545,26 @@ export const mapParticipantStatusToAPI = (status: any): number => {
 /**
  * Map participant status to player status ID for admin API
  */
+export const mapPlayerStatusFromDescription = (playerStatusDescription: string): any => {
+  switch (playerStatusDescription?.toUpperCase()) {
+    case 'READY':
+      return 'READY';
+    case 'REST':
+    case 'RESTING':
+      return 'RESTING';
+    case 'WAITLIST':
+      return 'WAITLIST';
+    case 'RESERVE':
+      return 'RESERVE';
+    case 'REJECTED':
+      return 'REJECTED';
+    case 'ONGOING':
+      return 'IN-GAME';
+    default:
+      return 'READY';
+  }
+};
+
 export const mapParticipantStatusToPlayerStatusId = (status: any): number | null => {
   switch (status) {
     case 'READY':
@@ -556,7 +576,9 @@ export const mapParticipantStatusToPlayerStatusId = (status: any): number | null
     case 'RESERVE':
       return 4; // Reserve player status
     case 'WAITLIST':
-      return null; // No player status for waitlist
+      return 3; // Use WAITLIST status ID (3) for waitlist
+    case 'REJECTED':
+      return 5; // Rejected player status
     default:
       return 1; // Ready player status
   }

@@ -19,7 +19,9 @@ const CourtMatchmakingCard: React.FC<{
   canEndGame: boolean;
   canCloseCourt: boolean;
   isAddingPlayers?: boolean;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false }) => {
+  isStartingGame?: boolean;
+  isEndingGame?: boolean;
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 44;
   const nvz = 7;
@@ -127,19 +129,19 @@ const CourtMatchmakingCard: React.FC<{
         <Button 
           size="sm" 
           onClick={onStart}
-          disabled={!canStartGame}
-          title={!canStartGame ? "Need exactly 4 players to start game" : "Start the game"}
+          disabled={!canStartGame || isStartingGame}
+          title={!canStartGame ? "Need exactly 4 players to start game" : isStartingGame ? "Starting game..." : "Start the game"}
         >
-          Start Game
+          {isStartingGame ? "Starting..." : "Start Game"}
         </Button>
         <Button 
           size="sm" 
           variant="outline" 
           onClick={onEnd}
-          disabled={!canEndGame}
-          title={!canEndGame ? "Game must be in progress to end" : "End the game and select winner"}
+          disabled={!canEndGame || isEndingGame}
+          title={!canEndGame ? "Game must be in progress to end" : isEndingGame ? "Ending game..." : "End the game and select winner"}
         >
-          End Game
+          {isEndingGame ? "Ending..." : "End Game"}
         </Button>
         <Button 
           size="sm" 

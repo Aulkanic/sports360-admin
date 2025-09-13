@@ -14,6 +14,7 @@ import OpenPlayPage from "./private/bookings/open-play";
 import OpenPlayDetailPage from "./private/bookings/open-play-detail";
 import BookingsExplorePage from "./private/bookings/explore";
 import CommunitiesClubsAdminPage from "./private/communities/communities-clubs";
+import UsersPage from "./private/users/page";
 import ProfilePage from "./private/profile/page";
 import SettingsPage from "./private/settings/page";
 
@@ -34,6 +35,7 @@ export {
 	OpenPlayDetailPage,
 	BookingsExplorePage,
 	CommunitiesClubsAdminPage,
+	UsersPage,
 	ProfilePage,
 	SettingsPage,
 }
