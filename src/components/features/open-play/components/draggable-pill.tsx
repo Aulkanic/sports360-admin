@@ -4,8 +4,19 @@ import { useDraggable } from "@dnd-kit/core";
 import React from "react";
 import type { Participant } from "../types";
 import { getStatusString } from "../types";
+import { Trophy, Clock } from "lucide-react";
 
-const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) => {
+interface DraggablePillProps {
+  participant: Participant;
+  queuePosition?: number;
+  showQueueInfo?: boolean;
+}
+
+const DraggablePill: React.FC<DraggablePillProps> = ({ 
+  participant, 
+  queuePosition, 
+  showQueueInfo = false 
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `p-${participant.id}`,
     data: { participant },
@@ -22,11 +33,19 @@ const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) 
       style={style}
       {...listeners}
       {...attributes}
-      className="rounded-lg border bg-card p-3 flex items-center gap-3 hover:shadow-sm transition"
+      className="rounded-lg border relative bg-card p-3 flex items-center gap-3 hover:shadow-sm transition"
     >
-      <Avatar className="h-8 w-8 flex-shrink-0">
+      {/* Queue Position Badge */}
+      {showQueueInfo && queuePosition && (
+        <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold absolute top-0 -left-2 transform -translate-y-1/2">
+          {queuePosition}
+        </div>
+      )}
+      
+      <Avatar className="h-20 w-20 flex-shrink-0">
         <AvatarImage src={participant.avatar || '/default_avatar.png'} />
       </Avatar>
+      
       <div className="flex flex-col gap-2 min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{participant?.name}</p>
         <div className="flex items-center gap-2">
@@ -37,6 +56,27 @@ const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) 
             {participant.skillLevel ?? participant.level ?? 'No Skill'}
           </Badge>
         </div>
+        
+        {/* Games Played and Queue Info */}
+        {showQueueInfo && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Trophy className="h-3 w-3" />
+              <span>{participant.gamesPlayed ?? 0} games</span>
+            </div>
+            {participant.readyTime && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>
+                  {new Date(participant.readyTime).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

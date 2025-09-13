@@ -189,12 +189,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                     <div className="text-2xl font-bold text-yellow-600">{waitlistList.length}</div>
                     <div className="text-xs text-gray-600">Waitlist</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">
-                      {participants.filter((p) => p.paymentStatus === "Rejected").length}
-                    </div>
-                    <div className="text-xs text-gray-600">Rejected</div>
-                  </div>
                 </div>
               </div>
 
@@ -257,19 +251,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs">
                                   {participant.level ?? 'Veteran'}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "text-xs",
-                                    participant.paymentStatus === "Pending"
-                                      ? "text-orange-700 border-orange-300 bg-orange-50"
-                                      : participant.paymentStatus === "Rejected"
-                                      ? "text-red-700 border-red-300 bg-red-50"
-                                      : "text-green-700 border-green-300 bg-green-50"
-                                  )}
-                                >
-                                  {participant.paymentStatus}
                                 </Badge>
                               </div>
                             </div>
@@ -334,12 +315,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                       return(
                     <div
                       key={participant.id}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-lg transition-colors",
-                        participant.paymentStatus === "Rejected"
-                          ? "bg-red-50 border border-red-200"
-                          : "bg-gray-50 hover:bg-gray-100"
-                      )}
+                      className="flex items-center justify-between p-4 rounded-lg transition-colors bg-gray-50 hover:bg-gray-100"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <Avatar className="h-10 w-10">
@@ -363,19 +339,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                 {participant.gamesPlayed} games
                               </Badge>
                             )}
-                            {participant.paymentStatus !== "Paid" && (
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "text-xs",
-                                  participant.paymentStatus === "Pending"
-                                    ? "text-orange-700 border-orange-300 bg-orange-50"
-                                    : "text-red-700 border-red-300 bg-red-50"
-                                )}
-                              >
-                                {participant.paymentStatus ?? 'pending'}
-                              </Badge>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -386,8 +349,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                         <div className="flex items-center gap-1 flex-wrap">
                           {/* Ready Button - Show if not already Ready and not Endgame */}
                           {!["READY"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            participant.paymentStatus !== "Rejected" && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -406,8 +368,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                           
                           {/* Resting Button - Show if not already Resting and not Endgame */}
                           {!["REST", "RESTING"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            participant.paymentStatus !== "Rejected" && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -426,8 +387,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                           
                           {/* Waitlist Button - Show if not already Waitlist and not Endgame */}
                           {!["WAITLIST"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            participant.paymentStatus !== "Rejected" && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -446,8 +406,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                           
                           {/* Reserve Button - Show if not already Reserve and not Endgame */}
                           {!["RESERVE"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            participant.paymentStatus !== "Rejected" && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -527,19 +486,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                   <span className="font-semibold text-yellow-600">{waitlistList.length}</span>
                 </div>
                 <Separator />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Payment Pending</span>
-                  <span className="font-semibold text-orange-600">
-                    {participants.filter((p) => p.paymentStatus === "Pending").length}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Rejected</span>
-                  <span className="font-semibold text-red-600">
-                    {participants.filter((p) => p.paymentStatus === "Rejected").length}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -585,8 +531,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
         open={addPlayerOpen}
         onOpenChange={setAddPlayerOpen}
         sessionTitle={session.sessionName || session.title}
-        occurrenceId={occurrence?.id || (session as any).occurrenceId || ""}
-        sessionPrice={session.pricePerPlayer || 150} // Use price from session data
         onAddPlayer={onAddPlayer}
         onSuccess={onPlayerAddSuccess}
         onError={onPlayerAddError}

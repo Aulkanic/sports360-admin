@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import type { Court } from '@/components/features/open-play/types';
+import { Clock, Trophy, Users, X } from 'lucide-react';
 
 interface AddCourtModalProps {
   open: boolean;
@@ -10,28 +14,37 @@ interface AddCourtModalProps {
     courtId: string;
     team1Name: string;
     team2Name: string;
-    matchName: string;
+    matchDuration: number; // in minutes
   }) => Promise<void>;
-  availableCourts: Court[];
+  selectedCourt?: Court;
 }
+
+const durationHelpers = [
+  { value: 30, label: '30 mins', description: 'Quick match' },
+  { value: 60, label: '1 hr', description: 'Standard match' },
+  { value: 90, label: '1.5 hrs', description: 'Extended match' },
+  { value: 120, label: '2 hrs', description: 'Long match' },
+  { value: 180, label: '3 hrs', description: 'Marathon match' },
+];
+
 
 const AddCourtModal: React.FC<AddCourtModalProps> = ({
   open,
   onClose,
   onAddCourt,
-  availableCourts
+  selectedCourt
 }) => {
   const [formData, setFormData] = useState({
-    courtId: '',
+    courtId: selectedCourt?.id || '',
     team1Name: '',
     team2Name: '',
-    matchName: ''
+    matchDuration: 60
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -39,12 +52,17 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
     }
   };
 
+  const handleDurationChange = (value: string) => {
+    const numericValue = parseInt(value) || 0;
+    handleInputChange('matchDuration', numericValue);
+  };
+
+  const setDuration = (minutes: number) => {
+    handleInputChange('matchDuration', minutes);
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.courtId) {
-      newErrors.courtId = 'Please select a court';
-    }
 
     if (!formData.team1Name.trim()) {
       newErrors.team1Name = 'Team 1 name is required';
@@ -54,12 +72,16 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
       newErrors.team2Name = 'Team 2 name is required';
     }
 
-    if (!formData.matchName.trim()) {
-      newErrors.matchName = 'Match name is required';
-    }
-
     if (formData.team1Name.trim() === formData.team2Name.trim() && formData.team1Name.trim()) {
       newErrors.team2Name = 'Team names must be different';
+    }
+
+    if (!formData.matchDuration || formData.matchDuration <= 0) {
+      newErrors.matchDuration = 'Match duration must be greater than 0 minutes';
+    }
+
+    if (formData.matchDuration > 480) {
+      newErrors.matchDuration = 'Match duration cannot exceed 8 hours (480 minutes)';
     }
 
     setErrors(newErrors);
@@ -75,10 +97,10 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
         await onAddCourt(formData);
         // Reset form
         setFormData({
-          courtId: '',
+          courtId: selectedCourt?.id || '',
           team1Name: '',
           team2Name: '',
-          matchName: ''
+          matchDuration: 60
         });
         setErrors({});
         onClose();
@@ -93,10 +115,10 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
 
   const handleClose = () => {
     setFormData({
-      courtId: '',
+      courtId: selectedCourt?.id || '',
       team1Name: '',
       team2Name: '',
-      matchName: ''
+      matchDuration: 60
     });
     setErrors({});
     onClose();
@@ -105,95 +127,180 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">Add New Court Match</h2>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="courtId" className="block text-sm font-medium">Select Court</label>
-            <select 
-              id="courtId"
-              value={formData.courtId} 
-              onChange={(e) => handleInputChange('courtId', e.target.value)}
-              className={`w-full p-2 border rounded-md ${errors.courtId ? 'border-red-500' : 'border-gray-300'}`}
-            >
-              <option value="">Choose a court...</option>
-              {availableCourts.map((court) => (
-                <option key={court.id} value={court.id}>
-                  {court.name} (Capacity: {court.capacity})
-                </option>
-              ))}
-            </select>
-            {errors.courtId && (
-              <p className="text-sm text-red-500">{errors.courtId}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="matchName" className="block text-sm font-medium">Match Name</label>
-            <Input
-              id="matchName"
-              value={formData.matchName}
-              onChange={(e) => handleInputChange('matchName', e.target.value)}
-              placeholder="e.g., Championship Match"
-              className={errors.matchName ? 'border-red-500' : ''}
-            />
-            {errors.matchName && (
-              <p className="text-sm text-red-500">{errors.matchName}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="team1Name" className="block text-sm font-medium">Team 1 Name</label>
-              <Input
-                id="team1Name"
-                value={formData.team1Name}
-                onChange={(e) => handleInputChange('team1Name', e.target.value)}
-                placeholder="e.g., Team Alpha"
-                className={errors.team1Name ? 'border-red-500' : ''}
-              />
-              {errors.team1Name && (
-                <p className="text-sm text-red-500">{errors.team1Name}</p>
-              )}
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-2xl mx-4 bg-white shadow-2xl">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Trophy className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Create New Match</CardTitle>
+                <CardDescription>
+                  Set up a new match on {selectedCourt?.name || 'selected court'}
+                </CardDescription>
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="team2Name" className="block text-sm font-medium">Team 2 Name</label>
-              <Input
-                id="team2Name"
-                value={formData.team2Name}
-                onChange={(e) => handleInputChange('team2Name', e.target.value)}
-                placeholder="e.g., Team Beta"
-                className={errors.team2Name ? 'border-red-500' : ''}
-              />
-              {errors.team2Name && (
-                <p className="text-sm text-red-500">{errors.team2Name}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleClose}
               disabled={isSubmitting}
+              className="h-8 w-8 p-0"
             >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Add Court Match'}
+              <X className="h-4 w-4" />
             </Button>
           </div>
-        </form>
-      </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Court Info */}
+          {selectedCourt && (
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Users className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm">Selected Court</h3>
+                  <p className="text-sm text-muted-foreground">{selectedCourt.name}</p>
+                  <div className="flex gap-2 mt-1">
+                    <Badge variant="secondary" className="text-xs">
+                      Capacity: {selectedCourt.capacity} players
+                    </Badge>
+                    {selectedCourt.location && (
+                      <Badge variant="outline" className="text-xs">
+                        {selectedCourt.location}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Team Names */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-foreground">Team Configuration</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="team1Name" className="text-sm font-medium">
+                    Team 1 Name
+                  </Label>
+                  <Input
+                    id="team1Name"
+                    value={formData.team1Name}
+                    onChange={(e) => handleInputChange('team1Name', e.target.value)}
+                    placeholder="e.g., Team Alpha"
+                    className={errors.team1Name ? 'border-red-500' : ''}
+                  />
+                  {errors.team1Name && (
+                    <p className="text-sm text-red-500">{errors.team1Name}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="team2Name" className="text-sm font-medium">
+                    Team 2 Name
+                  </Label>
+                  <Input
+                    id="team2Name"
+                    value={formData.team2Name}
+                    onChange={(e) => handleInputChange('team2Name', e.target.value)}
+                    placeholder="e.g., Team Beta"
+                    className={errors.team2Name ? 'border-red-500' : ''}
+                  />
+                  {errors.team2Name && (
+                    <p className="text-sm text-red-500">{errors.team2Name}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Match Duration */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-foreground">Match Duration</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Duration (minutes)</Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      value={formData.matchDuration || ''}
+                      onChange={(e) => handleDurationChange(e.target.value)}
+                      placeholder="Enter duration in minutes"
+                      className={`pr-10 ${errors.matchDuration ? 'border-red-500' : ''}`}
+                      min="1"
+                      max="480"
+                    />
+                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {errors.matchDuration && (
+                    <p className="text-sm text-red-500">{errors.matchDuration}</p>
+                  )}
+                </div>
+
+                {/* Duration Helper Buttons */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Quick select:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {durationHelpers.map((helper) => (
+                      <Button
+                        key={helper.value}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDuration(helper.value)}
+                        className={`h-8 px-3 text-xs ${
+                          formData.matchDuration === helper.value 
+                            ? 'bg-primary text-primary-foreground border-primary' 
+                            : 'hover:bg-muted'
+                        }`}
+                        title={helper.description}
+                      >
+                        {helper.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="px-6"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating Match...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    Create Match
+                  </div>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

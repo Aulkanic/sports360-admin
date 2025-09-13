@@ -3,9 +3,8 @@ import React from "react";
 import type { Participant } from "../types";
 
 const MatchCardPlayer: React.FC<{ participant: Participant }> = ({ participant }) => {
-  console.log('participant', participant);
   return (
-    <div className="relative m-0 flex-1 flex h-full bg-white/10 backdrop-blur-[1px] border border-white/20 rounded-lg overflow-hidden">
+    <div className="relative m-0 flex-1 flex h-full bg-[#645A57] backdrop-blur-[1px] border border-white/20 rounded-lg overflow-hidden">
       <img
         className="h-24 w-24 object-cover"
         src={

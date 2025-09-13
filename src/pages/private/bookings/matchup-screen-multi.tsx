@@ -103,9 +103,6 @@ const MatchupScreenMulti: React.FC = () => {
 
   // Get full participant information by matching participant ID
   const getFullParticipantInfo = (participantId: string) => {
-    console.log('🔍 LOOKING FOR PARTICIPANT ID:', participantId, 'Type:', typeof participantId);
-    console.log('📊 SESSION DATA AVAILABLE:', !!sessionData);
-    console.log('🏟️ SESSION DATA OCCURRENCES COUNT:', sessionData?.occurrences?.length);
     
     // First check if we have session data with occurrence participants
     if (sessionData?.occurrences) {
@@ -615,58 +612,20 @@ const MatchupScreenMulti: React.FC = () => {
         </div>
       ) : (
         // All Courts Page - Grid view with header and controls
-        <div className="fixed inset-0 h-screen w-screen overflow-hidden relative z-50 bg-gradient-to-br from-gray-900 via-gray-800 to-black" style={{ margin: 0, padding: 0 }}>
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="w-full h-full" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }} />
-          </div> 
-          
-          {/* Header */}
-          <div className="relative z-10 p-2">
-            <div className="flex justify-between items-center px-6">
-              {/* Sport Title - Left aligned */}
-              <div className="bg-black/80 backdrop-blur-sm rounded-xl px-6 py-3 shadow-2xl border border-white/10">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <h1 className="text-3xl font-black uppercase tracking-wider text-white">
-                      {matchup.sport}
-                    </h1>
-                    {matchup.hubName && (
-                      <p className="text-sm text-white/80 mt-1">
-                        {matchup.hubName}
-                      </p>
-                    )}
-                    {matchup.occurrenceDate && matchup.occurrenceStartTime && matchup.occurrenceEndTime && (
-                      <p className="text-xs text-white/60 mt-1">
-                        {new Date(matchup.occurrenceDate).toLocaleDateString()} • {matchup.occurrenceStartTime} - {matchup.occurrenceEndTime}
-                      </p>
-                    )}
-                  </div>
-                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 bg-black rounded-full flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div className="h-screen w-screen overflow-y-auto relative z-50 bg-gradient-to-br from-gray-900 via-gray-800 to-black" style={{ margin: 0, padding: 0 }}>
+     
           {/* Main Content - Grid view */}
-          <div className="flex-1 flex items-center justify-center px-2 py-2 w-full h-[calc(100vh-120px)]">
-            <div className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500 scroll-smooth">
+          <div className=" flex items-center justify-center px-2 py-2 w-full overflow-y-auto">
               <AllCourtsView
                 courts={matchup.courts}
                 focusedCourtId={focusedCourtId}
                 onFocusCourt={focusCourt}
               />
-            </div>
+         
           </div>
           
           {/* Controls - Bottom right corner */}
-          <div className="absolute bottom-4 right-4 flex gap-2">
+          <div className="absolute top-4 right-4 flex gap-2 z-50">
             {!isFullscreen && (
               <Button
                 onClick={() => navigate(-1)}

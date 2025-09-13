@@ -21,9 +21,10 @@ const CourtMatchmakingCard: React.FC<{
   isAddingPlayers?: boolean;
   isStartingGame?: boolean;
   isEndingGame?: boolean;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false }) => {
+  hasMatch?: boolean;
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false }) => {
   const perTeam = Math.floor(capacity / 2);
-  const totalLen = 44;
+  const totalLen = 54;
   const nvz = 7;
   const nvzPct = (nvz / totalLen) * 100;
   const midPct = 50;
@@ -51,22 +52,22 @@ const CourtMatchmakingCard: React.FC<{
         </Badge>
       </div>
 
-      <div className="relative">
+      <div className="relative p-3 bg-[#B85537]">
         <div
           className="relative"
           style={{
             aspectRatio: "11 / 5",
             minHeight: 40,                 // ⬅️ taller drawing
-            background: "#137a46",
+            background: "#ffffff",
           }}
         >
-          <div className="absolute inset-2 rounded-sm border-2 border-white/70 pointer-events-none" />
+          <div className="absolute inset-2 rounded-sm bg-white pointer-events-none" />
           <div
-            className="absolute left-2 right-2 bg-white/90"
+            className="absolute left-2 right-2 bg-black z-4"
             style={{ top: `${midPct}%`, height: 2, transform: "translateY(-1px)" }}
           />
           <div
-            className="absolute left-2 right-2 bg-white/12 pointer-events-none"
+            className="absolute left-2 right-2 bg-[#B8ADA9] pointer-events-none"
             style={{ top: `${upperNVZ}%`, height: `${nvzPct * 2}%` }}
           />
           <div
@@ -74,20 +75,20 @@ const CourtMatchmakingCard: React.FC<{
             style={{ top: `${upperNVZ}%`, height: 2, transform: "translateY(-1px)" }}
           />
           <div
-            className="absolute left-2 right-2 bg-white/75"
+            className="absolute left-2 right-2 bg-white"
             style={{ top: `${lowerNVZ}%`, height: 2, transform: "translateY(-1px)" }}
           />
           <div
-            className="absolute bg-white/75"
+            className="absolute bg-white z-8"
             style={{ left: "50%", width: 2, top: "8px", bottom: `${100 - upperNVZ}%`, transform: "translateX(-1px)" }}
           />
           <div
-            className="absolute bg-white/75"
+            className="absolute bg-white z-8"
             style={{ left: "50%", width: 2, top: `${lowerNVZ}%`, bottom: "8px", transform: "translateX(-1px)" }}
           />
 
           <div
-            className="absolute grid place-items-center rounded-xl bg-black text-white px-3 py-2 text-sm font-extrabold"
+            className="absolute grid place-items-center z-6 bg-black text-white px-8 py-2 text-sm font-extrabold"
             style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
           >
             VS
@@ -96,9 +97,10 @@ const CourtMatchmakingCard: React.FC<{
           {/* overlays keep same geometry, panels are now taller via min-h */}
           <div className="absolute" style={{ left: "12px", right: "12px", top: "12px", bottom: `${100 - upperNVZ + 4}%` }}>
             <MatchCardPanel
-              id={`${court.id}:A`}
+              id={hasMatch ? `${court.id}:A` : `disabled:${court.id}:A`}
               title={`Team A (${teamA.length}/${perTeam})`}
-              className="h-full bg-white/10 backdrop-blur-[1px] border-white/40"
+              className={`h-full backdrop-blur-[1px] border-white/40 ${!hasMatch ? 'opacity-50 pointer-events-none' : ''}`}
+              disabled={!hasMatch}
             >
               {teamA.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
             </MatchCardPanel>
@@ -106,9 +108,10 @@ const CourtMatchmakingCard: React.FC<{
 
           <div className="absolute" style={{ left: "12px", right: "12px", top: `${lowerNVZ + 4}%`, bottom: "12px" }}>
             <MatchCardPanel
-              id={`${court.id}:B`}
+              id={hasMatch ? `${court.id}:B` : `disabled:${court.id}:B`}
               title={`Team B (${teamB.length}/${perTeam})`}
-              className="h-full bg-white/10 backdrop-blur-[1px] border-white/40"
+              className={`h-full backdrop-blur-[1px] border-white/40 ${!hasMatch ? 'opacity-50 pointer-events-none' : ''}`}
+              disabled={!hasMatch}
             >
               {teamB.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
             </MatchCardPanel>

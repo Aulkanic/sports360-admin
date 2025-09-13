@@ -7,16 +7,20 @@ interface MatchCardPanelProps {
   title: string;
   children?: ReactNode;
   className?: string;
+  disabled?: boolean;
 }
 
-const MatchCardPanel: React.FC<MatchCardPanelProps> = ({ id, title, children, className }) => {
-  const { isOver, setNodeRef } = useDroppable({ id });
+const MatchCardPanel: React.FC<MatchCardPanelProps> = ({ id, title, children, className, disabled = false }) => {
+  const { isOver, setNodeRef } = useDroppable({ 
+    id: disabled ? `disabled-${id}` : id,
+    disabled: disabled 
+  });
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "border bg-card transition rounded-md overflow-hidden",
+        "border bg-[#645A57] transition overflow-hidden",
         isOver ? "bg-muted/40 ring-1 ring-primary/30" : "",
         className
       )}

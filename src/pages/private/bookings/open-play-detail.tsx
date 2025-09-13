@@ -197,11 +197,11 @@ const OpenPlayDetailPage: React.FC = () => {
                 initials: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                   fullParticipant.user?.userName?.[0] || '?',
-                paymentStatus: fullParticipant.paymentStatus as 'Paid' | 'Pending' | 'Rejected',
                 paymentAmount: fullParticipant.paymentAmount,
                 notes: fullParticipant.notes,
                 user: fullParticipant.user,
                 isApproved: fullParticipant.statusId === 5, // Assuming statusId 5 means approved
+                paymentStatus: undefined, // Not displaying payment status
                 // Add additional fields that might be useful
                 email: fullParticipant.user?.email,
                 contactNo: fullParticipant.user?.personalInfo?.contactNo,
@@ -345,11 +345,11 @@ const OpenPlayDetailPage: React.FC = () => {
           level: 'Intermediate' as const,
           status: 'IN-GAME',
           playerStatus: { id: 1, description: 'IN-GAME' },
-          paymentStatus: 'Paid',
           isApproved: true,
           gamesPlayed: 0,
           readyTime: new Date(participant.joinedAt).getTime(),
           skillScore: 2,
+          paymentStatus: undefined, // Not displaying payment status
           user: participant.user ? {
             id: participant.user.id,
             userName: participant.user.userName,
@@ -409,11 +409,11 @@ const OpenPlayDetailPage: React.FC = () => {
           level: 'Intermediate' as const,
           status: 'IN-GAME',
           playerStatus: { id: 1, description: 'IN-GAME' },
-          paymentStatus: 'Paid',
           isApproved: true,
           gamesPlayed: 0,
           readyTime: new Date(participant.joinedAt).getTime(),
           skillScore: 2,
+          paymentStatus: undefined, // Not displaying payment status
           user: participant.user ? {
             id: participant.user.id,
             userName: participant.user.userName,
@@ -506,8 +506,6 @@ const OpenPlayDetailPage: React.FC = () => {
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
             p.user?.userName?.[0] || 'U',
-          paymentStatus: (p.paymentStatus === 'pending' ? 'Pending' : 
-                        p.paymentStatus === 'confirmed' ? 'Paid' : 'Rejected') as 'Paid' | 'Pending' | 'Rejected',
           isApproved: p.statusId === 1, // CONFIRMED
           checkedInAt: p.checkedInAt,
           joinedAt: p.registeredAt,
@@ -515,6 +513,7 @@ const OpenPlayDetailPage: React.FC = () => {
           gamesPlayed: 0,
           skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
           readyTime: undefined,
+          paymentStatus: undefined, // Not displaying payment status
           user: p.user
         }));
         
@@ -542,8 +541,6 @@ const OpenPlayDetailPage: React.FC = () => {
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
             p.user?.userName?.[0] || 'U',
-          paymentStatus: (p.paymentStatus === 'pending' ? 'Pending' : 
-                        p.paymentStatus === 'confirmed' ? 'Paid' : 'Rejected') as 'Paid' | 'Pending' | 'Rejected',
           isApproved: p.statusId === 1, // CONFIRMED
           checkedInAt: p.checkedInAt,
           joinedAt: p.registeredAt,
@@ -551,6 +548,7 @@ const OpenPlayDetailPage: React.FC = () => {
           gamesPlayed: 0,
           skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
           readyTime: undefined,
+          paymentStatus: undefined, // Not displaying payment status
           user: p.user
         }));
         
@@ -852,7 +850,7 @@ const OpenPlayDetailPage: React.FC = () => {
     courtId: string;
     team1Name: string;
     team2Name: string;
-    matchName: string;
+    matchDuration: number;
   }) {
     const selectedCourt = availableCourts.find(c => c.id === data.courtId);
     if (!selectedCourt) return;
@@ -879,11 +877,11 @@ const OpenPlayDetailPage: React.FC = () => {
       const gameMatchData = {
         occurrenceId: currentOccurrenceId || occurrence?.id || sessionById?.occurrenceId || '1', // Use current occurrence ID first
         courtId: data.courtId,
-        matchName: data.matchName,
+        matchName: `${data.team1Name} vs ${data.team2Name} - ${data.matchDuration}min`,
         requiredPlayers: selectedCourt.capacity || 4,
         team1Name: data.team1Name,
         team2Name: data.team2Name,
-        organizerNotes: `Game match created for ${selectedCourt.name}`
+        organizerNotes: `Game match created for ${selectedCourt.name} - ${data.matchDuration} minutes`
       };
 
       const createdMatch = await createGameMatch(gameMatchData);
@@ -1451,8 +1449,6 @@ const OpenPlayDetailPage: React.FC = () => {
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
               p.user?.userName?.[0] || 'U',
-            paymentStatus: (p.paymentStatus === 'pending' ? 'Pending' : 
-                          p.paymentStatus === 'confirmed' ? 'Paid' : 'Rejected') as 'Paid' | 'Pending' | 'Rejected',
             isApproved: p.statusId === 1, // CONFIRMED
             checkedInAt: p.checkedInAt,
             joinedAt: p.registeredAt,
@@ -1460,6 +1456,7 @@ const OpenPlayDetailPage: React.FC = () => {
             gamesPlayed: 0,
             skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
             readyTime: undefined,
+            paymentStatus: undefined, // Not displaying payment status
             user: p.user
           }));
           
@@ -1487,8 +1484,6 @@ const OpenPlayDetailPage: React.FC = () => {
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
               p.user?.userName?.[0] || 'U',
-            paymentStatus: (p.paymentStatus === 'pending' ? 'Pending' : 
-                          p.paymentStatus === 'confirmed' ? 'Paid' : 'Rejected') as 'Paid' | 'Pending' | 'Rejected',
             isApproved: p.statusId === 1, // CONFIRMED
             checkedInAt: p.checkedInAt,
             joinedAt: p.registeredAt,
@@ -1496,6 +1491,7 @@ const OpenPlayDetailPage: React.FC = () => {
             gamesPlayed: 0,
             skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
             readyTime: undefined,
+            paymentStatus: undefined, // Not displaying payment status
             user: p.user
           }));
           
@@ -1523,12 +1519,8 @@ const OpenPlayDetailPage: React.FC = () => {
       // Show success message (you could add a toast notification here)
       console.log('Player added successfully:', playerData);
       
-      // Show success message based on payment status
-      if (playerData.paymentStatus === 'Paid') {
-        console.log('✅ Player added as "Ready to Play"');
-      } else if (playerData.paymentStatus === 'Pending') {
-        console.log('⚠️ Player added to Waitlist - Payment pending');
-      }
+      // Show success message
+      console.log('✅ Player added successfully');
     } catch (error) {
       console.error('Error adding player:', error);
     } finally {
@@ -1716,7 +1708,6 @@ const OpenPlayDetailPage: React.FC = () => {
           restingList={restingList}
           reserveList={reserveList}
           waitlistList={waitlistList}
-          availableCourts={availableCourts}
           onDragEnd={onDragEnd}
           onAddCourt={addCourt}
           isCreatingGameMatch={isCreatingGameMatch}
@@ -1754,8 +1745,6 @@ const OpenPlayDetailPage: React.FC = () => {
         open={addPlayerOpen}
         onOpenChange={setAddPlayerOpen}
         sessionTitle={session.sessionName || session.title}
-        occurrenceId={currentOccurrenceId || occurrence?.id || ""}
-        sessionPrice={session.pricePerPlayer || 150} // Use price from session data
         onAddPlayer={handleAddPlayer}
         onSuccess={handlePlayerAddSuccess}
         onError={handlePlayerAddError}

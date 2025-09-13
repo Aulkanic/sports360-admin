@@ -50,7 +50,7 @@ const AllCourtsView: React.FC<AllCourtsViewProps> = ({
           onFocus={onFocusCourt}
         />
       );
-    } else if (hasPlayers) {
+    } else if (!hasPlayers) {
       return (
         <ActiveMatchCard
           key={court.id}
@@ -74,12 +74,27 @@ const AllCourtsView: React.FC<AllCourtsViewProps> = ({
   };
 
   return (
-    <div className="w-full min-h-full p-6 relative">
+    <div 
+      className="w-full min-h-full p-6 relative"
+      style={{
+        backgroundImage: 'url("/matchupbg.jpg")',
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundBlendMode: 'multiply'
+      }}
+    >
+      {/* Background color overlay that blends with the image */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-gray-800/70 to-gray-900/80"
+        style={{ mixBlendMode: 'multiply' }}
+      ></div>
+      
       {/* Top fade indicator */}
       <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-900 to-transparent z-10 pointer-events-none"></div>
       
       {/* Courts grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 relative z-20">
         {courts.map(court => renderCourtCard(court))}
       </div>
       

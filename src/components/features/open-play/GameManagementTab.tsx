@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { CourtCanvas } from "@/components/features/open-play/components/court-canvas";
 import CourtMatchmakingCard from "@/components/features/open-play/components/court-matching-card";
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
 import AddCourtModal from "@/components/features/open-play/AddCourtModal";
-import type { Court, Match, Participant } from "@/components/features/open-play/types";
+import type { Court, Match, Participant, Level } from "@/components/features/open-play/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trophy, Plus, Users } from "lucide-react";
+import { Trophy, Plus, Users, Filter, Search, X } from "lucide-react";
+import { useCourts } from "@/hooks";
 
 interface GameManagementTabProps {
   participants: Participant[];
@@ -24,13 +25,12 @@ interface GameManagementTabProps {
   restingList: Participant[];
   reserveList: Participant[];
   waitlistList: Participant[];
-  availableCourts: Court[];
   onDragEnd: (e: DragEndEvent) => Promise<void>;
   onAddCourt: (data: {
     courtId: string;
     team1Name: string;
     team2Name: string;
-    matchName: string;
+    matchDuration: number;
   }) => Promise<void>;
   onRenameCourt: (courtId: string) => void;
   onToggleCourtOpen: (courtId: string) => void;
@@ -64,7 +64,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   restingList,
   reserveList,
   waitlistList,
-  availableCourts,
   onDragEnd,
   onAddCourt,
   onRenameCourt,
@@ -82,12 +81,93 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   canCloseCourt,
   isCreatingGameMatch = false,
   isAddingPlayersToMatch = new Set(),
-  isLoadingGameMatches = false,
   isStartingGame = new Set(),
   isEndingGame = new Set(),
 }) => {
   console.log(courtTeams)
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+  const [selectedCourt, setSelectedCourt] = useState<Court | undefined>(undefined);
+  const [selectedSkillLevel, setSelectedSkillLevel] = useState<Level | "All">("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Get all courts from the court management system
+  const { items: allCourts, isLoading: isLoadingAllCourts } = useCourts();
+
+  // Filter ready list by skill level and search query
+  const filteredReadyList = useMemo(() => {
+    let filtered = readyList;
+
+    // Filter by skill level
+    if (selectedSkillLevel !== "All") {
+      filtered = filtered.filter(participant => {
+        const skillLevel = (participant.skillLevel || participant.level)?.toString().toUpperCase();
+        return skillLevel === selectedSkillLevel.toUpperCase();
+      });
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(participant => {
+        const name = participant.name?.toLowerCase() || '';
+        const email = participant.user?.email?.toLowerCase() || '';
+        const firstName = participant.user?.personalInfo?.firstName?.toLowerCase() || '';
+        const lastName = participant.user?.personalInfo?.lastName?.toLowerCase() || '';
+        
+        return name.includes(query) || 
+               email.includes(query) || 
+               firstName.includes(query) || 
+               lastName.includes(query) ||
+               `${firstName} ${lastName}`.trim().includes(query);
+      });
+    }
+
+    return filtered;
+  }, [readyList, selectedSkillLevel, searchQuery]);
+
+  // Create ready list with queue positions
+  const readyListWithQueuePositions = useMemo(() => {
+    return filteredReadyList.map((participant, index) => ({
+      ...participant,
+      queuePosition: index + 1
+    }));
+  }, [filteredReadyList]);
+
+  // Get available skill levels from ready list
+  const availableSkillLevels = useMemo(() => {
+    const levels = new Set<Level>();
+    readyList.forEach(participant => {
+      const skillLevel = (participant.skillLevel || participant.level).toUpperCase();
+      if (skillLevel && (skillLevel === "BEGINNER" || skillLevel === "INTERMEDIATE" || skillLevel === "ADVANCED")) {
+        levels.add(skillLevel);
+      }
+    });
+    return Array.from(levels).sort();
+  }, [readyList]);
+
+  // Merge all courts with existing game courts
+  const displayCourts = useMemo(() => {
+    // Convert all courts to the format expected by the game management
+    const convertedAllCourts = allCourts.map(court => ({
+      id: court.id,
+      name: court.name,
+      capacity: court.capacity || 4,
+      status: "Open" as const,
+      location: court.location,
+      hourlyRate: court.hourlyRate,
+      images: court.images?.filter((img): img is string => typeof img === 'string'),
+      // Add any other properties needed for display
+    }));
+
+    // Create a map of existing game courts by ID
+    const existingGameCourts = new Map(courts.map(court => [court.id, court]));
+    
+    // Merge: use existing game court data if available, otherwise use converted court data
+    return convertedAllCourts.map(court => {
+      const existingGameCourt = existingGameCourts.get(court.id);
+      return existingGameCourt || court;
+    });
+  }, [allCourts, courts]);
   return (
     <DndContext onDragEnd={onDragEnd}>
       <div className="flex-1 overflow-y-auto">
@@ -107,11 +187,94 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 subtitle="Players ready to play"
                 childrenClassName="grid grid-cols-1"
               >
-                {readyList.map((p) => (
-                  <DraggablePill key={p.id} participant={p} />
+                {/* Search and Filter Section */}
+                <div className="mb-3 space-y-3 p-2 bg-gray-50 rounded-lg border">
+                  {/* Search Input */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">Search players:</span>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="Search by name, email..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-8 text-xs pr-8"
+                      />
+                      {searchQuery && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-200"
+                          onClick={() => setSearchQuery("")}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Skill Level Filter Tabs */}
+                  {availableSkillLevels.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">Filter by skill level:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Button
+                          variant={selectedSkillLevel === "All" ? "default" : "outline"}
+                          size="sm"
+                          className="h-6 px-2 text-xs font-medium"
+                          onClick={() => setSelectedSkillLevel("All")}
+                        >
+                          All ({readyList.length})
+                        </Button>
+                        {availableSkillLevels.map((level) => {
+                          const count = readyList.filter(p => (p.skillLevel || p.level) === level).length;
+                          const getVariant = (level: Level) => {
+                            switch (level) {
+                              case "Beginner": return selectedSkillLevel === level ? "default" : "outline";
+                              case "Intermediate": return selectedSkillLevel === level ? "default" : "outline";
+                              case "Advanced": return selectedSkillLevel === level ? "default" : "outline";
+                              default: return "outline";
+                            }
+                          };
+                          return (
+                            <Button
+                              key={level}
+                              variant={getVariant(level)}
+                              size="sm"
+                              className="h-6 px-2 text-xs font-medium"
+                              onClick={() => setSelectedSkillLevel(level)}
+                            >
+                              {level} ({count})
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {readyListWithQueuePositions.map((p) => (
+                  <DraggablePill 
+                    key={p.id} 
+                    participant={p} 
+                    queuePosition={p.queuePosition}
+                    showQueueInfo={true}
+                  />
                 ))}
-                {readyList.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No players ready</p>
+                {readyListWithQueuePositions.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {searchQuery.trim() 
+                      ? `No players found matching "${searchQuery}"`
+                      : selectedSkillLevel === "All" 
+                        ? "No players ready" 
+                        : `No ${selectedSkillLevel.toLowerCase()} players ready`}
+                  </p>
                 )}
               </DroppablePanel>
 
@@ -207,75 +370,92 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
 
               {/* Court canvas */}
               <CourtCanvas>
-                {isLoadingGameMatches ? (
+                {isLoadingAllCourts ? (
                   <div className="flex flex-col items-center justify-center py-12 px-6">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Game Matches</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Courts</h3>
                     <p className="text-gray-500 text-center mb-6 max-w-md">
-                      Fetching existing game matches for this occurrence...
+                      Fetching all available courts...
                     </p>
                   </div>
-                ) : courts.length === 0 ? (
+                ) : displayCourts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-6">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <Users className="h-8 w-8 text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Courts Added Yet</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Courts Available</h3>
                     <p className="text-gray-500 text-center mb-6 max-w-md">
-                      Get started by adding your first court match. You'll be able to select a court, 
-                      name the teams, and set up the match details.
+                      No courts are available for this session. Please check your court management settings.
                     </p>
-                    <Button onClick={() => setShowAddCourtModal(true)} className="bg-primary text-white hover:bg-primary/90">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Court
-                    </Button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {courts.map((c,idx) => {
-                      const teams = courtTeams[c.id] ?? { A: [], B: [] };
-                      const perTeam = Math.floor(c.capacity / 2);
+                    {displayCourts.map((court, idx) => {
+                      const teams = courtTeams[court.id] ?? { A: [], B: [] };
+                      const perTeam = Math.floor(court.capacity / 2);
+                      const hasMatch = teams.A.length > 0 || teams.B.length > 0;
 
                       return (
                         <div key={idx}>
                           <div className="p-2">
-                            <CourtMatchmakingCard
-                              court={c}
-                              teamA={teams.A}
-                              teamB={teams.B}
-                              capacity={c.capacity}
-                              onStart={() => onStartGame(c.id)}
-                              onEnd={() => onEndGame(c.id)}
-                              onRename={() => onRenameCourt(c.id)}
-                              onToggleOpen={() => onToggleCourtOpen(c.id)}
-                              onRandomPick={() => onMatchMakeCourt(c.id)}
-                              canStartGame={canStartGame(c.id)}
-                              isStartingGame={isStartingGame.has(c.id)}
-                              isEndingGame={isEndingGame.has(c.id)}
-                              canEndGame={canEndGame(c.id)}
-                              canCloseCourt={canCloseCourt(c.id)}
-                              isAddingPlayers={isAddingPlayersToMatch.size > 0}
-                            />
+                     <CourtMatchmakingCard
+                       court={court}
+                       teamA={teams.A}
+                       teamB={teams.B}
+                       capacity={court.capacity}
+                       onStart={() => onStartGame(court.id)}
+                       onEnd={() => onEndGame(court.id)}
+                       onRename={() => onRenameCourt(court.id)}
+                       onToggleOpen={() => onToggleCourtOpen(court.id)}
+                       onRandomPick={() => onMatchMakeCourt(court.id)}
+                       canStartGame={canStartGame(court.id)}
+                       isStartingGame={isStartingGame.has(court.id)}
+                       isEndingGame={isEndingGame.has(court.id)}
+                       canEndGame={canEndGame(court.id)}
+                       canCloseCourt={canCloseCourt(court.id)}
+                       isAddingPlayers={isAddingPlayersToMatch.size > 0}
+                       hasMatch={hasMatch}
+                     />
                             <div className="flex flex-col items-center gap-2 mt-2">
                               <p className="text-[11px] text-muted-foreground text-center">
-                                Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
+                                Team size: {perTeam} • {hasMatch ? 'Drag players onto A/B or use "Matchmake This Court"' : 'Create a match first to drag players'}
                               </p>
-                              {teams.A.length === 0 && teams.B.length === 0 && (
-                                <p className="text-[10px] text-orange-600 text-center">
-                                  No players assigned yet
-                                </p>
+                              {!hasMatch && (
+                                <div className="text-center py-2">
+                                  <p className="text-[10px] text-orange-600 text-center mb-2">
+                                    No match on this court
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedCourt(court);
+                                      setShowAddCourtModal(true);
+                                    }}
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-7 px-3"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Create Match
+                                  </Button>
+                                </div>
                               )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => onViewMatchupScreen(c.id)}
-                                className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-                              >
-                                <Trophy className="h-3 w-3 mr-1" />
-                                Play Screen
-                              </Button>
+                              {hasMatch && (
+                                <>
+                                  <p className="text-[10px] text-green-600 text-center">
+                                    Active match with {teams.A.length + teams.B.length} players
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => onViewMatchupScreen(court.id)}
+                                    className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                                  >
+                                    <Trophy className="h-3 w-3 mr-1" />
+                                    Play Screen
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -424,9 +604,12 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
       {/* Add Court Modal */}
       <AddCourtModal
         open={showAddCourtModal}
-        onClose={() => setShowAddCourtModal(false)}
+        onClose={() => {
+          setShowAddCourtModal(false);
+          setSelectedCourt(undefined);
+        }}
         onAddCourt={onAddCourt}
-        availableCourts={availableCourts}
+        selectedCourt={selectedCourt}
       />
     </DndContext>
   );

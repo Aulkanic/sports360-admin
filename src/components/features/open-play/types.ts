@@ -16,7 +16,7 @@ export type Participant = {
   status: any;
   avatar?: string;
   initials?: string;
-  paymentStatus: "Paid" | "Pending" | "Rejected";
+  paymentStatus?: "Paid" | "Pending" | "Rejected"; // Made optional since we're removing display
   isApproved: boolean;
   waitlistReason?: string;
   // Game history for matchmaking
@@ -41,6 +41,9 @@ export type Court = {
   name: string;
   capacity: number; // total across both teams
   status: "Open" | "IN-GAME" | "Closed";
+  location?: string;
+  hourlyRate?: number;
+  images?: string[];
 };
 
 export type Match = {

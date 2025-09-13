@@ -54,6 +54,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
   const pickleRef = useRef<HTMLImageElement>(null);
   const teamACardsRef = useRef<HTMLDivElement>(null);
   const teamBCardsRef = useRef<HTMLDivElement>(null);
+  const go8PowerRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -79,6 +80,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
     });
 
     gsap.set([teamACardsRef.current, teamBCardsRef.current], {
+      y: '100%',
+      opacity: 0
+    });
+
+    gsap.set(go8PowerRef.current, {
       y: '100%',
       opacity: 0
     });
@@ -118,7 +124,14 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
         duration: 0.8,
         ease: 'power2.out',
         stagger: 0.1
-      }, '-=0.3');
+      }, '-=0.3')
+      // 5. Go8Power slides in from bottom at the end
+      .to(go8PowerRef.current, {
+        y: '0%',
+        opacity: 1,
+        duration: 0.6,
+        ease: 'power2.out'
+      }, '-=0.2');
 
   }, []);
 
@@ -137,11 +150,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Dark overlay to reduce background visibility */}
-      <div className="absolute inset-0 bg-black/40 z-10"></div>
+      {/* Dark overlay with blend mode to merge with background */}
+ 
       
-      <img ref={tlAbstractRef} src="/TLabstract.png" className='absolute top-0 left-0 w-[30%] h-[65%] object-fill h-32 z-20' alt="" />
-      <img ref={trAbstractRef} src="/TRabstract.png" className='absolute top-0 right-0 w-[30%] h-[65%] object-fill h-32 z-20' alt="" />
+      <img ref={tlAbstractRef} src="/TLabstract.png" className='absolute top-0 left-0 w-[20%] h-[55%] object-fill h-32 z-20' alt="" />
+      <img ref={trAbstractRef} src="/TRabstract.png" className='absolute top-0 right-0 w-[20%] h-[55%] object-fill h-32 z-20' alt="" />
       <div className='flex flex-1 flex-col justify-center items-center'>
         <div className='flex flex-nowrap gap-[30%] justify-center items-center  w-full'>
           <img ref={logoRef} src="/logo.png" className='z-50 w-40' alt="" />
@@ -331,6 +344,9 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
           </div>
         </div>
         </div>
+      </div>
+      <div>
+        <img ref={go8PowerRef} src="/go8power.png" alt="" />
       </div>
     </div>
   );

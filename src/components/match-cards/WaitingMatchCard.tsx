@@ -28,42 +28,69 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
   focusedCourtId,
   onFocus
 }) => {
+  const totalLen = 54;
+  const nvz = 7;
+  const nvzPct = (nvz / totalLen) * 100;
+  const midPct = 50;
+  const upperNVZ = midPct - nvzPct;
+  const lowerNVZ = midPct + nvzPct;
   return (
     <div 
-      className={`relative w-full bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 flex flex-col justify-center items-center shadow-2xl transition-all duration-500 ${
-        isFocused ? 'scale-100 z-20 rounded-none ring-8 ring-blue-400/30 ring-opacity-50' : 'scale-90 hover:scale-95 z-10 rounded-2xl'
+      className={`relative w-full flex flex-col justify-center border-12 border-[#B85537] items-center shadow-2xl transition-all duration-500 ${
+        isFocused ? 'scale-100 z-20 rounded-none ring-8 ring-blue-400/30 ring-opacity-50' : 'scale-90 hover:scale-95 z-10'
       } ${focusedCourtId && !isFocused ? 'opacity-30' : 'opacity-100'}`}
       style={{
         minHeight: isFocused ? '100vh' : '100%',
         width: isFocused ? '100vw' : '100%',
         maxWidth: isFocused ? '100vw' : '100%',
         height: isFocused ? '100vh' : '100%',
-        margin: isFocused ? '0' : 'auto'
+        margin: isFocused ? '0' : 'auto',
+        backgroundImage: 'url("/card.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundBlendMode: 'multiply'
       }}
     >
+      {/* Background color overlay that blends with the image */}
+      <div 
+        className="absolute inset-0 bg-[#645A57]"
+        style={{ mixBlendMode: 'multiply' }}
+      ></div>
       {/* Court Lines */}
-      <div className="absolute top-1/2 left-0 right-0 h-2 bg-white/95 shadow-2xl z-10"></div>
-      <div className="absolute top-1/2 left-1/2 w-2 h-1/2 bg-white/80 transform -translate-x-1/2 shadow-2xl z-10"></div>
-      
-      {/* Additional Court Lines for realism */}
-      <div className="absolute top-1/4 left-0 right-0 h-1 bg-white/70 shadow-lg z-10"></div>
-      <div className="absolute bottom-1/4 left-0 right-0 h-1 bg-white/70 shadow-lg z-10"></div>
-      
-      {/* Service boxes */}
-      <div className="absolute top-1/4 left-1/4 w-1/2 h-1/4 border-2 border-white/60 rounded-lg z-10"></div>
-      <div className="absolute bottom-1/4 left-1/4 w-1/2 h-1/4 border-2 border-white/60 rounded-lg z-10"></div>
-      
-      {/* Court division lines for better alignment reference */}
-      <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white/30 z-5"></div>
-      <div className="absolute top-1/4 left-0 right-0 h-0.5 bg-white/20 z-5"></div>
-      <div className="absolute bottom-1/4 left-0 right-0 h-0.5 bg-white/20 z-5"></div>
-      
-      {/* Court Texture */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="w-full h-full" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='20' cy='20' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }} />
-      </div>
+      <div className="absolute inset-2 rounded-sm bg-white pointer-events-none" />
+          <div
+            className="absolute left-2 right-2 bg-black z-40"
+            style={{ top: `${midPct}%`, height: 2, transform: "translateY(-1px)" }}
+          />
+          <div
+            className="absolute left-2 right-2 bg-[#B8ADA9] z-40 pointer-events-none"
+            style={{ top: `${upperNVZ}%`, height: `${nvzPct * 2}%` }}
+          />
+          <div
+            className="absolute left-2 right-2 bg-white/75 z-50"
+            style={{ top: `${upperNVZ}%`, height: 2, transform: "translateY(-1px)" }}
+          />
+          <div
+            className="absolute left-2 right-2 bg-white z-50"
+            style={{ top: `${lowerNVZ}%`, height: 2, transform: "translateY(-1px)" }}
+          />
+          <div
+            className="absolute bg-white z-50"
+            style={{ left: "50%", width: 2, top: "8px", bottom: `${100 - upperNVZ}%`, transform: "translateX(-1px)" }}
+          />
+          <div
+            className="absolute bg-white z-50"
+            style={{ left: "50%", width: 2, top: `${lowerNVZ}%`, bottom: "8px", transform: "translateX(-1px)" }}
+          />
+
+          <div
+            className="absolute grid place-items-center z-40 bg-black text-white px-8 py-2 text-sm font-extrabold"
+            style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
+          >
+            VS
+          </div>
+    
       
       {/* Animated particles for focused view */}
       {isFocused && (
@@ -76,14 +103,14 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
       )}
 
       {/* Orange Borders */}
-      <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 shadow-lg"></div>
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 shadow-lg"></div>
+      {/* <div className="absolute top-0 left-0 right-0 h-6 bg-[#B85537] shadow-lg"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-6 bg-[#B85537] shadow-lg"></div> */}
       
       {/* Side borders for full screen effect */}
       {isFocused && (
         <>
-          <div className="absolute top-0 left-0 bottom-0 w-6 bg-gradient-to-b from-orange-500 via-orange-600 to-orange-500 shadow-lg"></div>
-          <div className="absolute top-0 right-0 bottom-0 w-6 bg-gradient-to-b from-orange-500 via-orange-600 to-orange-500 shadow-lg"></div>
+          <div className="absolute top-0 left-0 bottom-0 w-6 bg-[#B85537] shadow-lg"></div>
+          <div className="absolute top-0 right-0 bottom-0 w-6 bg-[#B85537] shadow-lg"></div>
         </>
       )}
 
@@ -93,13 +120,13 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
       {/* Court Content - Video Display */}
       <div className="flex-1 w-full flex items-center justify-center p-0">
         <div className="w-full h-[90%] flex justify-center items-center z-40 relative">
-          <div className="w-full h-[77%] relative -mt-2">
+          <div className="w-full h-[97%] relative -mt-2">
             <video
               autoPlay
               loop
               muted
               playsInline
-              className="w-full h-full z-50 object-cover rounded-lg"
+              className="w-full h-full z-50 object-cove"
               style={{ 
                 filter: 'brightness(1) contrast(1.1)',
                 borderRadius: isFocused ? '0' : '0.5rem'
@@ -110,8 +137,19 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
             </video>
             
             {/* Overlay with court info */}
-            <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center">
-              <div className="text-center text-white">
+            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{
+              backgroundImage: 'url("/card.jpg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundBlendMode: 'multiply'
+            }}>
+              {/* Background color overlay for video overlay */}
+              <div 
+                className="absolute inset-0 bg-black/20"
+                style={{ mixBlendMode: 'multiply' }}
+              ></div>
+              <div className="text-center text-white relative z-10">
                 <div className={`font-bold ${isFocused ? 'text-4xl' : 'text-2xl'} mb-4`}>
                   {court?.name}
                 </div>

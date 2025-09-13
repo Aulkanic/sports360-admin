@@ -143,7 +143,7 @@ export interface AddPlayerRequest {
   lastName?: string;
   email?: string;
   phoneNumber?: string;
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+  skillId: number; // Skill level ID (1=Beginner, 2=Intermediate, 3=Advanced)
   additionalNotes?: string;
   paymentMethodId: number;
   paymentAmount: number;
@@ -444,7 +444,7 @@ export const checkCourtAvailability = async (params: {
  */
 export const addPlayerToSession = async (playerData: AddPlayerRequest): Promise<any> => {
   try {
-    const response = await apiClient.post('/openplay/add-player', playerData);
+    const response = await apiClient.post('/openplay/add-player', {...playerData, paymentAmount:'100'});
     return response.data.data;
   } catch (error: any) {
     console.error('Error adding player to session:', error);

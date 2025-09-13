@@ -1235,7 +1235,7 @@ const OpenPlayPage: React.FC = () => {
         isLoading ? (
           <OpenPlayGridSkeleton count={6} />
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {sessions.map((s) => {
           const topLevels = Array.from(new Set(s.participants.map((p) => p.level).filter(Boolean))) as LevelTag[];
           const isActive = s.participants.length > 0;
@@ -1257,73 +1257,85 @@ const OpenPlayPage: React.FC = () => {
               <div className="pointer-events-none absolute inset-x-0 -top-20 h-36 translate-y-0 bg-gradient-to-b from-primary/15 to-transparent" />
               
               {/* Status indicator */}
-              <div className="absolute top-3 right-3 flex flex-col gap-1">
+              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-1">
                 {s.isDummy && (
-                  <Badge className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
-                    🧪 DUMMY
+                  <Badge className="px-1.5 py-0.5 sm:px-2 sm:py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
+                    <span className="hidden sm:inline">🧪 DUMMY</span>
+                    <span className="sm:hidden">🧪</span>
                   </Badge>
                 )}
                 <Badge 
-                  className={`px-3 py-1 text-xs font-medium ${
+                  className={`px-2 py-0.5 sm:px-3 sm:py-1 text-xs font-medium ${
                     isActive 
                       ? "bg-green-100 text-green-800 border-green-200" 
                       : "bg-muted text-muted-foreground border-border"
                   }`}
                 >
-                  {isActive ? "🟢 Active" : "🔵 Open"}
+                  <span className="hidden sm:inline">{isActive ? "🟢 Active" : "🔵 Open"}</span>
+                  <span className="sm:hidden">{isActive ? "🟢" : "🔵"}</span>
                 </Badge>
                 {(s as any).isFreeJoin || (s as any).pricePerPlayer === 0 ? (
-                  <Badge className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 border-green-200">
-                    🆓 Free
+                  <Badge className="px-1.5 py-0.5 sm:px-2 sm:py-1 text-xs font-medium bg-green-100 text-green-800 border-green-200">
+                    <span className="hidden sm:inline">🆓 Free</span>
+                    <span className="sm:hidden">🆓</span>
                   </Badge>
                 ) : null}
                 {s.participants.length >= 8 && (
-                  <Badge className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
-                    🔥 Popular
+                  <Badge className="px-1.5 py-0.5 sm:px-2 sm:py-1 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
+                    <span className="hidden sm:inline">🔥 Popular</span>
+                    <span className="sm:hidden">🔥</span>
                   </Badge>
                 )}
               </div>
 
-              <div className="p-5 space-y-4">
+              <div className="p-3 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
                 {/* Header */}
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0">
                     {s.title}
                   </h3>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md flex-shrink-0">
                       <Calendar className="h-3 w-3" />
-                      <span>ID: {s.id}</span>
+                      <span className="hidden sm:inline">ID: {s.id}</span>
+                      <span className="sm:hidden">{s.id}</span>
                     </div>
                   </div>
                   
                   {s.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                       {s.description}
                     </p>
                   )}
 
                   {/* Event Type & Level Badges */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {s.eventType && (
                       <Badge
                         variant="outline"
-                        className={`text-xs px-3 py-1 font-medium ${
+                        className={`text-xs px-2 py-0.5 sm:px-3 sm:py-1 font-medium ${
                           s.eventType === 'tournament' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                           s.eventType === 'recurring' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                           'bg-gray-100 text-gray-800 border-gray-200'
                         }`}
                       >
-                        {s.eventType === 'tournament' ? '🏆 Tournament' :
-                         s.eventType === 'recurring' ? '🔄 Recurring' :
-                         '📅 One-time'}
+                        <span className="hidden sm:inline">
+                          {s.eventType === 'tournament' ? '🏆 Tournament' :
+                           s.eventType === 'recurring' ? '🔄 Recurring' :
+                           '📅 One-time'}
+                        </span>
+                        <span className="sm:hidden">
+                          {s.eventType === 'tournament' ? '🏆' :
+                           s.eventType === 'recurring' ? '🔄' :
+                           '📅'}
+                        </span>
                       </Badge>
                     )}
                     {s.level.map((lvl) => (
                       <Badge
                         key={lvl}
                         variant="outline"
-                        className={`text-xs px-3 py-1 font-medium ${levelColor[lvl]}`}
+                        className={`text-xs px-2 py-0.5 sm:px-3 sm:py-1 font-medium ${levelColor[lvl]}`}
                       >
                         {lvl}
                       </Badge>
@@ -1331,31 +1343,31 @@ const OpenPlayPage: React.FC = () => {
                     </div>
 
                   {/* Session Details Grid */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-4 w-4 text-blue-500" />
-                      <div>
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0" />
+                      <div className="min-w-0">
                         <div className="font-medium text-foreground">Schedule</div>
-                        <div className="text-xs">{s.when}</div>
+                        <div className="text-xs truncate">{s.when}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4 text-green-500" />
-                      <div>
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
+                      <div className="min-w-0">
                         <div className="font-medium text-foreground">Location</div>
-                        <div className="text-xs">{s.location}</div>
+                        <div className="text-xs truncate">{s.location}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Hub Information */}
                   {(s as any).hub && (
-                    <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-200/30">
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <div>
-                          <div className="font-medium text-blue-900">{(s as any).hub.sportsHubName}</div>
-                          <div className="text-xs text-blue-700">
+                    <div className="bg-blue-50/50 rounded-lg p-2 sm:p-3 border border-blue-200/30">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-blue-900 truncate">{(s as any).hub.sportsHubName}</div>
+                          <div className="text-xs text-blue-700 truncate">
                             {(s as any).hub.city}, {(s as any).hub.stateProvince}
                           </div>
                         </div>
@@ -1364,50 +1376,60 @@ const OpenPlayPage: React.FC = () => {
                   )}
 
                   {/* Additional Info */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/30 rounded-lg p-2">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-2">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                     {s.eventType === 'recurring' && (
                         <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>Weekly</span>
+                        <span className="hidden sm:inline">Weekly</span>
+                        <span className="sm:hidden">Weekly</span>
                       </div>
                     )}
                     {s.eventType === 'tournament' && (
                         <div className="flex items-center gap-1">
                         <Star className="h-3 w-3" />
-                        <span>Single Elimination</span>
+                        <span className="hidden sm:inline">Single Elimination</span>
+                        <span className="sm:hidden">Tournament</span>
                       </div>
                     )}
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        <span>Max {(s as any).maxParticipants || 10} players</span>
+                        <span className="hidden sm:inline">Max {(s as any).maxParticipants || 10} players</span>
+                        <span className="sm:hidden">Max {(s as any).maxParticipants || 10}</span>
                   </div>
                     </div>
                     <div className="text-xs font-medium text-foreground">
                       {(s as any).isFreeJoin || (s as any).pricePerPlayer === 0 ? (
-                        <span className="text-green-600 font-semibold">🆓 Free to Join</span>
+                        <span className="text-green-600 font-semibold">
+                          <span className="hidden sm:inline">🆓 Free to Join</span>
+                          <span className="sm:hidden">🆓 Free</span>
+                        </span>
                       ) : (
-                        `₱${(s as any).pricePerPlayer || 150} per player`
+                        <>
+                          <span className="hidden sm:inline">₱{(s as any).pricePerPlayer || 150} per player</span>
+                          <span className="sm:hidden">₱{(s as any).pricePerPlayer || 150}</span>
+                        </>
                       )}
                     </div>
                   </div>
               </div>
 
                 {/* Participants Section */}
-                <div className="space-y-3 border-t pt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                <div className="space-y-2 sm:space-y-3 border-t pt-2 sm:pt-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <AvatarsStrip
                     people={s.participants.map((p) => ({ avatar: (p as any).avatar, initials: (p as any).initials, name: p.name }))}
                         max={4}
-                        size={32}
+                        size={24}
                       />
-                      <div className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground text-lg">{s.participants.length}</span>
-                          <span className="text-muted-foreground">/ {(s as any).maxParticipants || 10} players</span>
+                      <div className="text-xs sm:text-sm min-w-0">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <span className="font-semibold text-foreground text-sm sm:text-lg">{s.participants.length}</span>
+                          <span className="text-muted-foreground hidden sm:inline">/ {(s as any).maxParticipants || 10} players</span>
+                          <span className="text-muted-foreground sm:hidden">/ {(s as any).maxParticipants || 10}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground truncate">
                           {s.participants.length === 0 ? 'No participants yet' : 
                            s.participants.length === 1 ? '1 participant' : 
                            `${s.participants.length} participants`}
@@ -1415,9 +1437,9 @@ const OpenPlayPage: React.FC = () => {
                   </div>
                 </div>
                 {topLevels.length > 0 && (
-                      <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md">
+                      <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md">
                         <Star className="h-3 w-3 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-800">
+                        <span className="text-xs font-medium text-amber-800 truncate">
                           {topLevels.slice(0, 2).join(", ")}
                       </span>
                   </div>
@@ -1427,14 +1449,15 @@ const OpenPlayPage: React.FC = () => {
                   {/* Enhanced Progress bar with percentage */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Registration Progress</span>
+                      <span className="text-muted-foreground hidden sm:inline">Registration Progress</span>
+                      <span className="text-muted-foreground sm:hidden">Progress</span>
                       <span className="font-medium text-foreground">
                         {Math.round((s.participants.length / ((s as any).maxParticipants || 10)) * 100)}%
                       </span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2.5">
+                    <div className="w-full bg-muted rounded-full h-2 sm:h-2.5">
                       <div 
-                        className={`h-2.5 rounded-full transition-all duration-500 ${
+                        className={`h-2 sm:h-2.5 rounded-full transition-all duration-500 ${
                           s.participants.length >= 8 ? 'bg-green-500' :
                           s.participants.length >= 5 ? 'bg-yellow-500' :
                           s.participants.length >= 2 ? 'bg-blue-500' :
@@ -1453,53 +1476,55 @@ const OpenPlayPage: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-3 border-t">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 sm:pt-3 border-t">
                 <Button
                   size="sm"
                   variant="outline"
-                    className="flex-1 h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/30 text-primary hover:text-primary transition-all duration-200"
+                    className="flex-1 h-9 sm:h-10 border-primary/20 hover:bg-primary/10 hover:border-primary/30 text-primary hover:text-primary transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
                     openParticipants(s.id);
                   }}
                 >
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium">Players</div>
-                      <div className="text-xs opacity-75">View & Manage</div>
+                    <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <div className="text-left min-w-0">
+                      <div className="text-xs sm:text-sm font-medium truncate">Players</div>
+                      <div className="text-xs opacity-75 hidden sm:block">View & Manage</div>
                     </div>
                 </Button>
                 <Button
                   size="sm"
-                    className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
+                    className="flex-1 h-9 sm:h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleManageSession(s);
                   }}
                 >
-                    <Settings className="h-4 w-4 mr-2" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium">Manage</div>
-                      <div className="text-xs opacity-75">Edit Session</div>
+                    <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <div className="text-left min-w-0">
+                      <div className="text-xs sm:text-sm font-medium truncate">Manage</div>
+                      <div className="text-xs opacity-75 hidden sm:block">Edit Session</div>
                     </div>
                 </Button>
                 </div>
 
                 {/* Quick Stats Footer */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs text-muted-foreground pt-1 sm:pt-2">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <div className="flex items-center gap-1">
                       <div className={`w-2 h-2 rounded-full ${(s as any).isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                      <span>{(s as any).isActive ? 'Active' : 'Inactive'}</span>
+                      <span className="hidden sm:inline">{(s as any).isActive ? 'Active' : 'Inactive'}</span>
+                      <span className="sm:hidden">{(s as any).isActive ? '🟢' : '⚪'}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      <span>{(s as any).totalOccurrences || 0} sessions</span>
+                      <span className="hidden sm:inline">{(s as any).totalOccurrences || 0} sessions</span>
+                      <span className="sm:hidden">{(s as any).totalOccurrences || 0}</span>
                     </div>
                     {(s as any).sport && (
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <span>{(s as any).sport.name}</span>
+                        <span className="truncate">{(s as any).sport.name}</span>
                       </div>
                     )}
                   </div>

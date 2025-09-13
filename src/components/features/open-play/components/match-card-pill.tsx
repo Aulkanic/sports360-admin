@@ -13,7 +13,6 @@ const MatchDraggablePill: React.FC<{ participant: Participant }> = ({ participan
     opacity: isDragging ? 0.7 : 1,
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } as React.CSSProperties;
-  console.log('match card pill', participant);
   return (
     <div
       ref={setNodeRef}

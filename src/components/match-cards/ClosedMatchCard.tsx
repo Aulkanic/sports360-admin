@@ -30,7 +30,7 @@ const ClosedMatchCard: React.FC<ClosedMatchCardProps> = ({
 }) => {
   return (
     <div 
-      className={`relative w-full bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800 flex flex-col justify-center items-center shadow-2xl transition-all duration-500 ${
+      className={`relative w-full flex flex-col justify-center items-center shadow-2xl transition-all duration-500 ${
         isFocused ? 'scale-100 z-20 rounded-none ring-8 ring-gray-400/30 ring-opacity-50' : 'scale-90 hover:scale-95 z-10 rounded-2xl'
       } ${focusedCourtId && !isFocused ? 'opacity-30' : 'opacity-100'}`}
       style={{
@@ -38,9 +38,19 @@ const ClosedMatchCard: React.FC<ClosedMatchCardProps> = ({
         width: isFocused ? '100vw' : '100%',
         maxWidth: isFocused ? '100vw' : '100%',
         height: isFocused ? '100vh' : '100%',
-        margin: isFocused ? '0' : 'auto'
+        margin: isFocused ? '0' : 'auto',
+        backgroundImage: 'url("/card.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundBlendMode: 'multiply'
       }}
     >
+      {/* Background color overlay that blends with the image */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800"
+        style={{ mixBlendMode: 'multiply' }}
+      ></div>
       {/* Court Lines - Dimmed */}
       <div className="absolute top-1/2 left-0 right-0 h-2 bg-white/30 shadow-2xl z-10"></div>
       <div className="absolute top-1/2 left-1/2 w-2 h-1/2 bg-white/20 transform -translate-x-1/2 shadow-2xl z-10"></div>
@@ -89,7 +99,7 @@ const ClosedMatchCard: React.FC<ClosedMatchCardProps> = ({
 
 
       {/* Court Content - Closed Message */}
-      <div className="flex-1 w-full flex items-center justify-center p-6">
+      <div className="flex-1 w-full flex items-center justify-center p-6 relative z-10">
         <div className="text-center text-white/70 h-full flex flex-col items-center justify-center">
           {/* Lock Icon */}
           <div className={`${isFocused ? 'mb-8' : 'mb-6'}`}>
