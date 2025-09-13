@@ -74,8 +74,17 @@ const AllCourtsView: React.FC<AllCourtsViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 h-full w-full gap-4 p-4">
-      {courts.map(court => renderCourtCard(court))}
+    <div className="w-full min-h-full p-6 relative">
+      {/* Top fade indicator */}
+      <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-900 to-transparent z-10 pointer-events-none"></div>
+      
+      {/* Courts grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {courts.map(court => renderCourtCard(court))}
+      </div>
+      
+      {/* Bottom fade indicator */}
+      <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-900 to-transparent z-10 pointer-events-none"></div>
     </div>
   );
 };

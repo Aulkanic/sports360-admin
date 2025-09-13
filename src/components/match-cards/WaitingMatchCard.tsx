@@ -113,7 +113,7 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
             <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center">
               <div className="text-center text-white">
                 <div className={`font-bold ${isFocused ? 'text-4xl' : 'text-2xl'} mb-4`}>
-                  {court.name}
+                  {court?.name}
                 </div>
                 <div className={`${isFocused ? 'text-xl' : 'text-lg'} mb-2 flex items-center justify-center gap-2`}>
                   <Users className="h-6 w-6" />

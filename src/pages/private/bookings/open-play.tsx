@@ -169,13 +169,8 @@ const OpenPlayPage: React.FC = () => {
         })
       ]);
       
-      console.log('API Response - Sessions:', sessionsData);
-      console.log('API Response - Stats:', statsData);
-      console.log('API Response - Lookup:', lookupData);
-      
       // Ensure sessionsData is an array
       const safeSessionsData = Array.isArray(sessionsData) ? sessionsData : [];
-      console.log('Safe sessions data:', safeSessionsData);
       
       setStats(statsData);
       // setLookup(lookupData); // Commented out since lookup is not used
@@ -655,7 +650,13 @@ const OpenPlayPage: React.FC = () => {
       // Create session via API
       await createOpenPlaySession(sessionData);
       
-      // Close form and reset (data will be refreshed on next page load)
+      // Refetch the session list to show the new session
+      await loadSessions();
+      
+      // Show success message
+      alert('Session created successfully!');
+      
+      // Close form and reset
       setCreateOpen(false);
       setCreateError(null); // Clear any errors
       setCreateForm({
@@ -848,7 +849,7 @@ const OpenPlayPage: React.FC = () => {
       {/* Sessions Grid View */}
       {viewMode === "grid" && (
         isLoading ? (
-          <OpenPlayGridSkeleton count={8} />
+          <OpenPlayGridSkeleton count={6} />
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {sessions.map((s) => {
@@ -858,7 +859,7 @@ const OpenPlayPage: React.FC = () => {
             <div
               key={s.id}
               className={cn(
-                "group relative overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300",
+                "group relative overflow-hidden rounded-xl border !bg-white shadow-sm transition-all duration-300",
                 "hover:shadow-xl hover:shadow-primary/15 hover:scale-[1.02] hover:border-primary/40",
                 "hover:-translate-y-1",
                 selectedSessionId === s.id ? "ring-2 ring-primary/70 shadow-xl shadow-primary/25 scale-[1.02]" : "",

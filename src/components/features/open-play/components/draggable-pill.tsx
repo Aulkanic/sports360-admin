@@ -27,13 +27,13 @@ const DraggablePill: React.FC<{ participant: Participant }> = ({ participant }) 
         <AvatarImage src={participant.avatar || '/default_avatar.png'} />
       </Avatar>
       <div className="flex flex-col gap-2 min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{participant.user?.personalInfo?.firstName} {participant.user?.personalInfo?.lastName}</p>
+        <p className="text-sm font-medium truncate">{participant?.name}</p>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-[10px]">
-            {getStatusString(participant.playerStatus?.description)}
+            {getStatusString(participant.playerStatus?.description ?? participant.status)}
           </Badge>
           <Badge variant="outline" className="text-[10px]">
-            {participant.skillLevel ?? 'No Skill'}
+            {participant.skillLevel ?? participant.level ?? 'No Skill'}
           </Badge>
         </div>
       </div>

@@ -6,13 +6,12 @@
 import apiClient from "@/config/api";
 
 export type Level = "Beginner" | "Intermediate" | "Advanced";
-export type ParticipantStatus = "READY" | "RESTING" | "RESERVE" | "IN-GAME" | "WAITLIST" | "PENDING" | "ONGOING" | "COMPLETED";
 
 export interface OpenPlayParticipant {
   id: string;
   name: string;
   level: Level;
-  status: ParticipantStatus;
+  status: any;
   avatar?: string;
   initials?: string;
   paymentStatus: "Paid" | "Pending" | "Rejected";
@@ -361,6 +360,29 @@ export const updateParticipantPlayerStatusByAdmin = async (
 };
 
 /**
+ * Map status strings to playerStatusId numbers based on the API documentation
+ */
+export const mapStatusToPlayerStatusId = (status: string): number => {
+  switch (status.toUpperCase()) {
+    case 'READY': return 1;
+    case 'REST': return 2;
+    case 'WAITLIST': return 3;
+    case 'ENDGAME': return 4;
+    case 'PENDING': return 5;
+    case 'RESERVE': return 6;
+    case 'CONFIRMED': return 7;
+    case 'COMPLETED': return 8;
+    case 'ONPROCESS': return 9;
+    case 'CANCELED': return 10;
+    case 'INCOMING': return 11;
+    case 'ONGOING': return 12;
+    case 'ENDED': return 13;
+    default: return 1; // Default to READY
+  }
+};
+
+
+/**
  * Get open-play statistics
  */
 export const getOpenPlayStats = async (hubId?: string): Promise<OpenPlayStats> => {
@@ -480,7 +502,7 @@ export const addPlayerToSession = async (playerData: AddPlayerRequest): Promise<
 /**
  * Map participant status from API to frontend format
  */
-export const mapParticipantStatus = (status: string): ParticipantStatus => {
+export const mapParticipantStatus = (status: string): any => {
   switch (status.toUpperCase()) {
     case 'CONFIRMED':
     case 'READY':
@@ -503,7 +525,7 @@ export const mapParticipantStatus = (status: string): ParticipantStatus => {
 /**
  * Map participant status from frontend to API format
  */
-export const mapParticipantStatusToAPI = (status: ParticipantStatus): number => {
+export const mapParticipantStatusToAPI = (status: any): number => {
   switch (status) {
     case 'READY':
       return 1; // CONFIRMED
@@ -523,7 +545,7 @@ export const mapParticipantStatusToAPI = (status: ParticipantStatus): number => 
 /**
  * Map participant status to player status ID for admin API
  */
-export const mapParticipantStatusToPlayerStatusId = (status: ParticipantStatus): number | null => {
+export const mapParticipantStatusToPlayerStatusId = (status: any): number | null => {
   switch (status) {
     case 'READY':
       return 1; // Ready player status
@@ -583,9 +605,7 @@ export const getParticipantAvatar = (participant: OpenPlayParticipant): string =
   if (participant.avatar) {
     return participant.avatar;
   }
-  
-  // Generate a consistent avatar based on name
-  // const initials = participant.initials || generateInitials(participant.name);
+
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(participant.name)}&background=random&color=fff&size=100&bold=true&format=png`;
 };
 
@@ -625,9 +645,7 @@ export const convertSessionFromAPI = (apiSession: any): OpenPlaySession => {
   };
 };
 
-/**
- * Convert backend occurrence data to frontend format
- */
+
 export const convertOccurrenceFromAPI = (apiOccurrence: any): OpenPlayOccurrence => {
   return {
     id: apiOccurrence.id.toString(),
@@ -688,7 +706,7 @@ export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticip
   };
 
   // Map participant status from statusId (general status)
-  const mapStatusFromId = (statusId: number): ParticipantStatus => {
+  const mapStatusFromId = (statusId: number): any => {
     switch (statusId) {
       case 1: // CONFIRMED
         return 'READY';
@@ -698,15 +716,39 @@ export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticip
         return 'IN-GAME';
       case 4: // RESTING
         return 'RESTING';
-      case 5: // RESERVE
+      case 5: // PENDING (from sample response)
+        return 'WAITLIST';
+      case 8: // COMPLETED (from sample response)
+        return 'READY';
+      default:
+        return 'READY';
+    }
+  };
+
+  // Map participant status from status description (new API format)
+  const mapStatusFromDescription = (statusDescription: string): any => {
+    switch (statusDescription?.toUpperCase()) {
+      case 'CONFIRMED':
+        return 'READY';
+      case 'PENDING':
+        return 'WAITLIST';
+      case 'CHECKED_IN':
+        return 'IN-GAME';
+      case 'RESTING':
+        return 'RESTING';
+      case 'RESERVE':
         return 'RESERVE';
+      case 'COMPLETED':
+        return 'READY';
+      case 'ONGOING':
+        return 'IN-GAME';
       default:
         return 'READY';
     }
   };
 
   // Map player status from playerStatusId (specific player status)
-  const mapPlayerStatusFromId = (playerStatusId: number | null): ParticipantStatus => {
+  const mapPlayerStatusFromId = (playerStatusId: number | null): any => {
     if (!playerStatusId) {
       return 'READY'; // Default when no player status is set
     }
@@ -731,13 +773,13 @@ export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticip
     `${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}`.trim() :
     apiParticipant.user?.userName || 'Unknown Player';
 
-  console.log('Converted participant name:', participantName);
-
   return {
     id: apiParticipant.id.toString(),
     name: participantName,
     level: mapSkillLevel(apiParticipant.skillLevel),
-    status: mapPlayerStatusFromId(apiParticipant.playerStatusId) || mapStatusFromId(apiParticipant.statusId),
+    status: mapStatusFromDescription(apiParticipant.status?.description) || 
+            mapPlayerStatusFromId(apiParticipant.playerStatusId) || 
+            mapStatusFromId(apiParticipant.statusId),
     avatar: undefined,
     initials: apiParticipant.user?.personalInfo ? 
       generateInitials(`${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}`) :

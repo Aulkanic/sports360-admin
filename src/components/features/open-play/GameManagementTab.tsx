@@ -47,6 +47,8 @@ interface GameManagementTabProps {
   canEndGame: (courtId: string) => boolean;
   canCloseCourt: (courtId: string) => boolean;
   isCreatingGameMatch?: boolean;
+  isAddingPlayersToMatch?: Set<string>;
+  isLoadingGameMatches?: boolean;
 }
 
 const GameManagementTab: React.FC<GameManagementTabProps> = ({
@@ -72,13 +74,15 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   onViewMatchupScreen,
   onSetResult,
   onSetScoreEntry,
-  onSetTeamNames,
   onSetShowWinnerDialog,
   canStartGame,
   canEndGame,
   canCloseCourt,
   isCreatingGameMatch = false,
+  isAddingPlayersToMatch = new Set(),
+  isLoadingGameMatches = false,
 }) => {
+  console.log(courts)
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   return (
     <DndContext onDragEnd={onDragEnd}>
@@ -158,7 +162,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
               {/* Controls */}
               <div className="bg-white rounded-xl border shadow-sm p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                     <Button 
                       variant="outline" 
                       onClick={() => setShowAddCourtModal(true)}
@@ -170,11 +175,12 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        const activeCourt = courts.find(c => c.status === "IN-GAME");
-                        if (activeCourt) {
-                          onViewMatchupScreen(activeCourt.id);
+                        // Open matchup screen with the first court, or any available court
+                        const firstCourt = courts[0];
+                        if (firstCourt) {
+                          onViewMatchupScreen(firstCourt.id);
                         } else {
-                          alert("No active games to display");
+                          alert("No courts available to display");
                         }
                       }}
                       className="bg-primary text-white hover:bg-primary/90"
@@ -182,13 +188,32 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       <Trophy className="h-4 w-4 mr-2" />
                       Play Screen
                     </Button>
+                    </div>
+                    {courts.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        {courts.length} court{courts.length !== 1 ? 's' : ''} loaded • {courts.filter(c => {
+                          const teams = courtTeams[c.id] ?? { A: [], B: [] };
+                          return teams.A.length > 0 || teams.B.length > 0;
+                        }).length} with players
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Court canvas */}
               <CourtCanvas>
-                {courts.length === 0 ? (
+                {isLoadingGameMatches ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-6">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Game Matches</h3>
+                    <p className="text-gray-500 text-center mb-6 max-w-md">
+                      Fetching existing game matches for this occurrence...
+                    </p>
+                  </div>
+                ) : courts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-6">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <Users className="h-8 w-8 text-gray-400" />
@@ -205,12 +230,12 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {courts.map((c) => {
+                    {courts.map((c,idx) => {
                       const teams = courtTeams[c.id] ?? { A: [], B: [] };
                       const perTeam = Math.floor(c.capacity / 2);
 
                       return (
-                        <div key={c.id}>
+                        <div key={idx}>
                           <div className="p-2">
                             <CourtMatchmakingCard
                               court={c}
@@ -225,22 +250,26 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                               canStartGame={canStartGame(c.id)}
                               canEndGame={canEndGame(c.id)}
                               canCloseCourt={canCloseCourt(c.id)}
+                              isAddingPlayers={isAddingPlayersToMatch.size > 0}
                             />
                             <div className="flex flex-col items-center gap-2 mt-2">
                               <p className="text-[11px] text-muted-foreground text-center">
                                 Team size: {perTeam} • Drag players onto A/B or use "Matchmake This Court"
                               </p>
-                              {(teams.A.length > 0 || teams.B.length > 0) && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => onViewMatchupScreen(c.id)}
-                                  className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-                                >
-                                  <Trophy className="h-3 w-3 mr-1" />
-                                  Play Screen
-                                </Button>
+                              {teams.A.length === 0 && teams.B.length === 0 && (
+                                <p className="text-[10px] text-orange-600 text-center">
+                                  No players assigned yet
+                                </p>
                               )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onViewMatchupScreen(c.id)}
+                                className="text-xs h-7 px-3 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                              >
+                                <Trophy className="h-3 w-3 mr-1" />
+                                Play Screen
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -381,73 +410,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                   </div>
                 </div>
               )}
-
-              {/* Team Naming Section */}
-              <div className="bg-white rounded-xl border shadow-sm p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-semibold">Team Names</p>
-                  <span className="text-xs text-muted-foreground">Customize team names for courts</span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {courts.map((court) => {
-                    const teams = courtTeams[court.id] ?? { A: [], B: [] };
-                    const currentNames = teamNames[court.id] ?? { A: "", B: "" };
-                    
-                    return (
-                      <div key={court.id} className="border rounded-lg p-3 space-y-3">
-                        <h4 className="font-medium text-sm">{court.name}</h4>
-                        
-                        <div className="space-y-2">
-                          <div>
-                            <label className="text-xs text-gray-600">Team A Name</label>
-                            <div className="flex gap-2">
-                              <Input
-                                className="h-8 text-sm"
-                                placeholder="Enter team name"
-                                value={currentNames.A}
-                                onChange={(e) => onSetTeamNames(court.id, "A", e.target.value)}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const teamA = teams.A.map(p => p.name).join(", ");
-                                  onSetTeamNames(court.id, "A", teamA);
-                                }}
-                              >
-                                Use Players
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <label className="text-xs text-gray-600">Team B Name</label>
-                            <div className="flex gap-2">
-                              <Input
-                                className="h-8 text-sm"
-                                placeholder="Enter team name"
-                                value={currentNames.B}
-                                onChange={(e) => onSetTeamNames(court.id, "B", e.target.value)}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const teamB = teams.B.map(p => p.name).join(", ");
-                                  onSetTeamNames(court.id, "B", teamB);
-                                }}
-                              >
-                                Use Players
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </section>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import type { Court, Participant } from "../types";
 import MatchCardPanel from "./match-card-panel";
-import MatchDraggablePill from "./match-card-pill";
+import MatchCardPlayer from "./match-card-player";
 
 const CourtMatchmakingCard: React.FC<{
   court: Court;
@@ -18,7 +18,8 @@ const CourtMatchmakingCard: React.FC<{
   canStartGame: boolean;
   canEndGame: boolean;
   canCloseCourt: boolean;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt }) => {
+  isAddingPlayers?: boolean;
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 44;
   const nvz = 7;
@@ -97,7 +98,7 @@ const CourtMatchmakingCard: React.FC<{
               title={`Team A (${teamA.length}/${perTeam})`}
               className="h-full bg-white/10 backdrop-blur-[1px] border-white/40"
             >
-              {teamA.map((p) => <MatchDraggablePill key={p.id} participant={p} />)}
+              {teamA.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
             </MatchCardPanel>
           </div>
 
@@ -107,7 +108,7 @@ const CourtMatchmakingCard: React.FC<{
               title={`Team B (${teamB.length}/${perTeam})`}
               className="h-full bg-white/10 backdrop-blur-[1px] border-white/40"
             >
-              {teamB.map((p) => <MatchDraggablePill key={p.id} participant={p} />)}
+              {teamB.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
             </MatchCardPanel>
           </div>
         </div>
@@ -118,10 +119,10 @@ const CourtMatchmakingCard: React.FC<{
           size="sm" 
           variant="outline" 
           onClick={onRandomPick}
-          disabled={court.status !== "Open"}
-          title={court.status !== "Open" ? "Court must be open to random pick players" : "Randomly pick players for this court"}
+          disabled={court.status !== "Open" || isAddingPlayers}
+          title={court.status !== "Open" ? "Court must be open to random pick players" : isAddingPlayers ? "Adding players to match..." : "Randomly pick players for this court"}
         >
-          Random Pick
+          {isAddingPlayers ? "Adding Players..." : "Random Pick"}
         </Button>
         <Button 
           size="sm" 

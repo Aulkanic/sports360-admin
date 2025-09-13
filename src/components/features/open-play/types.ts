@@ -1,5 +1,4 @@
 export type Level = "Beginner" | "Intermediate" | "Advanced";
-export type ParticipantStatus = "READY" | "RESTING" | "RESERVE" | "IN-GAME" | "WAITLIST" | "PENDING" | "ONGOING" | "COMPLETED";
 
 export type StatusObject = {
   id: number;
@@ -12,7 +11,7 @@ export type Participant = {
   id: string;
   name: string;
   level: Level;
-  status: ParticipantStatus | StatusObject;
+  status: any;
   avatar?: string;
   initials?: string;
   paymentStatus: "Paid" | "Pending" | "Rejected";
@@ -68,7 +67,7 @@ export type OpenPlaySession = {
 };
 
 // Helper function to extract status string from status object or string
-export const getStatusString = (status: ParticipantStatus | StatusObject | any): string => {
+export const getStatusString = (status:any): string => {
 
   if (typeof status === 'string') {
     return status;

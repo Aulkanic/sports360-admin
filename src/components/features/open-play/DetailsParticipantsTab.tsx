@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { OpenPlaySession, Participant } from "@/components/features/open-play/types";
+import type { Participant } from "@/components/features/open-play/types";
 import { getStatusString } from "@/components/features/open-play/types";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import {
@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 interface DetailsParticipantsTabProps {
-  session: OpenPlaySession;
+  session: any; // Raw session data from API
   participants: Participant[];
   occurrence?: any;
   readyList: Participant[];
@@ -66,6 +66,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
   isAddingPlayer,
   onSwitchToGameTab,
 }) => {
+  console.log(occurrence)
   function getStatusIcon(status: string) {
     switch (status) {
       case "READY":
@@ -128,13 +129,13 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Rules</h3>
                   <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    {session.rules ?? "Standard club rules apply."}
+                    {session.rules || session.description || "Standard club rules apply."}
                   </p>
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Format</h3>
                   <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    {session.format ?? "Open queue and court rotation."}
+                    {session.format || "Open queue and court rotation."}
                   </p>
                 </div>
               </div>
@@ -172,7 +173,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
-                      {participants.filter((p) => getStatusString(p.playerStatus) === "IN-GAME").length}
+                      {participants.filter((p) => getStatusString(p.status) === "IN-GAME").length}
                     </div>
                     <div className="text-xs text-gray-600">In Game</div>
                   </div>
@@ -240,10 +241,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                   </div>
                   <div className="grid grid-cols-1 gap-3">
                     {waitlistList.map((participant) => {
-                      const personalInfo = (participant as any).user?.personalInfo;
-                      const participantName = personalInfo 
-                        ? `${personalInfo.firstName} ${personalInfo.lastName}`.trim()
-                        : (participant as any).user?.userName || 'Unknown Player';
                       return (
                       <div
                         key={participant.id}
@@ -256,10 +253,10 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                             
                             </Avatar>
                             <div>
-                              <div className="font-medium text-gray-900">{participantName}</div>
+                              <div className="font-medium text-gray-900">{participant?.name}</div>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs">
-                                  {participant.skillLevel ?? 'Veteran'}
+                                  {participant.level ?? 'Veteran'}
                                 </Badge>
                                 <Badge
                                   variant="outline"
@@ -328,10 +325,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                 <h3 className="font-semibold mb-4">All Participants</h3>
                 <div className="space-y-3">
                     {participants.map((participant) => {
-                      const personalInfo = (participant as any).user?.personalInfo;
-                      const participantName = personalInfo 
-                        ? `${personalInfo.firstName} ${personalInfo.lastName}`.trim()
-                        : (participant as any).user?.userName || 'Unknown Player';
+                      console.log(participant)
                       return(
                     <div
                       key={participant.id}
@@ -349,15 +343,15 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <div className="font-medium text-gray-900 truncate">
-                            {participantName}
+                            {participant?.name}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">
-                              {participant.skillLevel ?? 'Beginner'}
+                              {participant.level ?? 'Beginner'}
                             </Badge>
                             <div className="flex items-center gap-1">
-                              {getStatusIcon(getStatusString(participant.playerStatus))}
-                              <span className="text-xs text-gray-600">{getStatusString(participant.playerStatus)}</span>
+                              {getStatusIcon(getStatusString(participant.status ?? participant.status?.description))}
+                              <span className="text-xs text-gray-600">{getStatusString(participant.status ?? participant.status?.description)}</span>
                             </div>
                             {participant.gamesPlayed !== undefined && (
                               <Badge variant="outline" className="text-xs text-blue-700 border-blue-300 bg-blue-50">
@@ -374,18 +368,18 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                     : "text-red-700 border-red-300 bg-red-50"
                                 )}
                               >
-                                {participant.paymentStatus}
+                                {participant.paymentStatus ?? 'pending'}
                               </Badge>
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={getStatusColor(getStatusString(participant.playerStatus))}>
-                          {getStatusString(participant.playerStatus)}
+                        <Badge className={getStatusColor(getStatusString(participant.status ?? participant.status?.description))}>
+                          {getStatusString(participant.status ?? participant.status?.description)}
                         </Badge>
                         <div className="flex items-center gap-1">
-                          {!["READY", "COMPLETED"].includes(getStatusString(participant.playerStatus)) &&
+                          {!["READY", "COMPLETED","PENDING"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
                             participant.paymentStatus !== "Rejected" && (
                               <Button
                                 size="sm"
@@ -401,7 +395,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                 {isUpdatingStatus.has(participant.id) ? "Updating..." : "Ready"}
                               </Button>
                             )}
-                          {!["WAITLIST", "COMPLETED"].includes(getStatusString(participant.playerStatus)) &&
+                          {!["WAITLIST", "COMPLETED"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
                             participant.paymentStatus !== "Rejected" && (
                               <Button
                                 size="sm"
@@ -417,7 +411,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                 {isUpdatingStatus.has(participant.id) ? "Updating..." : "Waitlist"}
                               </Button>
                             )}
-                          {!["RESERVE", "COMPLETED"].includes(getStatusString(participant.playerStatus)) &&
+                          {!["RESERVE", "COMPLETED"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
                             participant.paymentStatus !== "Rejected" && (
                               <Button
                                 size="sm"
@@ -535,9 +529,9 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
       <AddPlayerModal
         open={addPlayerOpen}
         onOpenChange={setAddPlayerOpen}
-        sessionTitle={session.title}
+        sessionTitle={session.sessionName || session.title}
         occurrenceId={occurrence?.id || (session as any).occurrenceId || ""}
-        sessionPrice={150} // Default price in pesos - you can get this from session data if available
+        sessionPrice={session.pricePerPlayer || 150} // Use price from session data
         onAddPlayer={onAddPlayer}
         onSuccess={onPlayerAddSuccess}
         onError={onPlayerAddError}
