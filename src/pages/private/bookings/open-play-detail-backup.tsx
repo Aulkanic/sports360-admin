@@ -12,8 +12,8 @@ import type {
   Match,
   OpenPlaySession,
   Participant,
+  ParticipantStatus,
 } from "@/components/features/open-play/types";
-import type { ParticipantStatus } from "@/services/open-play.service";
 import { getStatusString } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";

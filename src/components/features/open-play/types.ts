@@ -1,5 +1,7 @@
 export type Level = "Beginner" | "Intermediate" | "Advanced";
 
+export type ParticipantStatus = "READY" | "RESTING" | "RESERVE" | "WAITLIST" | "IN-GAME";
+
 export type StatusObject = {
   id: number;
   description: string;
