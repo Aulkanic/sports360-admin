@@ -136,22 +136,32 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
 
   // Helper function to check if a court has any active matches
   const courtHasActiveMatch = (courtId: string): boolean => {
-    const hasActive = gameMatches.some(match => 
-      match.courtId === courtId && 
-      match.matchStatusId && 
-      match.matchStatusId !== 10 && match.participants.length > 0 // Assuming 10 is COMPLETED status
-    );
-    const info = gameMatches.find(match => 
-      match.courtId === courtId && 
-      match.matchStatusId && 
-      match.matchStatusId !== 10 // Assuming 10 is COMPLETED status
-    );
-    console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
-      gameMatches: gameMatches.length,
-      info,
-      hasActive,
-      matches: gameMatches.filter(m => m.courtId === courtId)
+    const courtMatches = gameMatches.filter(match => match.courtId === courtId);
+    
+    // Check if any match for this court is active (not completed, cancelled, or ended)
+    const hasActive = courtMatches.some(match => {
+      const statusId = match.matchStatusId;
+      // Active statuses: 1-9 (assuming 10+ are completed/ended statuses)
+      // Also check if match has participants or is in progress
+      const isActiveStatus = statusId && statusId < 10;
+      const hasParticipants = match.participants && match.participants.length > 0;
+      const isInProgress = statusId === 5; // Assuming 5 is IN_PROGRESS
+      
+      return isActiveStatus || hasParticipants || isInProgress;
     });
+    
+    console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
+      courtMatches: courtMatches.length,
+      matches: courtMatches.map(m => ({
+        id: m.id,
+        matchName: m.matchName,
+        matchStatusId: m.matchStatusId,
+        participantsCount: m.participants?.length || 0,
+        currentPlayers: m.currentPlayers
+      })),
+      hasActive
+    });
+    
     return hasActive;
   };
 

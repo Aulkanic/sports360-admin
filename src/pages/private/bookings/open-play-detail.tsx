@@ -127,19 +127,44 @@ const OpenPlayDetailPage: React.FC = () => {
     console.log('🔍 Finding match for court:', courtId);
     console.log('🔍 Available game matches:', gameMatches.map(m => ({ id: m.id, courtId: m.courtId, status: m.matchStatusId })));
     
-    const match = gameMatches.find(match => {
-      const matches = match.courtId === courtId;
-      console.log(`🔍 Checking match ${match.id}: courtId ${match.courtId} === ${courtId} = ${matches}`);
-      return matches;
-    });
+    const courtMatches = gameMatches.filter(match => match.courtId === courtId);
+    console.log('🔍 Court matches found:', courtMatches.length);
     
-    if (match) {
-      console.log('✅ Found match:', { id: match.id, courtId: match.courtId, status: match.matchStatusId });
-      return match.id;
-    } else {
-      console.log('❌ No match found for court:', courtId);
+    if (courtMatches.length === 0) {
+      console.log('❌ No matches found for court:', courtId);
       return null;
     }
+    
+    // If multiple matches, prioritize by:
+    // 1. Matches with participants (active matches)
+    // 2. Matches with higher status ID (more recent/active)
+    // 3. Most recently created match
+    const prioritizedMatch = courtMatches.sort((a, b) => {
+      // First priority: matches with participants
+      const aHasParticipants = a.participants && a.participants.length > 0;
+      const bHasParticipants = b.participants && b.participants.length > 0;
+      
+      if (aHasParticipants && !bHasParticipants) return -1;
+      if (!aHasParticipants && bHasParticipants) return 1;
+      
+      // Second priority: higher status ID (more active)
+      if (a.matchStatusId !== b.matchStatusId) {
+        return (b.matchStatusId || 0) - (a.matchStatusId || 0);
+      }
+      
+      // Third priority: most recently created
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    })[0];
+    
+    console.log('✅ Selected match:', { 
+      id: prioritizedMatch.id, 
+      courtId: prioritizedMatch.courtId, 
+      status: prioritizedMatch.matchStatusId,
+      participants: prioritizedMatch.participants?.length || 0,
+      matchName: prioritizedMatch.matchName
+    });
+    
+    return prioritizedMatch.id;
   };
 
   // Helper function to map player status from description
