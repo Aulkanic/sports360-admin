@@ -528,9 +528,14 @@ const OpenPlayDetailPage: React.FC = () => {
           position: (participant as any).position
         });
         
+        // Update participant status based on bench status
         if (isOnBench) {
-          console.log(`⏸️ Skipping participant ${participantData.name} (ID: ${participantId}) - on bench (status: ${playerStatusId})`);
-          return; // Skip this participant
+          participantData.status = 'BENCH';
+          participantData.playerStatus = { 
+            id: playerStatusId, 
+            description: 'BENCH' 
+          };
+          console.log(`⏸️ Participant ${participantData.name} (ID: ${participantId}) is on bench but will be included in display`);
         }
         
         // Assign to team based on teamNumber (1 = Team A, 2 = Team B)

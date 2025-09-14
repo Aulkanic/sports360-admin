@@ -26,6 +26,7 @@ import {
   // type OpenPlayLookup
 } from "@/services/open-play.service";
 import OccurrenceSelector from "@/components/features/open-play/OccurrenceSelector";
+import { useCourts } from "@/hooks";
 
 type LevelTag = "Beginner" | "Intermediate" | "Advanced";
 
@@ -486,6 +487,9 @@ const OpenPlayPage: React.FC = () => {
   const [selectedSessionForOccurrence, setSelectedSessionForOccurrence] = useState<OpenPlaySession | null>(null);
   // const [lookup, setLookup] = useState<OpenPlayLookup | null>(null);
   const navigate = useNavigate();
+  
+  // Get courts data for court selection
+  const { items: courts, isLoading: courtsLoading } = useCourts();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -497,6 +501,7 @@ const OpenPlayPage: React.FC = () => {
     maxPlayers: 10,
     price: 0,
     isFreeJoin: false,
+    courtId: "",
     eventType: "one-time" as "one-time" | "recurring" | "tournament",
     // Recurring fields
     frequency: "weekly" as "daily" | "weekly" | "monthly",
@@ -878,7 +883,7 @@ const OpenPlayPage: React.FC = () => {
         .map(([k]) => k as LevelTag);
         
       // Basic validation
-      if (!createForm.title.trim() || !createForm.date || !createForm.startTime || !createForm.endTime || levels.length === 0) {
+      if (!createForm.title.trim() || !createForm.date || !createForm.startTime || !createForm.endTime || !createForm.courtId || levels.length === 0) {
         setCreateError({
           success: false,
           message: "Validation Error",
@@ -889,7 +894,8 @@ const OpenPlayPage: React.FC = () => {
             availableAlternatives: [
               "Check that all required fields are filled",
               "Ensure at least one skill level is selected",
-              "Verify the date and time are properly set"
+              "Verify the date and time are properly set",
+              "Select a court for the session"
             ],
             conflictDetails: ""
           }
@@ -1012,7 +1018,7 @@ const OpenPlayPage: React.FC = () => {
         pricePerPlayer: createForm.isFreeJoin ? 0 : (createForm.price || 0),
         isFreeJoin: createForm.isFreeJoin,
         skillLevels: levels.map(level => level.toLowerCase()), // Convert to lowercase for API
-        courtId: "1", // TODO: Get from user context or selection
+        courtId: createForm.courtId,
         hubId: "1", // TODO: Get from user context or selection
         sportsId: "1", // TODO: Get from user context or selection
         recurringSettings: createForm.eventType === 'recurring' ? {
@@ -1042,6 +1048,7 @@ const OpenPlayPage: React.FC = () => {
           maxPlayers: 10,
           price: 0,
           isFreeJoin: false,
+          courtId: "",
           eventType: "one-time",
           frequency: "weekly",
           endDate: "",
@@ -1907,6 +1914,24 @@ const OpenPlayPage: React.FC = () => {
                   disabled={createForm.isFreeJoin}
                 />
               </div>
+            </div>
+            
+            {/* Court Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Select Court</label>
+              <select
+                value={createForm.courtId}
+                onChange={(e) => setCreateForm((p) => ({ ...p, courtId: e.target.value }))}
+                className="h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={courtsLoading}
+              >
+                <option value="">Select a court...</option>
+                {courts.map((court) => (
+                  <option key={court.id} value={court.id}>
+                    {court.name} - {court.location} (Capacity: {court.capacity})
+                  </option>
+                ))}
+              </select>
             </div>
             
             {/* Free Join Checkbox */}
