@@ -139,10 +139,16 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
     const hasActive = gameMatches.some(match => 
       match.courtId === courtId && 
       match.matchStatusId && 
+      match.matchStatusId !== 10 && match.participants.length > 0 // Assuming 10 is COMPLETED status
+    );
+    const info = gameMatches.find(match => 
+      match.courtId === courtId && 
+      match.matchStatusId && 
       match.matchStatusId !== 10 // Assuming 10 is COMPLETED status
     );
     console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
       gameMatches: gameMatches.length,
+      info,
       hasActive,
       matches: gameMatches.filter(m => m.courtId === courtId)
     });
