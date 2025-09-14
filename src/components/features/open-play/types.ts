@@ -9,10 +9,10 @@ export type StatusObject = {
 
 export type Participant = {
   playerStatus: any;
-  skillLevel: any;
+  skillLevel: any; // Legacy field for backward compatibility
   id: string;
   name: string;
-  level: Level;
+  level: Level; // Legacy field for backward compatibility
   status: any;
   avatar?: string;
   initials?: string;
@@ -23,6 +23,13 @@ export type Participant = {
   gamesPlayed?: number;
   readyTime?: number;
   skillScore?: number;
+  skill?: any;
+  // Additional enriched fields
+  skillId?: number;
+  profileUpload?: any;
+  profilePhoto?: string;
+  // Priority queuing
+  updatedPlayerStatusAt?: string | null; // ISO timestamp when player status was last updated
   // API structure
   user?: {
     id: string;
@@ -32,6 +39,12 @@ export type Participant = {
       firstName: string;
       lastName: string;
       contactNo: string;
+      skillId?: number;
+      upload?: any;
+      skill?: {
+        id: number;
+        description: string;
+      };
     };
   };
 };
@@ -81,4 +94,39 @@ export const getStatusString = (status:any): string => {
     return status.description;
   }
   return 'Unknown';
+};
+
+// Helper function to extract skill level from participant
+export const getSkillLevel = (participant: Participant): string => {
+  // Try new structure first: user.personalInfo.skill.description
+  if (participant.user?.personalInfo?.skill?.description) {
+    return participant.user.personalInfo.skill.description;
+  }
+  
+  // Fallback to legacy fields
+  if (participant.skillLevel) {
+    if (typeof participant.skillLevel === 'string') {
+      return participant.skillLevel;
+    }
+    if (typeof participant.skillLevel === 'object' && participant.skillLevel.description) {
+      return participant.skillLevel.description;
+    }
+  }
+  
+  if (participant.level) {
+    return participant.level;
+  }
+  
+  return 'Unknown';
+};
+
+// Helper function to get skill level as Level type
+export const getSkillLevelAsLevel = (participant: Participant): Level => {
+  const skillLevel = getSkillLevel(participant).toUpperCase();
+  
+  if (skillLevel === 'BEGINNER') return 'Beginner';
+  if (skillLevel === 'INTERMEDIATE') return 'Intermediate';
+  if (skillLevel === 'ADVANCED') return 'Advanced';
+  
+  return 'Intermediate'; // Default fallback
 };

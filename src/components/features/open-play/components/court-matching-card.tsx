@@ -22,7 +22,8 @@ const CourtMatchmakingCard: React.FC<{
   isStartingGame?: boolean;
   isEndingGame?: boolean;
   hasMatch?: boolean;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false }) => {
+  hasActiveMatch?: boolean; // Add this prop
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 54;
   const nvz = 7;
@@ -97,10 +98,10 @@ const CourtMatchmakingCard: React.FC<{
           {/* overlays keep same geometry, panels are now taller via min-h */}
           <div className="absolute" style={{ left: "12px", right: "12px", top: "12px", bottom: `${100 - upperNVZ + 4}%` }}>
             <MatchCardPanel
-              id={hasMatch ? `${court.id}:A` : `disabled:${court.id}:A`}
+              id={(hasMatch || hasActiveMatch) ? `${court.id}:A` : `disabled:${court.id}:A`}
               title={`Team A (${teamA.length}/${perTeam})`}
-              className={`h-full backdrop-blur-[1px] border-white/40 ${!hasMatch ? 'opacity-50 pointer-events-none' : ''}`}
-              disabled={!hasMatch}
+              className={`h-full backdrop-blur-[1px] border-white/40 ${!(hasMatch || hasActiveMatch) ? 'opacity-50 pointer-events-none' : ''}`}
+              disabled={!(hasMatch || hasActiveMatch)}
             >
               {teamA.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
             </MatchCardPanel>
@@ -108,10 +109,10 @@ const CourtMatchmakingCard: React.FC<{
 
           <div className="absolute" style={{ left: "12px", right: "12px", top: `${lowerNVZ + 4}%`, bottom: "12px" }}>
             <MatchCardPanel
-              id={hasMatch ? `${court.id}:B` : `disabled:${court.id}:B`}
+              id={(hasMatch || hasActiveMatch) ? `${court.id}:B` : `disabled:${court.id}:B`}
               title={`Team B (${teamB.length}/${perTeam})`}
-              className={`h-full backdrop-blur-[1px] border-white/40 ${!hasMatch ? 'opacity-50 pointer-events-none' : ''}`}
-              disabled={!hasMatch}
+              className={`h-full backdrop-blur-[1px] border-white/40 ${!(hasMatch || hasActiveMatch) ? 'opacity-50 pointer-events-none' : ''}`}
+              disabled={!(hasMatch || hasActiveMatch)}
             >
               {teamB.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
             </MatchCardPanel>

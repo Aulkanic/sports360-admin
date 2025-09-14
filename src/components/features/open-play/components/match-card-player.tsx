@@ -3,6 +3,7 @@ import React from "react";
 import type { Participant } from "../types";
 
 const MatchCardPlayer: React.FC<{ participant: Participant }> = ({ participant }) => {
+  console.log('match card player', participant);
   return (
     <div className="relative m-0 flex-1 flex h-full bg-[#645A57] backdrop-blur-[1px] border border-white/20 rounded-lg overflow-hidden">
       <img
@@ -19,7 +20,7 @@ const MatchCardPlayer: React.FC<{ participant: Participant }> = ({ participant }
         <p className="text-white text-md font-semibold truncate">{participant.user?.personalInfo?.firstName} {participant.user?.personalInfo?.lastName}</p>
         {!!participant.level && (
           <p className="text-white/80 text-[10px] leading-none truncate">
-            {participant.skillLevel ?? 'No Skill'}
+            {participant.level ?? 'No Skill'}
           </p>
         )}
       </div>

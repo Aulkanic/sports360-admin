@@ -9,7 +9,7 @@ import type {
   OpenPlaySession,
   Participant,
 } from "@/components/features/open-play/types";
-import { getStatusString } from "@/components/features/open-play/types";
+import { getStatusString, getSkillLevelAsLevel } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
@@ -60,8 +60,9 @@ const OpenPlayDetailPage: React.FC = () => {
   );
 
   // Convert skill level to numeric score for sorting
-  const getSkillScore = (level: string): number => {
-    switch (level) {
+  const getSkillScore = (participant: Participant): number => {
+    const skillLevel = getSkillLevelAsLevel(participant);
+    switch (skillLevel) {
       case 'Beginner': return 1;
       case 'Intermediate': return 2;
       case 'Advanced': return 3;
@@ -80,7 +81,7 @@ const OpenPlayDetailPage: React.FC = () => {
         ...participant,
         gamesPlayed: participant.gamesPlayed ?? Math.floor(Math.random() * 15), // Mock data
         readyTime: participant.readyTime ?? (getStatusString(participant.status) === 'Ready' ? Date.now() - Math.random() * 3600000 : undefined),
-        skillScore: participant.skillScore ?? getSkillScore(participant.skillLevel)
+        skillScore: participant.skillScore ?? getSkillScore(participant)
       }));
     }
   );
@@ -114,7 +115,14 @@ const OpenPlayDetailPage: React.FC = () => {
   const [isLoadingGameMatches, setIsLoadingGameMatches] = useState(false);
   const [isStartingGame, setIsStartingGame] = useState<Set<string>>(new Set());
   const [isEndingGame, setIsEndingGame] = useState<Set<string>>(new Set());
+  const [gameMatches, setGameMatches] = useState<any[]>([]); // Store raw game matches from API
   const hasFetchedGameMatches = useRef(false);
+
+  // Helper function to find matchId for a given courtId
+  const findMatchIdByCourtId = (courtId: string): string | null => {
+    const match = gameMatches.find(match => match.courtId === courtId);
+    return match ? match.id : null;
+  };
 
   // Helper function to map player status from description
   const mapPlayerStatusFromDescription = (playerStatusDescription: string): any => {
@@ -182,7 +190,13 @@ const OpenPlayDetailPage: React.FC = () => {
               console.log('✅ OPEN-PLAY-DETAIL: Found full participant:', {
                 id: fullParticipant.id,
                 name: fullParticipant.user?.personalInfo?.firstName,
-                email: fullParticipant.user?.email
+                email: fullParticipant.user?.email,
+                skill: fullParticipant.user?.personalInfo?.skill,
+                skillId: fullParticipant.user?.personalInfo?.skillId,
+                profileUpload: fullParticipant.user?.personalInfo?.upload,
+                profilePhoto: fullParticipant.user?.personalInfo?.photoUrl,
+                skillScore: fullParticipant.skillScore,
+                gamesPlayed: fullParticipant.gamesPlayed
               });
               return {
                 id: fullParticipant.id.toString(),
@@ -208,7 +222,16 @@ const OpenPlayDetailPage: React.FC = () => {
                 address: fullParticipant.user?.personalInfo?.address,
                 gender: fullParticipant.user?.personalInfo?.gender,
                 birthday: fullParticipant.user?.personalInfo?.birthday,
-                country: fullParticipant.user?.personalInfo?.country
+                country: fullParticipant.user?.personalInfo?.country,
+                // Add skills information
+                skill: fullParticipant.user?.personalInfo?.skill,
+                skillId: fullParticipant.user?.personalInfo?.skillId,
+                // Add profile upload information
+                profileUpload: fullParticipant.user?.personalInfo?.upload,
+                profilePhoto: fullParticipant.user?.personalInfo?.photoUrl,
+                // Additional skill-related fields
+                skillScore: fullParticipant.skillScore,
+                gamesPlayed: fullParticipant.gamesPlayed
               } as Participant & {
                 email?: string;
                 contactNo?: string;
@@ -216,6 +239,12 @@ const OpenPlayDetailPage: React.FC = () => {
                 gender?: string;
                 birthday?: string;
                 country?: string;
+                skill?: any;
+                skillId?: number;
+                profileUpload?: any;
+                profilePhoto?: string;
+                skillScore?: number;
+                gamesPlayed?: number;
               };
             }
           }
@@ -244,13 +273,31 @@ const OpenPlayDetailPage: React.FC = () => {
         A: teams.A.map(participant => {
           console.log(`🔍 ENRICHING TEAM A PARTICIPANT:`, participant.id, participant.name);
           const enriched = getFullParticipantInfo(participant.id) || participant;
-          console.log(`📊 ENRICHED RESULT:`, enriched.name, enriched.user ? 'HAS_USER' : 'NO_USER');
+          console.log(`📊 ENRICHED RESULT:`, {
+            name: enriched.name,
+            hasUser: !!enriched.user,
+            skill: enriched.skill,
+            skillId: enriched.skillId,
+            profileUpload: enriched.profileUpload,
+            profilePhoto: enriched.profilePhoto,
+            skillScore: enriched.skillScore,
+            gamesPlayed: enriched.gamesPlayed
+          });
           return enriched;
         }),
         B: teams.B.map(participant => {
           console.log(`🔍 ENRICHING TEAM B PARTICIPANT:`, participant.id, participant.name);
           const enriched = getFullParticipantInfo(participant.id) || participant;
-          console.log(`📊 ENRICHED RESULT:`, enriched.name, enriched.user ? 'HAS_USER' : 'NO_USER');
+          console.log(`📊 ENRICHED RESULT:`, {
+            name: enriched.name,
+            hasUser: !!enriched.user,
+            skill: enriched.skill,
+            skillId: enriched.skillId,
+            profileUpload: enriched.profileUpload,
+            profilePhoto: enriched.profilePhoto,
+            skillScore: enriched.skillScore,
+            gamesPlayed: enriched.gamesPlayed
+          });
           return enriched;
         })
       };
@@ -292,8 +339,37 @@ const OpenPlayDetailPage: React.FC = () => {
         console.log(`Player ${p.id} (${p.name}): isReady=${isReady}, notInTeam=${notInTeam}, status=${statusString}`);
         return isReady && notInTeam;
       });
-      console.log('readyList', ready.map(p => ({ id: p.id, name: p.name })));
-      return ready;
+      
+      // Sort by priority based on updatedPlayerStatusAt timestamp
+      const sortedReady = ready.sort((a, b) => {
+        // Players with updatedPlayerStatusAt timestamp get higher priority (earlier timestamp = higher priority)
+        const aTimestamp = a.updatedPlayerStatusAt ? new Date(a.updatedPlayerStatusAt).getTime() : 0;
+        const bTimestamp = b.updatedPlayerStatusAt ? new Date(b.updatedPlayerStatusAt).getTime() : 0;
+        
+        // If both have timestamps, sort by timestamp (earlier first)
+        if (aTimestamp > 0 && bTimestamp > 0) {
+          return aTimestamp - bTimestamp;
+        }
+        
+        // If only one has timestamp, prioritize the one with timestamp
+        if (aTimestamp > 0 && bTimestamp === 0) {
+          return -1; // a comes first
+        }
+        if (aTimestamp === 0 && bTimestamp > 0) {
+          return 1; // b comes first
+        }
+        
+        // If neither has timestamp, maintain original order (fallback to name for consistency)
+        return a.name.localeCompare(b.name);
+      });
+      
+      console.log('readyList (priority sorted)', sortedReady.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        updatedPlayerStatusAt: p.updatedPlayerStatusAt,
+        priority: p.updatedPlayerStatusAt ? new Date(p.updatedPlayerStatusAt).toLocaleString() : 'No timestamp'
+      })));
+      return sortedReady;
     },
     [participants, inAnyTeam]
   );
@@ -404,13 +480,16 @@ const OpenPlayDetailPage: React.FC = () => {
             (participant.user.personalInfo ? 
               `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
               participant.user.userName) : 
-            `User ${participantId}`,
+            `Player ${participantId}`,
           skillLevel: 'Intermediate' as const,
           level: 'Intermediate' as const,
           status: 'IN-GAME',
-          playerStatus: { id: 1, description: 'IN-GAME' },
+          playerStatus: { 
+            id: (participant as any).playerStatusId || 1, 
+            description: 'IN-GAME' 
+          },
           isApproved: true,
-          gamesPlayed: 0,
+          gamesPlayed: (participant as any).matchCount || 0,
           readyTime: new Date(participant.joinedAt).getTime(),
           skillScore: 2,
           paymentStatus: undefined, // Not displaying payment status
@@ -429,16 +508,23 @@ const OpenPlayDetailPage: React.FC = () => {
             (participant.user.personalInfo ? 
               `${participant.user.personalInfo.firstName?.[0]}${participant.user.personalInfo.lastName?.[0]}` : 
               participant.user.userName?.[0]) : 
-            '?'
+            `P${participantId}`
         };
         
         console.log('Created participant data:', participantData);
         
         // Assign to team based on teamNumber (1 = Team A, 2 = Team B)
-        if ((participant as any).teamNumber === 1) {
+        const teamNumber = (participant as any).teamNumber;
+        console.log(`Assigning participant ${participantData.name} to team ${teamNumber}`);
+        
+        if (teamNumber === 1) {
           teamA.push(participantData);
-        } else if ((participant as any).teamNumber === 2) {
+          console.log(`Added to Team A: ${participantData.name}`);
+        } else if (teamNumber === 2) {
           teamB.push(participantData);
+          console.log(`Added to Team B: ${participantData.name}`);
+        } else {
+          console.warn(`Unknown team number ${teamNumber} for participant ${participantData.name}`);
         }
       });
     }
@@ -732,8 +818,6 @@ const OpenPlayDetailPage: React.FC = () => {
       return next;
     });
 
-    await updateStatus(participant.id, "IN-GAME");
-
     // Call API to add player to match
     setIsAddingPlayersToMatch(prev => new Set(prev).add(participant.id));
     try {
@@ -748,24 +832,31 @@ const OpenPlayDetailPage: React.FC = () => {
         return;
       }
 
+      // Find the matchId for this court
+      const matchId = findMatchIdByCourtId(courtId);
+      if (!matchId) {
+        console.error(`No match found for court ${courtId}`);
+        alert('No active match found for this court');
+        return;
+      }
+
       // Convert team key to team number (A = 1, B = 2)
       const teamNumber = teamKey === 'A' ? 1 : 2;
       
-      await assignPlayerToTeam(courtId, participant.id, teamNumber);
-      console.log(`Player ${participant.name} assigned to team ${teamKey} (${teamNumber}) in match ${courtId}`);
+      // Assign player to team
+      await assignPlayerToTeam(matchId, participant.id, teamNumber);
+      console.log(`Player ${participant.name} assigned to team ${teamKey} (${teamNumber}) in match ${matchId} (court ${courtId})`);
       
       // Refetch matches to get updated data from server
       await fetchGameMatches();
     } catch (error) {
-      console.error('Error assigning player to team:', error);
+      console.error('Error in player assignment process:', error);
       // Revert the local state change on API error
       setCourtTeams((prev) => {
         const next = deepClone(prev);
         next[courtId][teamKey] = next[courtId][teamKey].filter((p) => p.id !== participant.id);
         return next;
       });
-      // Revert status change
-      await updateStatus(participant.id, "READY");
       
       // Enhanced error handling
       let errorMessage = 'Failed to assign player to team. Please try again.';
@@ -925,8 +1016,8 @@ const OpenPlayDetailPage: React.FC = () => {
       
       // Call API to update game match status
       const updateData = {
-        matchStatus: "in_progress",
-        gameStatus: "in_progress",
+        matchStatus: "5",
+        gameStatus: "5",
         startTime: new Date().toISOString()
       };
       
@@ -1057,9 +1148,8 @@ const OpenPlayDetailPage: React.FC = () => {
 
     const { A, B } = buildBalancedTeams(selectedPlayers, perTeam);
     setCourtTeams((prev) => ({ ...prev, [courtId]: { A, B } }));
-    await Promise.all([...A, ...B].map((p) => updateStatus(p.id, "IN-GAME")));
 
-    // Call API to add all players to match
+    // Call API to add all players to match (this will also update their status)
     const allPlayers = [...A, ...B];
     setIsAddingPlayersToMatch(prev => new Set([...prev, ...allPlayers.map(p => p.id)]));
     
@@ -1075,20 +1165,31 @@ const OpenPlayDetailPage: React.FC = () => {
         return;
       }
 
+      // Find the matchId for this court
+      const matchId = findMatchIdByCourtId(courtId);
+      if (!matchId) {
+        console.error(`No match found for court ${courtId}`);
+        alert('No active match found for this court');
+        return;
+      }
+
       // Assign each player to their respective team using the new API
-      const teamAAssignments = A.map(player => assignPlayerToTeam(courtId, player.id, 1));
-      const teamBAssignments = B.map(player => assignPlayerToTeam(courtId, player.id, 2));
+      const teamAAssignments = A.map(player => assignPlayerToTeam(matchId, player.id, 1));
+      const teamBAssignments = B.map(player => assignPlayerToTeam(matchId, player.id, 2));
       
       // Wait for all assignments to complete
       await Promise.all([...teamAAssignments, ...teamBAssignments]);
-      console.log(`All players assigned to teams in match ${courtId} via random pick`);
+      console.log(`All players assigned to teams in match ${matchId} (court ${courtId}) via random pick`);
       
-      // Refetch matches to get updated data from server
-      await fetchGameMatches();
+      // Update local state to reflect the team assignments immediately
+      console.log('Updating local state with team assignments:', { A, B });
+      
+      // Refetch matches to get updated data from server (but don't wait for it)
+      fetchGameMatches().catch(error => {
+        console.warn('Failed to refetch matches after random pick:', error);
+      });
     } catch (error) {
       setCourtTeams((prev) => ({ ...prev, [courtId]: { A: [], B: [] } }));
-      // Revert status changes
-      await Promise.all([...A, ...B].map((p) => updateStatus(p.id, "READY")));
       
       // Enhanced error handling for random pick
       let errorMessage = 'Failed to assign players to teams. Please try again.';
@@ -1342,36 +1443,75 @@ const OpenPlayDetailPage: React.FC = () => {
       const fetchedGameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
       console.log('Fetched game matches:', fetchedGameMatches);
       
+      // Store raw game matches for match detection
+      setGameMatches(fetchedGameMatches);
+      
       // Convert and integrate with existing state
       const convertedMatches: Match[] = [];
       const newCourtTeams: Record<string, { A: Participant[]; B: Participant[] }> = {};
       const newTeamNames: Record<string, { A: string; B: string }> = {};
       const newCourts: Court[] = [];
       
+      // Group matches by courtId to handle multiple matches per court
+      const matchesByCourt: Record<string, any[]> = {};
       fetchedGameMatches.forEach(gameMatch => {
+        if (!matchesByCourt[gameMatch.courtId]) {
+          matchesByCourt[gameMatch.courtId] = [];
+        }
+        matchesByCourt[gameMatch.courtId].push(gameMatch);
+      });
+      
+      // Process each court and its matches
+      Object.entries(matchesByCourt).forEach(([courtId, courtMatches]) => {
+        console.log(`Processing court ${courtId} with ${courtMatches.length} matches`);
+        
+        // Find the match with the most participants (or the first one if all are empty)
+        const matchWithParticipants = courtMatches.find(match => match.participants && match.participants.length > 0) || courtMatches[0];
+        
         // Convert to Match format
-        const match = convertGameMatchToMatch(gameMatch);
+        const match = convertGameMatchToMatch(matchWithParticipants);
         convertedMatches.push(match);
         
-        // Convert to court teams format
-        const courtTeams = convertGameMatchToCourtTeams(gameMatch);
-        newCourtTeams[gameMatch.id] = courtTeams;
+        // Convert to court teams format - merge participants from all matches for this court
+        const allParticipants: any[] = [];
+        courtMatches.forEach(gameMatch => {
+          if (gameMatch.participants && gameMatch.participants.length > 0) {
+            allParticipants.push(...gameMatch.participants);
+          }
+        });
         
-        // Set team names
-        newTeamNames[gameMatch.id] = {
-          A: gameMatch.team1Name || '',
-          B: gameMatch.team2Name || ''
+        // Create a combined game match object for processing
+        const combinedMatch = {
+          ...matchWithParticipants,
+          participants: allParticipants
+        };
+        
+        console.log(`Processing court ${courtId} with ${allParticipants.length} total participants:`, allParticipants.map(p => ({
+          id: p.participantId,
+          name: p.user?.personalInfo ? `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}` : p.user?.userName,
+          teamNumber: p.teamNumber
+        })));
+        
+        const courtTeams = convertGameMatchToCourtTeams(combinedMatch);
+        newCourtTeams[courtId] = courtTeams;
+        
+        // Set team names from the match with participants
+        newTeamNames[courtId] = {
+          A: matchWithParticipants.team1Name || '',
+          B: matchWithParticipants.team2Name || ''
         };
         
         // Create court entry using the actual court data from the response
         const court: Court = {
-          id: gameMatch.id,
-          name: gameMatch.matchName || (gameMatch as any).court?.courtName || `Match ${gameMatch.id}`,
-          capacity: gameMatch.requiredPlayers || (gameMatch as any).court?.capacity || 4,
-          status: gameMatch.gameStatus === 'in_progress' ? 'IN-GAME' : 
-                  gameMatch.gameStatus === 'completed' ? 'Closed' : 'Open'
+          id: courtId,
+          name: (matchWithParticipants as any).court?.courtName || `Court ${courtId}`,
+          capacity: (matchWithParticipants as any).court?.capacity || matchWithParticipants.requiredPlayers || 4,
+          status: courtMatches.some(m => m.gameStatus === 'in_progress') ? 'IN-GAME' : 
+                  courtMatches.some(m => m.gameStatus === 'completed') ? 'Closed' : 'Open'
         };
         newCourts.push(court);
+        
+        console.log(`Court ${courtId} final teams:`, courtTeams);
       });
       
       // Update state
@@ -1708,6 +1848,7 @@ const OpenPlayDetailPage: React.FC = () => {
           restingList={restingList}
           reserveList={reserveList}
           waitlistList={waitlistList}
+          gameMatches={gameMatches}
           onDragEnd={onDragEnd}
           onAddCourt={addCourt}
           isCreatingGameMatch={isCreatingGameMatch}

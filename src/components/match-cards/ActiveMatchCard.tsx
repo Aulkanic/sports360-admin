@@ -147,11 +147,46 @@ const ActiveMatchCard: React.FC<ActiveMatchCardProps> = ({
               }}>
                 {/* Background color overlay for player container */}
                 <div 
-                  className="absolute inset-0 bg-[#645A57]"
+                  className="absolute inset-0 bg-[#645A57] z-10"
                 ></div>
-                <img src={player?.avatar ?? '/default_avatar.png'} alt="" className="w-72 h-full relative z-10" />
+                
+                {/* Fallback div for when image fails to load */}
+                <div 
+                  className="w-full h-full bg-gray-600 flex items-center justify-center relative z-40"
+                  style={{ display: 'none' }}
+                >
+                  <div className="text-white text-4xl font-bold">
+                    {player?.initials || player?.name?.charAt(0) || '?'}
+                  </div>
+                </div>
+                
+                <img 
+                  src={player?.avatar || '/default_avatar.png'} 
+                  alt={player?.name || "Player"} 
+                  className="w-full h-full object-cover relative z-50" 
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    const fallbackDiv = target.parentElement?.querySelector('div[style*="display: none"]') as HTMLElement;
+                    if (fallbackDiv) {
+                      fallbackDiv.style.display = 'flex';
+                    }
+                    target.style.display = 'none';
+                    if (target.src !== '/default_avatar.png') {
+                      target.src = '/default_avatar.png';
+                    }
+                  }}
+                  onLoad={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'block';
+                    const fallbackDiv = target.parentElement?.querySelector('div[style*="display: none"]') as HTMLElement;
+                    if (fallbackDiv) {
+                      fallbackDiv.style.display = 'none';
+                    }
+                  }}
+                  style={{ display: 'block' }}
+                />
 
-                <div className={`h-full w-full bottom-0 inset-x-0 mx-auto rounded-lg px-2 py-3 z-40 relative`}>
+                <div className={`h-full w-full bottom-0 inset-x-0 mx-auto rounded-lg px-2 py-3 z-60 relative`}>
                   {isFocused && (
                     <div className={`font-black uppercase tracking-wide text-white ${isFocused ? 'text-2xl' : 'text-lg'}`}>
                       PLAYER {index + 1}
@@ -187,12 +222,46 @@ const ActiveMatchCard: React.FC<ActiveMatchCardProps> = ({
               }}>
                 {/* Background color overlay for player container */}
                 <div 
-                  className="absolute inset-0 bg-[#645A57]"
-                
+                  className="absolute inset-0 bg-[#645A57] z-10"
                 ></div>
-            <img src={player?.avatar ?? '/default_avatar.png'} alt="" className="w-72 h-full relative z-10" />
+                
+                {/* Fallback div for when image fails to load */}
+                <div 
+                  className="w-full h-full bg-gray-600 flex items-center justify-center relative z-40"
+                  style={{ display: 'none' }}
+                >
+                  <div className="text-white text-4xl font-bold">
+                    {player?.initials || player?.name?.charAt(0) || '?'}
+                  </div>
+                </div>
+                
+                <img 
+                  src={player?.avatar || '/default_avatar.png'} 
+                  alt={player?.name || "Player"} 
+                  className="w-full h-full object-cover relative z-50" 
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    const fallbackDiv = target.parentElement?.querySelector('div[style*="display: none"]') as HTMLElement;
+                    if (fallbackDiv) {
+                      fallbackDiv.style.display = 'flex';
+                    }
+                    target.style.display = 'none';
+                    if (target.src !== '/default_avatar.png') {
+                      target.src = '/default_avatar.png';
+                    }
+                  }}
+                  onLoad={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = 'block';
+                    const fallbackDiv = target.parentElement?.querySelector('div[style*="display: none"]') as HTMLElement;
+                    if (fallbackDiv) {
+                      fallbackDiv.style.display = 'none';
+                    }
+                  }}
+                  style={{ display: 'block' }}
+                />
 
-                <div className={`h-full w-full bottom-0 inset-x-0 mx-auto rounded-lg px-2 py-3 z-40 relative`}>
+                <div className={`h-full w-full bottom-0 inset-x-0 mx-auto rounded-lg px-2 py-3 z-60 relative`}>
                   {isFocused && (
                     <div className={`font-black uppercase tracking-wide text-white ${isFocused ? 'text-2xl' : 'text-lg'}`}>
                       PLAYER {index + 1}

@@ -4,7 +4,6 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import type { Participant } from "@/components/features/open-play/types";
 import { getStatusString } from "@/components/features/open-play/types";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
@@ -306,7 +305,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">All Participants</h3>
                   <div className="text-sm text-gray-500 bg-blue-50 px-3 py-1 rounded-lg">
-                    💡 Click buttons to change player status: Ready • Resting • Waitlist • Reserve • Reject (Endgame status cannot be changed)
+                    💡 Click buttons to change player status: Ready • Resting • Waitlist • Reserve • Reject (IN-GAME and Endgame status cannot be changed)
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -347,9 +346,10 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                           {getStatusString(participant.status ?? participant.status?.description)}
                         </Badge>
                         <div className="flex items-center gap-1 flex-wrap">
-                          {/* Ready Button - Show if not already Ready and not Endgame */}
+                          {/* Ready Button - Show if not already Ready, not Endgame, and not IN-GAME */}
                           {!["READY"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["IN-GAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -366,9 +366,10 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               </Button>
                             )}
                           
-                          {/* Resting Button - Show if not already Resting and not Endgame */}
+                          {/* Resting Button - Show if not already Resting, not Endgame, and not IN-GAME */}
                           {!["REST", "RESTING"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["IN-GAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -385,9 +386,10 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               </Button>
                             )}
                           
-                          {/* Waitlist Button - Show if not already Waitlist and not Endgame */}
+                          {/* Waitlist Button - Show if not already Waitlist, not Endgame, and not IN-GAME */}
                           {!["WAITLIST"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["IN-GAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -404,9 +406,10 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               </Button>
                             )}
                           
-                          {/* Reserve Button - Show if not already Reserve and not Endgame */}
+                          {/* Reserve Button - Show if not already Reserve, not Endgame, and not IN-GAME */}
                           {!["RESERVE"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["IN-GAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -423,9 +426,10 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               </Button>
                             )}
                           
-                          {/* Reject Button - Show if not already Rejected and not Endgame */}
+                          {/* Reject Button - Show if not already Rejected, not Endgame, and not IN-GAME */}
                           {!["REJECTED"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
-                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
+                            !["ENDGAME"].includes(getStatusString(participant.status ?? participant.status?.description)) &&
+                            !["IN-GAME"].includes(getStatusString(participant.status ?? participant.status?.description)) && (
                               <Button
                                 size="sm"
                                 variant="outline"

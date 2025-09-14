@@ -49,7 +49,7 @@ const FocusedCourtView: React.FC<FocusedCourtViewProps> = ({
         onFocus={onFocusCourt}
       />
     );
-  } else if (!hasPlayers) {
+  } else if (hasPlayers) {
     return (
       <FocusedActiveMatchCard
         court={court}

@@ -7,10 +7,11 @@ import DroppablePanel from "@/components/features/open-play/components/draggable
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
 import AddCourtModal from "@/components/features/open-play/AddCourtModal";
 import type { Court, Match, Participant, Level } from "@/components/features/open-play/types";
+import { getSkillLevel, getSkillLevelAsLevel } from "@/components/features/open-play/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trophy, Plus, Users, Filter, Search, X } from "lucide-react";
+import { Trophy, Plus, Users, Filter, Search, X, Star } from "lucide-react";
 import { useCourts } from "@/hooks";
 
 interface GameManagementTabProps {
@@ -25,6 +26,7 @@ interface GameManagementTabProps {
   restingList: Participant[];
   reserveList: Participant[];
   waitlistList: Participant[];
+  gameMatches?: any[]; // Add game matches from API
   onDragEnd: (e: DragEndEvent) => Promise<void>;
   onAddCourt: (data: {
     courtId: string;
@@ -64,6 +66,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   restingList,
   reserveList,
   waitlistList,
+  gameMatches = [],
   onDragEnd,
   onAddCourt,
   onRenameCourt,
@@ -93,6 +96,15 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   // Get all courts from the court management system
   const { items: allCourts, isLoading: isLoadingAllCourts } = useCourts();
 
+  // Helper function to check if a court has any active matches
+  const courtHasActiveMatch = (courtId: string): boolean => {
+    return gameMatches.some(match => 
+      match.courtId === courtId && 
+      match.matchStatusId && 
+      match.matchStatusId !== 10 // Assuming 10 is COMPLETED status
+    );
+  };
+
   // Filter ready list by skill level and search query
   const filteredReadyList = useMemo(() => {
     let filtered = readyList;
@@ -100,7 +112,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
     // Filter by skill level
     if (selectedSkillLevel !== "All") {
       filtered = filtered.filter(participant => {
-        const skillLevel = (participant.skillLevel || participant.level)?.toString().toUpperCase();
+        const skillLevel = getSkillLevel(participant).toUpperCase();
         return skillLevel === selectedSkillLevel.toUpperCase();
       });
     }
@@ -125,11 +137,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
     return filtered;
   }, [readyList, selectedSkillLevel, searchQuery]);
 
-  // Create ready list with queue positions
+  // Create ready list with queue positions and priority info
   const readyListWithQueuePositions = useMemo(() => {
     return filteredReadyList.map((participant, index) => ({
       ...participant,
-      queuePosition: index + 1
+      queuePosition: index + 1,
+      hasPriority: !!participant.updatedPlayerStatusAt,
+      priorityTime: participant.updatedPlayerStatusAt ? new Date(participant.updatedPlayerStatusAt) : null
     }));
   }, [filteredReadyList]);
 
@@ -137,10 +151,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const availableSkillLevels = useMemo(() => {
     const levels = new Set<Level>();
     readyList.forEach(participant => {
-      const skillLevel = (participant.skillLevel || participant.level).toUpperCase();
-      if (skillLevel && (skillLevel === "BEGINNER" || skillLevel === "INTERMEDIATE" || skillLevel === "ADVANCED")) {
-        levels.add(skillLevel);
-      }
+      const skillLevel = getSkillLevelAsLevel(participant);
+      levels.add(skillLevel);
     });
     return Array.from(levels).sort();
   }, [readyList]);
@@ -184,9 +196,22 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
               <DroppablePanel
                 id="ready"
                 title="Ready"
-                subtitle="Players ready to play"
+                subtitle={`Players ready to play • ${readyListWithQueuePositions.filter(p => p.hasPriority).length} with priority`}
                 childrenClassName="grid grid-cols-1"
               >
+                {/* Priority Legend */}
+                {readyListWithQueuePositions.some(p => p.hasPriority) && (
+                  <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-xs text-amber-800">
+                      <Star className="h-3 w-3 text-amber-600" />
+                      <span className="font-medium">Priority Queue Active</span>
+                    </div>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Players with ⭐ are queued by priority based on when they became ready
+                    </p>
+                  </div>
+                )}
+
                 {/* Search and Filter Section */}
                 <div className="mb-3 space-y-3 p-2 bg-gray-50 rounded-lg border">
                   {/* Search Input */}
@@ -233,7 +258,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                           All ({readyList.length})
                         </Button>
                         {availableSkillLevels.map((level) => {
-                          const count = readyList.filter(p => (p.skillLevel || p.level) === level).length;
+                          const count = readyList.filter(p => getSkillLevelAsLevel(p) === level).length;
                           const getVariant = (level: Level) => {
                             switch (level) {
                               case "Beginner": return selectedSkillLevel === level ? "default" : "outline";
@@ -265,6 +290,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                     participant={p} 
                     queuePosition={p.queuePosition}
                     showQueueInfo={true}
+                    hasPriority={p.hasPriority}
+                    priorityTime={p.priorityTime}
                   />
                 ))}
                 {readyListWithQueuePositions.length === 0 && (
@@ -396,7 +423,9 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       const teams = courtTeams[court.id] ?? { A: [], B: [] };
                       const perTeam = Math.floor(court.capacity / 2);
                       const hasMatch = teams.A.length > 0 || teams.B.length > 0;
-
+                      const hasActiveMatch = courtHasActiveMatch(court.id);
+                      console.log('teams', teams);
+                      console.log('teams court', court);
                       return (
                         <div key={idx}>
                           <div className="p-2">
@@ -417,12 +446,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                        canCloseCourt={canCloseCourt(court.id)}
                        isAddingPlayers={isAddingPlayersToMatch.size > 0}
                        hasMatch={hasMatch}
+                       hasActiveMatch={hasActiveMatch}
                      />
                             <div className="flex flex-col items-center gap-2 mt-2">
                               <p className="text-[11px] text-muted-foreground text-center">
-                                Team size: {perTeam} • {hasMatch ? 'Drag players onto A/B or use "Matchmake This Court"' : 'Create a match first to drag players'}
+                                Team size: {perTeam} • {(hasMatch || hasActiveMatch) ? 'Drag players onto A/B or use "Matchmake This Court"' : 'Create a match first to drag players'}
                               </p>
-                              {!hasMatch && (
+                              {!hasMatch && !hasActiveMatch && (
                                 <div className="text-center py-2">
                                   <p className="text-[10px] text-orange-600 text-center mb-2">
                                     No match on this court
@@ -453,6 +483,22 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                                   >
                                     <Trophy className="h-3 w-3 mr-1" />
                                     Play Screen
+                                  </Button>
+                                </>
+                              )}
+                              {!hasMatch && hasActiveMatch && (
+                                <>
+                                  <p className="text-[10px] text-blue-600 text-center">
+                                    Match exists - waiting for players
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => onViewMatchupScreen(court.id)}
+                                    className="text-xs h-7 px-3 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                                  >
+                                    <Trophy className="h-3 w-3 mr-1" />
+                                    View Match
                                   </Button>
                                 </>
                               )}

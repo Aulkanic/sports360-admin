@@ -50,7 +50,7 @@ const AllCourtsView: React.FC<AllCourtsViewProps> = ({
           onFocus={onFocusCourt}
         />
       );
-    } else if (!hasPlayers) {
+    } else if (hasPlayers) {
       return (
         <ActiveMatchCard
           key={court.id}

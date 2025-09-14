@@ -13,6 +13,7 @@ const MatchDraggablePill: React.FC<{ participant: Participant }> = ({ participan
     opacity: isDragging ? 0.7 : 1,
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } as React.CSSProperties;
+  console.log('match card pill', participant);
   return (
     <div
       ref={setNodeRef}
@@ -35,7 +36,7 @@ const MatchDraggablePill: React.FC<{ participant: Participant }> = ({ participan
         <p className="text-white text-md font-semibold truncate">{participant.user?.personalInfo?.firstName} {participant.user?.personalInfo?.lastName}</p>
         {!!participant.level && (
           <p className="text-white/80 text-[10px] leading-none truncate">
-            {participant.skillLevel ?? 'No Skill'}
+            {participant.skill?.description ?? 'No Skill'}
           </p>
         )}
       </div>

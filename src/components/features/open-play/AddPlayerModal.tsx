@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ResponsiveOverlay from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,10 @@ import {
   CheckCircle,
   Mail,
   Calendar,
-  Clock
+  Clock,
+  Camera,
+  X,
+  Upload
 } from 'lucide-react';
 
 export interface PlayerFormData {
@@ -24,6 +27,8 @@ export interface PlayerFormData {
   accountId?: string; // For registered users
   level: 'Beginner' | 'Intermediate' | 'Advanced';
   levelId: number; // Skill level ID (1=Beginner, 2=Intermediate, 3=Advanced)
+  profilePicture?: File; // Profile picture file for guest players
+  profilePictureUrl?: string; // Preview URL for the uploaded image
 }
 
 interface AddPlayerModalProps {
@@ -56,11 +61,23 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
     email: '',
     accountId: '',
     level: 'Intermediate',
-    levelId: 2 // Default to Intermediate (ID: 2)
+    levelId: 2, // Default to Intermediate (ID: 2)
+    profilePicture: undefined,
+    profilePictureUrl: undefined
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (formData.profilePictureUrl) {
+        URL.revokeObjectURL(formData.profilePictureUrl);
+      }
+    };
+  }, [formData.profilePictureUrl]);
 
   const handleInputChange = (field: keyof PlayerFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -72,6 +89,63 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
         return newErrors;
       });
     }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, profilePicture: 'Please select a valid image file' }));
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, profilePicture: 'Image size must be less than 5MB' }));
+        return;
+      }
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: file,
+        profilePictureUrl: previewUrl
+      }));
+
+      // Clear any existing error
+      if (errors.profilePicture) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.profilePicture;
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    // Revoke the object URL to free up memory
+    if (formData.profilePictureUrl) {
+      URL.revokeObjectURL(formData.profilePictureUrl);
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      profilePicture: undefined,
+      profilePictureUrl: undefined
+    }));
+
+    // Clear the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
   };
 
   const validateForm = (): boolean => {
@@ -136,7 +210,9 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
           email: '',
           accountId: '',
           level: 'Intermediate',
-          levelId: 2
+          levelId: 2,
+          profilePicture: undefined,
+          profilePictureUrl: undefined
         });
         setErrors({});
         
@@ -369,6 +445,89 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* Profile Picture Upload - Only for Guest Players */}
+            {formData.playerType === 'guest' && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Profile Picture (Optional)</label>
+                <div className="space-y-3">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  
+                  {/* Image Preview or Upload Area */}
+                  {formData.profilePictureUrl ? (
+                    <div className="relative">
+                      <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                        <img
+                          src={formData.profilePictureUrl}
+                          alt="Profile preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={handleImageClick}
+                      className="w-32 h-32 mx-auto border-2 border-dashed border-primary/30 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+                    >
+                      <Camera className="h-8 w-8 text-primary/60 mb-2" />
+                      <span className="text-xs text-muted-foreground text-center px-2">
+                        Click to upload
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Upload Button */}
+                  <div className="flex justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleImageClick}
+                      className="h-9"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {formData.profilePicture ? 'Change Photo' : 'Upload Photo'}
+                    </Button>
+                  </div>
+                  
+                  {/* File info */}
+                  {formData.profilePicture && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">
+                        {formData.profilePicture.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {(formData.profilePicture.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Error message */}
+                  {errors.profilePicture && (
+                    <p className="text-sm text-red-600 text-center">{errors.profilePicture}</p>
+                  )}
+                  
+                  {/* Help text */}
+                  <p className="text-xs text-muted-foreground text-center">
+                    Recommended: Square image, max 5MB. JPG, PNG, or WebP formats.
+                  </p>
+                </div>
+              </div>
+            )}
 
         </div>
 

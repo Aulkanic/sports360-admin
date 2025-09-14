@@ -148,6 +148,7 @@ export interface AddPlayerRequest {
   paymentMethodId: number;
   paymentAmount: number;
   paymentStatus: 'pending' | 'confirmed' | 'rejected';
+  profilePicture?: File; // Profile picture file for guest players
 }
 
 export interface OpenPlayStats {
@@ -444,7 +445,37 @@ export const checkCourtAvailability = async (params: {
  */
 export const addPlayerToSession = async (playerData: AddPlayerRequest): Promise<any> => {
   try {
-    const response = await apiClient.post('/openplay/add-player', {...playerData, paymentAmount:'100'});
+    let response;
+    
+    // Check if there's a profile picture to upload
+    if (playerData.profilePicture) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+      
+      // Add all non-file fields
+      Object.entries(playerData).forEach(([key, value]) => {
+        if (key === 'profilePicture') {
+          // Handle profile picture separately
+          return;
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, value.toString());
+        }
+      });
+      
+      // Add profile picture
+      formData.append('profilePicture', playerData.profilePicture);
+      
+      // Set content type for FormData
+      response = await apiClient.post('/openplay/add-player', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } else {
+      // Regular JSON request for players without profile pictures
+      response = await apiClient.post('/openplay/add-player', {...playerData, paymentAmount:'100'});
+    }
+    
     return response.data.data;
   } catch (error: any) {
     console.error('Error adding player to session:', error);

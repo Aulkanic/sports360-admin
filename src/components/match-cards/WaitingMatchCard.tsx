@@ -45,18 +45,9 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
         maxWidth: isFocused ? '100vw' : '100%',
         height: isFocused ? '100vh' : '100%',
         margin: isFocused ? '0' : 'auto',
-        backgroundImage: 'url("/card.jpg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundBlendMode: 'multiply'
+        backgroundColor: '#1a1a1a'
       }}
     >
-      {/* Background color overlay that blends with the image */}
-      <div 
-        className="absolute inset-0 bg-[#645A57]"
-        style={{ mixBlendMode: 'multiply' }}
-      ></div>
       {/* Court Lines */}
       <div className="absolute inset-2 rounded-sm bg-white pointer-events-none" />
           <div
@@ -101,12 +92,6 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
           <div className="absolute top-1/3 right-1/6 w-1 h-1 bg-white/35 rounded-full animate-ping" style={{ animationDelay: '1.5s' }}></div>
         </div>
       )}
-
-      {/* Orange Borders */}
-      {/* <div className="absolute top-0 left-0 right-0 h-6 bg-[#B85537] shadow-lg"></div>
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-[#B85537] shadow-lg"></div> */}
-      
-      {/* Side borders for full screen effect */}
       {isFocused && (
         <>
           <div className="absolute top-0 left-0 bottom-0 w-6 bg-[#B85537] shadow-lg"></div>
@@ -126,7 +111,7 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
               loop
               muted
               playsInline
-              className="w-full h-full z-50 object-cove"
+              className="w-full h-full z-50 object-cover"
               style={{ 
                 filter: 'brightness(1) contrast(1.1)',
                 borderRadius: isFocused ? '0' : '0.5rem'
@@ -136,19 +121,8 @@ const WaitingMatchCard: React.FC<WaitingMatchCardProps> = ({
               Your browser does not support the video tag.
             </video>
             
-            {/* Overlay with court info */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{
-              backgroundImage: 'url("/card.jpg")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              backgroundBlendMode: 'multiply'
-            }}>
-              {/* Background color overlay for video overlay */}
-              <div 
-                className="absolute inset-0 bg-black/20"
-                style={{ mixBlendMode: 'multiply' }}
-              ></div>
+            {/* Overlay with court info - reduced opacity to show video */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 z-40">
               <div className="text-center text-white relative z-10">
                 <div className={`font-bold ${isFocused ? 'text-4xl' : 'text-2xl'} mb-4`}>
                   {court?.name}
