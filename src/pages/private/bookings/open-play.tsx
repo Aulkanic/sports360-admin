@@ -1888,6 +1888,7 @@ const OpenPlayPage: React.FC = () => {
                 <Input
                   type="number"
                   min={1}
+                  max={500}
                   value={createForm.maxPlayers}
                   onChange={(e) => setCreateForm((p) => ({ ...p, maxPlayers: Number(e.target.value) }))}
                   className="h-11"
