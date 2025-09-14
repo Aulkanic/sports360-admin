@@ -148,11 +148,23 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const filteredReadyList = useMemo(() => {
     let filtered = readyList;
 
+    console.log('🔍 SKILL LEVEL FILTER DEBUG:', {
+      selectedSkillLevel,
+      totalReadyList: readyList.length,
+      readyListSkillLevels: readyList.map(p => ({
+        name: p.name,
+        skillLevel: getSkillLevel(p),
+        skillLevelAsLevel: getSkillLevelAsLevel(p)
+      }))
+    });
+
     // Filter by skill level
     if (selectedSkillLevel !== "All") {
       filtered = filtered.filter(participant => {
         const skillLevel = getSkillLevel(participant).toUpperCase();
-        return skillLevel === selectedSkillLevel.toUpperCase();
+        const matches = skillLevel === selectedSkillLevel.toUpperCase();
+        console.log(`🔍 FILTERING: ${participant.name} - ${skillLevel} vs ${selectedSkillLevel.toUpperCase()} = ${matches}`);
+        return matches;
       });
     }
 
@@ -292,7 +304,10 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                           variant={selectedSkillLevel === "All" ? "default" : "outline"}
                           size="sm"
                           className="h-6 px-2 text-xs font-medium"
-                          onClick={() => setSelectedSkillLevel("All")}
+                          onClick={() => {
+                            console.log('🔍 FILTER CHANGED: Setting to All');
+                            setSelectedSkillLevel("All");
+                          }}
                         >
                           All ({readyList.length})
                         </Button>
@@ -312,7 +327,10 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                               variant={getVariant(level)}
                               size="sm"
                               className="h-6 px-2 text-xs font-medium"
-                              onClick={() => setSelectedSkillLevel(level)}
+                              onClick={() => {
+                                console.log(`🔍 FILTER CHANGED: Setting to ${level}`);
+                                setSelectedSkillLevel(level);
+                              }}
                             >
                               {level} ({count})
                             </Button>

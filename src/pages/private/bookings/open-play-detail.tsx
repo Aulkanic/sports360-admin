@@ -9,7 +9,7 @@ import type {
   OpenPlaySession,
   Participant,
 } from "@/components/features/open-play/types";
-import { getStatusString, getSkillLevelAsLevel } from "@/components/features/open-play/types";
+import { getStatusString, getSkillLevelAsLevel, getSkillLevel } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
@@ -204,10 +204,10 @@ const OpenPlayDetailPage: React.FC = () => {
                 name: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
                   fullParticipant.user?.userName || 'Unknown Player',
-                level: (fullParticipant.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+                level: getSkillLevelAsLevel(fullParticipant),
                 status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || fullParticipant.status?.description || 'READY',
                 playerStatus: fullParticipant.playerStatus,
-                skillLevel: fullParticipant.skillLevel,
+                skillLevel: getSkillLevel(fullParticipant),
                 avatar: fullParticipant.user?.personalInfo?.photoUrl || undefined,
                 initials: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
@@ -418,7 +418,7 @@ const OpenPlayDetailPage: React.FC = () => {
               `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
               participant.user.userName) : 
             `User ${participant.userId}`,
-          skillLevel: 'Intermediate' as const, // Default value, could be enhanced
+          skillLevel: 'Intermediate', // Default value, could be enhanced
           level: 'Intermediate' as const,
           status: 'IN-GAME',
           playerStatus: { id: 1, description: 'IN-GAME' },
@@ -482,7 +482,7 @@ const OpenPlayDetailPage: React.FC = () => {
               `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
               participant.user.userName) : 
             `Player ${participantId}`,
-          skillLevel: 'Intermediate' as const,
+          skillLevel: 'Intermediate',
           level: 'Intermediate' as const,
           status: 'IN-GAME',
           playerStatus: { 
@@ -585,10 +585,10 @@ const OpenPlayDetailPage: React.FC = () => {
           name: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
             p.user?.userName || 'Unknown Player',
-          level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+          level: getSkillLevelAsLevel(p),
           status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
           playerStatus: p.playerStatus,
-          skillLevel: p.skillLevel,
+          skillLevel: getSkillLevel(p),
           avatar: undefined,
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
@@ -598,7 +598,7 @@ const OpenPlayDetailPage: React.FC = () => {
           joinedAt: p.registeredAt,
           notes: p.notes,
           gamesPlayed: 0,
-          skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
+          skillScore: getSkillScore(p),
           readyTime: undefined,
           paymentStatus: undefined, // Not displaying payment status
           user: p.user
@@ -620,10 +620,10 @@ const OpenPlayDetailPage: React.FC = () => {
           name: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
             p.user?.userName || 'Unknown Player',
-          level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+          level: getSkillLevelAsLevel(p),
           status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
           playerStatus: p.playerStatus,
-          skillLevel: p.skillLevel,
+          skillLevel: getSkillLevel(p),
           avatar: undefined,
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
@@ -633,7 +633,7 @@ const OpenPlayDetailPage: React.FC = () => {
           joinedAt: p.registeredAt,
           notes: p.notes,
           gamesPlayed: 0,
-          skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
+          skillScore: getSkillScore(p),
           readyTime: undefined,
           paymentStatus: undefined, // Not displaying payment status
           user: p.user
@@ -1669,10 +1669,10 @@ const OpenPlayDetailPage: React.FC = () => {
             name: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
               p.user?.userName || 'Unknown Player',
-            level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+            level: getSkillLevelAsLevel(p),
             status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
-            skillLevel: p.skillLevel,
+            skillLevel: getSkillLevel(p),
             avatar: undefined,
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
@@ -1682,7 +1682,7 @@ const OpenPlayDetailPage: React.FC = () => {
             joinedAt: p.registeredAt,
             notes: p.notes,
             gamesPlayed: 0,
-            skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
+            skillScore: getSkillScore(p),
             readyTime: undefined,
             paymentStatus: undefined, // Not displaying payment status
             user: p.user
@@ -1704,10 +1704,10 @@ const OpenPlayDetailPage: React.FC = () => {
             name: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
               p.user?.userName || 'Unknown Player',
-            level: (p.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+            level: getSkillLevelAsLevel(p),
             status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
-            skillLevel: p.skillLevel,
+            skillLevel: getSkillLevel(p),
             avatar: undefined,
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
@@ -1717,7 +1717,7 @@ const OpenPlayDetailPage: React.FC = () => {
             joinedAt: p.registeredAt,
             notes: p.notes,
             gamesPlayed: 0,
-            skillScore: p.skillLevel === 'beginner' ? 1 : p.skillLevel === 'advanced' ? 3 : 2,
+            skillScore: getSkillScore(p),
             readyTime: undefined,
             paymentStatus: undefined, // Not displaying payment status
             user: p.user

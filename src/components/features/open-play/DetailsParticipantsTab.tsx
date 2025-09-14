@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { Participant } from "@/components/features/open-play/types";
-import { getStatusString } from "@/components/features/open-play/types";
+import { getStatusString, getSkillLevelAsLevel } from "@/components/features/open-play/types";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import {
   Users,
@@ -248,7 +248,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                               <div className="font-medium text-gray-900">{participant?.name}</div>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs">
-                                  {participant.level ?? 'Veteran'}
+                                  {getSkillLevelAsLevel(participant)}
                                 </Badge>
                               </div>
                             </div>
@@ -326,7 +326,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">
-                              {participant.level ?? 'Beginner'}
+                              {getSkillLevelAsLevel(participant)}
                             </Badge>
                             <div className="flex items-center gap-1">
                               {getStatusIcon(getStatusString(participant.status ?? participant.status?.description))}
