@@ -516,16 +516,16 @@ const OpenPlayDetailPage: React.FC = () => {
         
         // Assign to team based on teamNumber (1 = Team A, 2 = Team B)
         const teamNumber = (participant as any).teamNumber;
-        console.log(`Assigning participant ${participantData.name} to team ${teamNumber}`);
+        console.log(`Assigning participant ${participantData.name} (ID: ${participantId}) to team ${teamNumber}`);
         
         if (teamNumber === 1) {
           teamA.push(participantData);
-          console.log(`Added to Team A: ${participantData.name}`);
+          console.log(`✅ Added to Team A: ${participantData.name} (ID: ${participantId})`);
         } else if (teamNumber === 2) {
           teamB.push(participantData);
-          console.log(`Added to Team B: ${participantData.name}`);
+          console.log(`✅ Added to Team B: ${participantData.name} (ID: ${participantId})`);
         } else {
-          console.warn(`Unknown team number ${teamNumber} for participant ${participantData.name}`);
+          console.warn(`❌ Unknown team number ${teamNumber} for participant ${participantData.name} (ID: ${participantId})`);
         }
       });
     }
@@ -888,11 +888,20 @@ const OpenPlayDetailPage: React.FC = () => {
       const teamNumber = teamKey === 'A' ? 1 : 2;
       
       // Assign player to team
-      await assignPlayerToTeam(matchId, participant.id, teamNumber);
+      console.log(`Assigning player ${participant.name} (ID: ${participant.id}) to team ${teamKey} (${teamNumber}) in match ${matchId} (court ${courtId})`);
+      const assignmentResult = await assignPlayerToTeam(matchId, participant.id, teamNumber);
+      console.log(`Player assignment API response:`, assignmentResult);
       console.log(`Player ${participant.name} assigned to team ${teamKey} (${teamNumber}) in match ${matchId} (court ${courtId})`);
       
-      // Refetch matches to get updated data from server
-      await fetchGameMatches();
+      // Add a small delay to ensure server has processed the assignment
+      setTimeout(async () => {
+        try {
+          console.log('Fetching latest data from server after team assignment...');
+          await fetchGameMatches();
+        } catch (error) {
+          console.error('Error fetching latest data after team assignment:', error);
+        }
+      }, 1000); // 1 second delay
     } catch (error) {
       console.error('Error in player assignment process:', error);
       // Revert the local state change on API error
@@ -931,7 +940,16 @@ const OpenPlayDetailPage: React.FC = () => {
 
     const participant = (active?.data?.current as { participant?: Participant } | undefined)
       ?.participant;
-    if (!participant) return;
+    if (!participant) {
+      console.log('No participant found in drag data');
+      return;
+    }
+
+    console.log('Drag end - participant:', {
+      id: participant.id,
+      name: participant.name,
+      currentStatus: participant.status
+    });
 
     const overId = String(over.id as UniqueIdentifier);
 
@@ -1510,9 +1528,8 @@ const OpenPlayDetailPage: React.FC = () => {
         console.log(`Processing court ${courtId} with ${courtMatches.length} matches`);
         console.log(`Court ${courtId} match statuses:`, courtMatches.map(m => ({
           id: m.id,
-          matchStatusId: m.matchStatusId,
-          gameStatus: m.gameStatus,
-          matchStatus: m.matchStatus
+          matchStatus: m.matchStatus,
+          gameStatus: m.gameStatus
         })));
         
         // Find the match with the most participants (or the first one if all are empty)
@@ -1559,14 +1576,15 @@ const OpenPlayDetailPage: React.FC = () => {
           status: (() => {
             const isInGame = courtMatches.some(m => {
               // Check for INGAME status - could be status ID 5, gameStatus 5, or description 'INGAME'
-              const inGame = m.matchStatusId === 5 || m.gameStatus === 5 || 
-                            m.matchStatusId === '5' || m.gameStatus === '5' ||
-                            m.gameStatus?.toLowerCase() === 'ingame' || 
+              const inGame = m.matchStatus === 5 || m.gameStatus === 5 || 
+                            m.matchStatus === '5' || m.gameStatus === '5' ||
+                            m.matchStatus?.toLowerCase() === 'ingame' || 
+                            m.gameStatus?.toLowerCase() === 'ingame' ||
                             m.gameStatus?.toLowerCase() === 'in_progress';
               if (inGame) {
                 console.log(`Court ${courtId} is IN-GAME based on match:`, {
                   id: m.id,
-                  matchStatusId: m.matchStatusId,
+                  matchStatus: m.matchStatus,
                   gameStatus: m.gameStatus
                 });
               }
@@ -1577,14 +1595,15 @@ const OpenPlayDetailPage: React.FC = () => {
             
             const isCompleted = courtMatches.some(m => {
               // Check for completed status - could be status ID 6, gameStatus 6, or description 'ENDED'/'COMPLETED'
-              const completed = m.matchStatusId === 6 || m.gameStatus === 6 || 
-                              m.matchStatusId === '6' || m.gameStatus === '6' ||
-                              m.gameStatus?.toLowerCase() === 'ended' || 
+              const completed = m.matchStatus === 6 || m.gameStatus === 6 || 
+                              m.matchStatus === '6' || m.gameStatus === '6' ||
+                              m.matchStatus?.toLowerCase() === 'ended' || 
+                              m.gameStatus?.toLowerCase() === 'ended' ||
                               m.gameStatus?.toLowerCase() === 'completed';
               if (completed) {
                 console.log(`Court ${courtId} is Closed based on match:`, {
                   id: m.id,
-                  matchStatusId: m.matchStatusId,
+                  matchStatus: m.matchStatus,
                   gameStatus: m.gameStatus
                 });
               }
@@ -1602,9 +1621,29 @@ const OpenPlayDetailPage: React.FC = () => {
         console.log(`Court ${courtId} final teams:`, courtTeams);
       });
       
-      // Update state
+      // Update state - merge with existing data instead of overriding
       setMatches(convertedMatches);
-      setCourtTeams(prev => ({ ...prev, ...newCourtTeams }));
+      setCourtTeams(prev => {
+        const merged = { ...prev };
+        Object.keys(newCourtTeams).forEach(courtId => {
+          const newTeams = newCourtTeams[courtId];
+          const existingTeams = merged[courtId];
+          
+          if (newTeams && (newTeams.A.length > 0 || newTeams.B.length > 0)) {
+            console.log(`Updating court ${courtId} teams with server data:`, newTeams);
+            console.log(`Previous teams for court ${courtId}:`, existingTeams);
+            
+            // Merge teams: use server data if available, otherwise keep existing
+            merged[courtId] = {
+              A: newTeams.A.length > 0 ? newTeams.A : (existingTeams?.A || []),
+              B: newTeams.B.length > 0 ? newTeams.B : (existingTeams?.B || [])
+            };
+            
+            console.log(`Final merged teams for court ${courtId}:`, merged[courtId]);
+          }
+        });
+        return merged;
+      });
       setTeamNames(prev => ({ ...prev, ...newTeamNames }));
       setCourts(newCourts);
       
