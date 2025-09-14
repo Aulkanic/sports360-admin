@@ -80,13 +80,16 @@ const OpenPlayDetailPage: React.FC = () => {
       const sourceParticipants = occurrence?.participants || sessionById?.participants || [];
       const initialParticipants = sourceParticipants as Participant[];
       
-      // Initialize existing participants with game history data
       return initialParticipants.map(participant => ({
         ...participant,
         gamesPlayed: participant.gamesPlayed ?? Math.floor(Math.random() * 15), // Mock data
         readyTime: participant.readyTime ?? (getStatusString(participant.status) === 'Ready' ? Date.now() - Math.random() * 3600000 : undefined),
         skillScore: participant.skillScore ?? getSkillScore(participant),
-        avatar: participant.user ? getUserProfileImageUrl(participant.user) : participant.avatar
+        avatar: participant?.user && (participant.user as any)?.upload?.fileName
+          ? `${API_CONFIG.IMG_URL}/uploads/${(participant.user as any).upload.fileName}`
+          : (participant.user as any)?.upload?.filePath
+            ? (participant.user as any).upload.filePath
+            : '/default_avatar.png'
       }));
     }
   );
@@ -228,17 +231,7 @@ const OpenPlayDetailPage: React.FC = () => {
             });
             
             if (fullParticipant) {
-              console.log('✅ OPEN-PLAY-DETAIL: Found full participant:', {
-                id: fullParticipant.id,
-                name: fullParticipant.user?.personalInfo?.firstName,
-                email: fullParticipant.user?.email,
-                skill: fullParticipant.user?.personalInfo?.skill,
-                skillId: fullParticipant.user?.personalInfo?.skillId,
-                profileUpload: fullParticipant.user?.personalInfo?.upload,
-                profilePhoto: fullParticipant.user?.personalInfo?.photoUrl,
-                skillScore: fullParticipant.skillScore,
-                gamesPlayed: fullParticipant.gamesPlayed
-              });
+   
               return {
                 id: fullParticipant.id.toString(),
                 name: fullParticipant.user?.personalInfo ? 
@@ -248,7 +241,7 @@ const OpenPlayDetailPage: React.FC = () => {
                 status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || fullParticipant.status?.description || 'READY',
                 playerStatus: fullParticipant.playerStatus,
                 skillLevel: getSkillLevel(fullParticipant),
-                avatar: `${API_CONFIG.IMG_URL}/uploads/${fullParticipant.user?.personalInfo?.upload?.fileName}` || fullParticipant.user?.personalInfo?.photoUrl || fullParticipant.user?.upload?.filePath || undefined,
+                avatar: fullParticipant.user?.upload?.fileName ? `${API_CONFIG.IMG_URL}/uploads/${fullParticipant.user?.upload?.fileName}` : fullParticipant.user?.personalInfo?.photoUrl ? fullParticipant.user?.personalInfo?.photoUrl : fullParticipant.user?.upload?.filePath ? fullParticipant.user?.upload?.filePath : '/default_avatar.png',
                 initials: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                   fullParticipant.user?.userName?.[0] || '?',
@@ -539,11 +532,16 @@ const OpenPlayDetailPage: React.FC = () => {
               upload: (participant.user.personalInfo as any).upload
             } : undefined
           } : undefined,
-          avatar: participant.user ? getUserProfileImageUrl(participant.user) : undefined,
-          initials: participant.user ? 
-            (participant.user.personalInfo ? 
-              `${participant.user.personalInfo.firstName?.[0]}${participant.user.personalInfo.lastName?.[0]}` : 
-              participant.user.userName?.[0]) : 
+          avatar: participant.user && (participant.user as any)?.upload?.fileName
+            ? `${API_CONFIG.IMG_URL}/uploads/${(participant.user as any).upload.fileName}`
+            : participant.user
+              ? getUserProfileImageUrl(participant.user)
+              : '/default_avatar.png',
+          initials: participant.user
+            ? (participant.user.personalInfo
+                ? `${participant.user.personalInfo.firstName?.[0] ?? ''}${participant.user.personalInfo.lastName?.[0] ?? ''}`
+                : participant.user.userName?.[0] ?? '')
+            : 
             `P${participantId}`
         };
         
@@ -557,7 +555,7 @@ const OpenPlayDetailPage: React.FC = () => {
           playerStatusId,
           isOnBench,
           teamNumber: (participant as any).teamNumber,
-          position: (participant as any).position
+          position: (participant as any).positionP
         });
         
         // Update participant status based on bench status
@@ -645,7 +643,7 @@ const OpenPlayDetailPage: React.FC = () => {
           status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
           playerStatus: p.playerStatus,
           skillLevel: getSkillLevel(p),
-          avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
+          avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
             p.user?.userName?.[0] || 'U',
@@ -680,7 +678,7 @@ const OpenPlayDetailPage: React.FC = () => {
           status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
           playerStatus: p.playerStatus,
           skillLevel: getSkillLevel(p),
-          avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
+          avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
             p.user?.userName?.[0] || 'U',
@@ -1877,7 +1875,7 @@ const OpenPlayDetailPage: React.FC = () => {
             status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
             skillLevel: getSkillLevel(p),
-            avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
+            avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
               p.user?.userName?.[0] || 'U',
@@ -1912,7 +1910,7 @@ const OpenPlayDetailPage: React.FC = () => {
             status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
             skillLevel: getSkillLevel(p),
-            avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
+            avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
               p.user?.userName?.[0] || 'U',
