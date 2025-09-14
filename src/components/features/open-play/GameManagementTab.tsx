@@ -85,7 +85,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   canStartGame,
   canEndGame,
   canCloseCourt,
-  isCreatingGameMatch = false,
   isAddingPlayersToMatch = new Set(),
   isStartingGame = new Set(),
   isEndingGame = new Set(),
@@ -421,14 +420,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowAddCourtModal(true)}
-                      disabled={isCreatingGameMatch}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {isCreatingGameMatch ? 'Creating...' : 'Add Court'}
-                    </Button>
+                
                     <Button 
                       variant="outline" 
                       onClick={() => {
