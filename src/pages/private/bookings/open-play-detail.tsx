@@ -198,9 +198,6 @@ const OpenPlayDetailPage: React.FC = () => {
   // Get full participant information by matching participant ID
   const getFullParticipantInfo = useMemo(() => {
     return (participantId: string) => {
-      console.log('🔍 OPEN-PLAY-DETAIL: Looking for participant ID:', participantId, 'Type:', typeof participantId);
-      console.log('📊 OPEN-PLAY-DETAIL: Raw session data available:', !!rawSessionData);
-      console.log('🏟️ OPEN-PLAY-DETAIL: Raw session occurrences count:', rawSessionData?.occurrences?.length);
       
       // First check if we have raw session data with occurrence participants
       if (rawSessionData?.occurrences) {
@@ -250,7 +247,7 @@ const OpenPlayDetailPage: React.FC = () => {
                 status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || fullParticipant.status?.description || 'READY',
                 playerStatus: fullParticipant.playerStatus,
                 skillLevel: getSkillLevel(fullParticipant),
-                avatar: fullParticipant.user?.personalInfo?.photoUrl || undefined,
+                avatar: fullParticipant.user?.personalInfo?.photoUrl || fullParticipant.user?.upload?.filePath || undefined,
                 initials: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                   fullParticipant.user?.userName?.[0] || '?',
@@ -406,12 +403,6 @@ const OpenPlayDetailPage: React.FC = () => {
         return a.name.localeCompare(b.name);
       });
       
-      console.log('readyList (priority sorted)', sortedReady.map(p => ({ 
-        id: p.id, 
-        name: p.name, 
-        updatedPlayerStatusAt: p.updatedPlayerStatusAt,
-        priority: p.updatedPlayerStatusAt ? new Date(p.updatedPlayerStatusAt).toLocaleString() : 'No timestamp'
-      })));
       return sortedReady;
     },
     [participants, inAnyTeam]

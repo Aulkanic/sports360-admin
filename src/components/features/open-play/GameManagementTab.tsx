@@ -169,22 +169,11 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const filteredReadyList = useMemo(() => {
     let filtered = readyList;
 
-    console.log('🔍 SKILL LEVEL FILTER DEBUG:', {
-      selectedSkillLevel,
-      totalReadyList: readyList.length,
-      readyListSkillLevels: readyList.map(p => ({
-        name: p.name,
-        skillLevel: getSkillLevel(p),
-        skillLevelAsLevel: getSkillLevelAsLevel(p)
-      }))
-    });
-
     // Filter by skill level
     if (selectedSkillLevel !== "All") {
       filtered = filtered.filter(participant => {
         const skillLevel = getSkillLevel(participant).toUpperCase();
         const matches = skillLevel === selectedSkillLevel.toUpperCase();
-        console.log(`🔍 FILTERING: ${participant.name} - ${skillLevel} vs ${selectedSkillLevel.toUpperCase()} = ${matches}`);
         return matches;
       });
     }
@@ -208,7 +197,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
 
     return filtered;
   }, [readyList, selectedSkillLevel, searchQuery]);
-
+  console.log(filteredReadyList)
   // Create ready list with queue positions and priority info
   const readyListWithQueuePositions = useMemo(() => {
     return filteredReadyList.map((participant, index) => ({
