@@ -141,11 +141,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
       match.matchStatusId && 
       match.matchStatusId !== 10 // Assuming 10 is COMPLETED status
     );
-    console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
-      gameMatches: gameMatches.length,
-      hasActive,
-      matches: gameMatches.filter(m => m.courtId === courtId)
-    });
     return hasActive;
   };
 
@@ -153,17 +148,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const filteredReadyList = useMemo(() => {
     let filtered = readyList;
 
-    console.log('🔍 SKILL LEVEL FILTER DEBUG:', {
-      selectedSkillLevel,
-      totalReadyList: readyList.length,
-      readyListSkillLevels: readyList.map(p => ({
-        name: p.name,
-        skillLevel: getSkillLevel(p),
-        skillLevelAsLevel: getSkillLevelAsLevel(p)
-      }))
-    });
-
-    // Filter by skill level
     if (selectedSkillLevel !== "All") {
       filtered = filtered.filter(participant => {
         const skillLevel = getSkillLevel(participant).toUpperCase();

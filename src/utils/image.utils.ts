@@ -47,12 +47,12 @@ export const getUserProfileImageUrl = (user: any): string => {
   
   // If the image path starts with '/', it's a relative path from the server root
   if (imagePath.startsWith('/')) {
-    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    const baseUrl = API_CONFIG.IMG_URL.replace('/api', '');
     return `${baseUrl}${imagePath}`;
   }
   
   // If it's just a filename, assume it's in the uploads directory
-  const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+  const baseUrl = API_CONFIG.IMG_URL.replace('/api', '');
   return `${baseUrl}/uploads/${imagePath}`;
 };
 

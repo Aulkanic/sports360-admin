@@ -279,3 +279,16 @@ export const setGameMatchWinner = async (matchId: string, winner: "team1" | "tea
     throw error;
   }
 };
+
+/**
+ * End game match
+ */
+export const endGameMatch = async (matchId: string): Promise<GameMatch> => {
+  try {
+    const response = await apiClient.put(`/game-match/matches/${matchId}/end`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error ending game match:', error);
+    throw error;
+  }
+};

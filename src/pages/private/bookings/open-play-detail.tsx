@@ -13,7 +13,7 @@ import { getStatusString, getSkillLevelAsLevel, getSkillLevel } from "@/componen
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
-import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, setGameMatchWinner, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
+import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, endGameMatch, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
 import { useCourts } from "@/hooks";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
@@ -1187,22 +1187,10 @@ const OpenPlayDetailPage: React.FC = () => {
       // Set loading state
       setIsEndingGame(prev => new Set(prev).add(courtId));
       
-      // First, update game match status to completed
-      const updateData = {
-        matchStatus: "6",
-        gameStatus: "6",
-        endTime: new Date().toISOString()
-      };
-      
-      console.log('📡 CALLING updateGameMatch API with data:', updateData);
-      await updateGameMatch(courtId, updateData);
-      console.log('✅ GAME MATCH STATUS UPDATED SUCCESSFULLY');
-      
-      // Then, set the winner using the dedicated winner API
-      const winnerTeam = winner === "A" ? "team1" : "team2";
-      console.log('🏆 CALLING setGameMatchWinner API with winner:', winnerTeam);
-      await setGameMatchWinner(courtId, winnerTeam);
-      console.log('✅ GAME MATCH WINNER SET SUCCESSFULLY');
+      // Use the new endGameMatch API to end the game
+      console.log('📡 CALLING endGameMatch API for match ID:', courtId);
+      await endGameMatch(courtId);
+      console.log('✅ GAME MATCH ENDED SUCCESSFULLY');
       
       // Update local state
     setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
