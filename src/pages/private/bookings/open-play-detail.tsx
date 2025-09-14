@@ -51,6 +51,7 @@ const OpenPlayDetailPage: React.FC = () => {
   const location = useLocation() as Location & { state?: LocationState };
   const [tab, setTab] = useState<"details" | "game">("details");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<Set<string>>(new Set());
+  const [isRemovingPlayer, setIsRemovingPlayer] = useState(false);
 
   const stateSession = location.state?.session;
   const occurrence = location.state?.occurrence;
@@ -778,6 +779,49 @@ const OpenPlayDetailPage: React.FC = () => {
     }
   }
 
+  // Handle remove player from match
+  const handleRemovePlayer = async (participant: Participant, team: 'A' | 'B', courtId: string) => {
+    setIsRemovingPlayer(true);
+    try {
+      // Find the current match for this court
+      const currentMatch = gameMatches.find(match => match.courtId === courtId);
+      if (!currentMatch) {
+        throw new Error('No active match found for this court');
+      }
+
+      // Remove player from API
+      await removePlayerFromMatch(participant.id);
+
+      // Update local state - remove player from court teams
+      setCourtTeams(prev => {
+        const newTeams = { ...prev };
+        if (newTeams[courtId]) {
+          newTeams[courtId] = {
+            ...newTeams[courtId],
+            [team]: newTeams[courtId][team].filter(p => p.id !== participant.id)
+          };
+        }
+        return newTeams;
+      });
+
+      // Update participants status back to READY
+      setParticipants(prev => 
+        prev.map(p => 
+          p.id === participant.id 
+            ? { ...p, status: { id: 1, description: 'READY' }, playerStatus: { id: 1, description: 'READY' } }
+            : p
+        )
+      );
+
+      console.log(`Player ${participant.name} removed from Team ${team} on court ${courtId}`);
+    } catch (error) {
+      console.error('Error removing player from match:', error);
+      throw error; // Re-throw to show error in UI
+    } finally {
+      setIsRemovingPlayer(false);
+    }
+  };
+
   async function moveToCourtTeam(courtId: string, teamKey: "A" | "B", participant: Participant) {
     // Check if court is closed
     const court = courts.find(c => c.id === courtId);
@@ -1059,8 +1103,8 @@ const OpenPlayDetailPage: React.FC = () => {
       
       // First, update game match status to completed
       const updateData = {
-        matchStatus: "completed",
-        gameStatus: "completed",
+        matchStatus: "6",
+        gameStatus: "6",
         endTime: new Date().toISOString()
       };
       
@@ -1464,6 +1508,12 @@ const OpenPlayDetailPage: React.FC = () => {
       // Process each court and its matches
       Object.entries(matchesByCourt).forEach(([courtId, courtMatches]) => {
         console.log(`Processing court ${courtId} with ${courtMatches.length} matches`);
+        console.log(`Court ${courtId} match statuses:`, courtMatches.map(m => ({
+          id: m.id,
+          matchStatusId: m.matchStatusId,
+          gameStatus: m.gameStatus,
+          matchStatus: m.matchStatus
+        })));
         
         // Find the match with the most participants (or the first one if all are empty)
         const matchWithParticipants = courtMatches.find(match => match.participants && match.participants.length > 0) || courtMatches[0];
@@ -1506,8 +1556,46 @@ const OpenPlayDetailPage: React.FC = () => {
           id: courtId,
           name: (matchWithParticipants as any).court?.courtName || `Court ${courtId}`,
           capacity: (matchWithParticipants as any).court?.capacity || matchWithParticipants.requiredPlayers || 4,
-          status: courtMatches.some(m => m.gameStatus === 'in_progress') ? 'IN-GAME' : 
-                  courtMatches.some(m => m.gameStatus === 'completed') ? 'Closed' : 'Open'
+          status: (() => {
+            const isInGame = courtMatches.some(m => {
+              // Check for INGAME status - could be status ID 5, gameStatus 5, or description 'INGAME'
+              const inGame = m.matchStatusId === 5 || m.gameStatus === 5 || 
+                            m.matchStatusId === '5' || m.gameStatus === '5' ||
+                            m.gameStatus?.toLowerCase() === 'ingame' || 
+                            m.gameStatus?.toLowerCase() === 'in_progress';
+              if (inGame) {
+                console.log(`Court ${courtId} is IN-GAME based on match:`, {
+                  id: m.id,
+                  matchStatusId: m.matchStatusId,
+                  gameStatus: m.gameStatus
+                });
+              }
+              return inGame;
+            });
+            
+            if (isInGame) return 'IN-GAME';
+            
+            const isCompleted = courtMatches.some(m => {
+              // Check for completed status - could be status ID 6, gameStatus 6, or description 'ENDED'/'COMPLETED'
+              const completed = m.matchStatusId === 6 || m.gameStatus === 6 || 
+                              m.matchStatusId === '6' || m.gameStatus === '6' ||
+                              m.gameStatus?.toLowerCase() === 'ended' || 
+                              m.gameStatus?.toLowerCase() === 'completed';
+              if (completed) {
+                console.log(`Court ${courtId} is Closed based on match:`, {
+                  id: m.id,
+                  matchStatusId: m.matchStatusId,
+                  gameStatus: m.gameStatus
+                });
+              }
+              return completed;
+            });
+            
+            if (isCompleted) return 'Closed';
+            
+            console.log(`Court ${courtId} is Open - no active or completed matches found`);
+            return 'Open';
+          })()
         };
         newCourts.push(court);
         
@@ -1877,6 +1965,8 @@ const OpenPlayDetailPage: React.FC = () => {
           canEndGame={canEndGame}
           canCloseCourt={canCloseCourt}
           isLoadingGameMatches={isLoadingGameMatches}
+          onRemovePlayer={handleRemovePlayer}
+          isRemovingPlayer={isRemovingPlayer}
         />
       )}
 

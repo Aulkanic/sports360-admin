@@ -6,6 +6,7 @@ import CourtMatchmakingCard from "@/components/features/open-play/components/cou
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
 import AddCourtModal from "@/components/features/open-play/AddCourtModal";
+import RemovePlayerDialog from "@/components/features/open-play/components/RemovePlayerDialog";
 import type { Court, Match, Participant, Level } from "@/components/features/open-play/types";
 import { getSkillLevel, getSkillLevelAsLevel } from "@/components/features/open-play/types";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,8 @@ interface GameManagementTabProps {
   isLoadingGameMatches?: boolean;
   isStartingGame?: Set<string>;
   isEndingGame?: Set<string>;
+  onRemovePlayer?: (participant: Participant, team: 'A' | 'B', courtId: string) => Promise<void>;
+  isRemovingPlayer?: boolean;
 }
 
 const GameManagementTab: React.FC<GameManagementTabProps> = ({
@@ -86,6 +89,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   isAddingPlayersToMatch = new Set(),
   isStartingGame = new Set(),
   isEndingGame = new Set(),
+  onRemovePlayer,
+  isRemovingPlayer = false,
 }) => {
   console.log(courtTeams)
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
@@ -93,8 +98,42 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<Level | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Remove player dialog state
+  const [showRemovePlayerDialog, setShowRemovePlayerDialog] = useState(false);
+  const [playerToRemove, setPlayerToRemove] = useState<{
+    participant: Participant;
+    team: 'A' | 'B';
+    courtId: string;
+  } | null>(null);
+  
   // Get all courts from the court management system
   const { items: allCourts, isLoading: isLoadingAllCourts } = useCourts();
+
+  // Handle remove player
+  const handleRemovePlayer = (participant: Participant, team: 'A' | 'B', courtId: string) => {
+    setPlayerToRemove({ participant, team, courtId });
+    setShowRemovePlayerDialog(true);
+  };
+
+  // Confirm remove player
+  const handleConfirmRemovePlayer = async () => {
+    if (!playerToRemove || !onRemovePlayer) return;
+    
+    try {
+      await onRemovePlayer(playerToRemove.participant, playerToRemove.team, playerToRemove.courtId);
+      setShowRemovePlayerDialog(false);
+      setPlayerToRemove(null);
+    } catch (error) {
+      console.error('Error removing player:', error);
+      // Keep dialog open on error
+    }
+  };
+
+  // Cancel remove player
+  const handleCancelRemovePlayer = () => {
+    setShowRemovePlayerDialog(false);
+    setPlayerToRemove(null);
+  };
 
   // Helper function to check if a court has any active matches
   const courtHasActiveMatch = (courtId: string): boolean => {
@@ -447,6 +486,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                        isAddingPlayers={isAddingPlayersToMatch.size > 0}
                        hasMatch={hasMatch}
                        hasActiveMatch={hasActiveMatch}
+                       onRemovePlayer={(participant, team) => handleRemovePlayer(participant, team, court.id)}
+                       showRemoveButtons={hasMatch || hasActiveMatch}
                      />
                             <div className="flex flex-col items-center gap-2 mt-2">
                               <p className="text-[11px] text-muted-foreground text-center">
@@ -656,6 +697,16 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
         }}
         onAddCourt={onAddCourt}
         selectedCourt={selectedCourt}
+      />
+      
+      {/* Remove Player Dialog */}
+      <RemovePlayerDialog
+        isOpen={showRemovePlayerDialog}
+        onClose={handleCancelRemovePlayer}
+        onConfirm={handleConfirmRemovePlayer}
+        participant={playerToRemove?.participant || null}
+        team={playerToRemove?.team || null}
+        isLoading={isRemovingPlayer}
       />
     </DndContext>
   );

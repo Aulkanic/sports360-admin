@@ -302,7 +302,9 @@ const MatchupScreenMulti: React.FC = () => {
                   `${participant.user.personalInfo.firstName?.[0] || ''}${participant.user.personalInfo.lastName?.[0] || ''}` :
                   participant.user?.userName?.[0] || 'U',
                 level: (participant.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-                status: match.gameStatus === 'in_progress' ? 'In-Game' : 'Ready' as any
+                status: (match.gameStatus === 5 || match.gameStatus === '5' || 
+                    match.gameStatus?.toLowerCase() === 'ingame' || 
+                    match.gameStatus?.toLowerCase() === 'in_progress') ? 'In-Game' : 'Ready' as any
               };
               
               console.log(`🎯 CREATED PLAYER OBJECT:`, {
@@ -336,8 +338,12 @@ const MatchupScreenMulti: React.FC = () => {
             id: court.id,
             name: court.courtName || `Court ${court.id}`,
             capacity: court.capacity || 4,
-            status: match.gameStatus === 'in_progress' ? 'In-Game' : 
-                    match.gameStatus === 'completed' ? 'Closed' : 'Open',
+            status: (match.gameStatus === 5 || match.gameStatus === '5' || 
+                    match.gameStatus?.toLowerCase() === 'ingame' || 
+                    match.gameStatus?.toLowerCase() === 'in_progress') ? 'In-Game' : 
+                    (match.gameStatus === 6 || match.gameStatus === '6' || 
+                    match.gameStatus?.toLowerCase() === 'ended' || 
+                    match.gameStatus?.toLowerCase() === 'completed') ? 'Closed' : 'Open',
             teamA,
             teamB,
             teamAName: match.team1Name,

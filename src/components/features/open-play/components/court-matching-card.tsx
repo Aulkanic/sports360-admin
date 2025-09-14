@@ -23,7 +23,9 @@ const CourtMatchmakingCard: React.FC<{
   isEndingGame?: boolean;
   hasMatch?: boolean;
   hasActiveMatch?: boolean; // Add this prop
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false }) => {
+  onRemovePlayer?: (participant: Participant, team: 'A' | 'B') => void;
+  showRemoveButtons?: boolean;
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, onRemovePlayer, showRemoveButtons = false }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 54;
   const nvz = 7;
@@ -103,7 +105,15 @@ const CourtMatchmakingCard: React.FC<{
               className={`h-full backdrop-blur-[1px] border-white/40 ${!(hasMatch || hasActiveMatch) ? 'opacity-50 pointer-events-none' : ''}`}
               disabled={!(hasMatch || hasActiveMatch)}
             >
-              {teamA.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
+              {teamA.map((p) => (
+                <MatchCardPlayer 
+                  key={p.id} 
+                  participant={p} 
+                  onRemove={onRemovePlayer ? (participant) => onRemovePlayer(participant, 'A') : undefined}
+                  showRemoveButton={showRemoveButtons}
+                  isDraggable={true}
+                />
+              ))}
             </MatchCardPanel>
           </div>
 
@@ -114,7 +124,15 @@ const CourtMatchmakingCard: React.FC<{
               className={`h-full backdrop-blur-[1px] border-white/40 ${!(hasMatch || hasActiveMatch) ? 'opacity-50 pointer-events-none' : ''}`}
               disabled={!(hasMatch || hasActiveMatch)}
             >
-              {teamB.map((p) => <MatchCardPlayer key={p.id} participant={p} />)}
+              {teamB.map((p) => (
+                <MatchCardPlayer 
+                  key={p.id} 
+                  participant={p} 
+                  onRemove={onRemovePlayer ? (participant) => onRemovePlayer(participant, 'B') : undefined}
+                  showRemoveButton={showRemoveButtons}
+                  isDraggable={true}
+                />
+              ))}
             </MatchCardPanel>
           </div>
         </div>
