@@ -30,6 +30,7 @@ import {
   Clock,
   MapPin,
 } from "lucide-react";
+import { API_CONFIG } from "@/config/api";
 
 /** Safe deep-clone that works on simple JSONy objects */
 function deepClone<T>(obj: T): T {
@@ -247,7 +248,7 @@ const OpenPlayDetailPage: React.FC = () => {
                 status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || fullParticipant.status?.description || 'READY',
                 playerStatus: fullParticipant.playerStatus,
                 skillLevel: getSkillLevel(fullParticipant),
-                avatar: fullParticipant.user?.personalInfo?.photoUrl || fullParticipant.user?.upload?.filePath || undefined,
+                avatar: `${API_CONFIG.IMG_URL}/uploads/${fullParticipant.user?.personalInfo?.upload?.fileName}` || fullParticipant.user?.personalInfo?.photoUrl || fullParticipant.user?.upload?.filePath || undefined,
                 initials: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                   fullParticipant.user?.userName?.[0] || '?',
