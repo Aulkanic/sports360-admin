@@ -125,7 +125,9 @@ export interface AddPlayersToMatchRequest {
 }
 
 export interface UpdatePlayerStatusRequest {
-  status: string;
+  playerStatus: string;
+  teamNumber?: number;
+  position?: string;
 }
 
 // ==============================

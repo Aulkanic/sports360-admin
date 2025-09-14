@@ -12,7 +12,7 @@ import { getSkillLevel, getSkillLevelAsLevel } from "@/components/features/open-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trophy, Plus, Users, Filter, Search, X, Star } from "lucide-react";
+import { Trophy, Users, Filter, Search, X, Star } from "lucide-react";
 import { useCourts } from "@/hooks";
 
 interface GameManagementTabProps {
@@ -499,6 +499,15 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                        onRename={() => onRenameCourt(court.id)}
                        onToggleOpen={() => onToggleCourtOpen(court.id)}
                        onRandomPick={() => onMatchMakeCourt(court.id)}
+                       onCreateMatch={() => {
+                         console.log('🎯 CREATE MATCH BUTTON CLICKED for court:', court);
+                         console.log('🎯 Court ID type:', typeof court.id, 'Value:', court.id);
+                         console.log('🎯 Setting selectedCourt:', court);
+                         console.log('🎯 Setting showAddCourtModal to true');
+                         setSelectedCourt(court);
+                         setShowAddCourtModal(true);
+                         console.log('🎯 Modal state should be updated');
+                       }}
                        canStartGame={canStartGame(court.id)}
                        isStartingGame={isStartingGame.has(court.id)}
                        isEndingGame={isEndingGame.has(court.id)}
@@ -514,29 +523,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                               <p className="text-[11px] text-muted-foreground text-center">
                                 Team size: {perTeam} • {(hasMatch || hasActiveMatch) ? 'Drag players onto A/B or use "Matchmake This Court"' : 'Create a match first to drag players'}
                               </p>
-                              {!hasMatch && !hasActiveMatch && (
-                                <div className="text-center py-2">
-                                  <p className="text-[10px] text-orange-600 text-center mb-2">
-                                    No match on this court
-                                  </p>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      console.log('🎯 CREATE MATCH BUTTON CLICKED for court:', court);
-                                      console.log('🎯 Court ID type:', typeof court.id, 'Value:', court.id);
-                                      console.log('🎯 Setting selectedCourt:', court);
-                                      console.log('🎯 Setting showAddCourtModal to true');
-                                      setSelectedCourt(court);
-                                      setShowAddCourtModal(true);
-                                      console.log('🎯 Modal state should be updated');
-                                    }}
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-7 px-3"
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Create Match
-                                  </Button>
-                                </div>
-                              )}
                               {hasMatch && (
                                 <>
                                   <p className="text-[10px] text-green-600 text-center">

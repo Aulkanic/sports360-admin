@@ -4,6 +4,7 @@ import React from "react";
 import type { Court, Participant } from "../types";
 import MatchCardPanel from "./match-card-panel";
 import MatchCardPlayer from "./match-card-player";
+import { Plus } from "lucide-react";
 
 const CourtMatchmakingCard: React.FC<{
   court: Court;
@@ -15,6 +16,7 @@ const CourtMatchmakingCard: React.FC<{
   onRename: () => void;
   onToggleOpen: () => void;
   onRandomPick: () => void;
+  onCreateMatch?: () => void;
   canStartGame: boolean;
   canEndGame: boolean;
   canCloseCourt: boolean;
@@ -25,7 +27,7 @@ const CourtMatchmakingCard: React.FC<{
   hasActiveMatch?: boolean; // Add this prop
   onRemovePlayer?: (participant: Participant, team: 'A' | 'B') => void;
   showRemoveButtons?: boolean;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, onRemovePlayer, showRemoveButtons = false }) => {
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, onCreateMatch, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, onRemovePlayer, showRemoveButtons = false }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 54;
   const nvz = 7;
@@ -139,6 +141,17 @@ const CourtMatchmakingCard: React.FC<{
       </div>
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3 pt-3">
+        {!hasMatch && !hasActiveMatch && onCreateMatch && (
+          <Button 
+            size="sm" 
+            onClick={onCreateMatch}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            title="Create a new match for this court"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Create Match
+          </Button>
+        )}
         <Button 
           size="sm" 
           variant="outline" 

@@ -13,7 +13,7 @@ import { getStatusString, getSkillLevelAsLevel, getSkillLevel } from "@/componen
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { getOpenPlaySessionById, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
-import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, setGameMatchWinner, type GameMatch } from "@/services/game-match.service";
+import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, setGameMatchWinner, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
 import { useCourts } from "@/hooks";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
@@ -517,6 +517,22 @@ const OpenPlayDetailPage: React.FC = () => {
         
         console.log('Created participant data:', participantData);
         
+        // Check if participant is on bench (playerStatusId: 16 = BENCH)
+        const playerStatusId = (participant as any).playerStatusId;
+        const isOnBench = playerStatusId === 16;
+        
+        console.log(`🔍 Processing participant ${participantData.name} (ID: ${participantId}):`, {
+          playerStatusId,
+          isOnBench,
+          teamNumber: (participant as any).teamNumber,
+          position: (participant as any).position
+        });
+        
+        if (isOnBench) {
+          console.log(`⏸️ Skipping participant ${participantData.name} (ID: ${participantId}) - on bench (status: ${playerStatusId})`);
+          return; // Skip this participant
+        }
+        
         // Assign to team based on teamNumber (1 = Team A, 2 = Team B)
         const teamNumber = (participant as any).teamNumber;
         console.log(`Assigning participant ${participantData.name} (ID: ${participantId}) to team ${teamNumber}`);
@@ -896,15 +912,42 @@ const OpenPlayDetailPage: React.FC = () => {
       console.log(`Player assignment API response:`, assignmentResult);
       console.log(`Player ${participant.name} assigned to team ${teamKey} (${teamNumber}) in match ${matchId} (court ${courtId})`);
       
-      // Add a small delay to ensure server has processed the assignment
+      // Update player status from BENCH to active (if they were on bench)
+      try {
+        console.log(`🔄 Updating player status for ${participant.name} (ID: ${participant.id}) from BENCH to active`);
+        console.log(`🔄 Status update payload:`, { 
+          playerStatus: 'ready',
+          teamNumber: teamNumber,
+          position: 'active'
+        });
+        
+        const statusUpdateResult = await updatePlayerStatus(participant.id, { 
+          playerStatus: 'ready',
+          teamNumber: teamNumber,
+          position: 'active'
+        });
+        
+        console.log(`✅ Player status updated successfully for ${participant.name}:`, statusUpdateResult);
+      } catch (statusError) {
+        console.error(`❌ Failed to update player status for ${participant.name}:`, statusError);
+        console.error(`❌ Status error details:`, {
+          participantId: participant.id,
+          participantName: participant.name,
+          error: statusError
+        });
+        // Don't fail the entire operation if status update fails
+      }
+      
+      // Add a longer delay to ensure server has processed both assignment and status update
       setTimeout(async () => {
         try {
-          console.log('Fetching latest data from server after team assignment...');
+          console.log('🔄 Fetching latest data from server after team assignment and status update...');
           await fetchGameMatches();
+          console.log('✅ Data refresh completed after team assignment');
         } catch (error) {
-          console.error('Error fetching latest data after team assignment:', error);
+          console.error('❌ Error fetching latest data after team assignment:', error);
         }
-      }, 1000); // 1 second delay
+      }, 2000); // 2 second delay to ensure both operations complete
     } catch (error) {
       console.error('Error in player assignment process:', error);
       // Revert the local state change on API error
