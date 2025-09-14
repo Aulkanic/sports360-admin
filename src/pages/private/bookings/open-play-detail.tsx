@@ -573,7 +573,9 @@ const OpenPlayDetailPage: React.FC = () => {
             // For dummy data, use the session data directly
             setRawSessionData(sessionById);
             if (sessionById.occurrences && sessionById.occurrences.length > 0) {
-              setCurrentOccurrenceId(sessionById.occurrences[0].id);
+              // Use the URL parameter id to find the correct occurrence, fallback to first occurrence
+              const targetOccurrence = sessionById.occurrences.find((occ: any) => occ.id === id) || sessionById.occurrences[0];
+              setCurrentOccurrenceId(targetOccurrence.id);
             }
             return;
           }
@@ -581,7 +583,9 @@ const OpenPlayDetailPage: React.FC = () => {
           const sessionData = await getOpenPlaySessionById(id);
           setRawSessionData(sessionData);
           if (sessionData.occurrences && sessionData.occurrences.length > 0) {
-            setCurrentOccurrenceId(sessionData.occurrences[0].id);
+            // Use the URL parameter id to find the correct occurrence, fallback to first occurrence
+            const targetOccurrence = sessionData.occurrences.find((occ: any) => occ.id === id) || sessionData.occurrences[0];
+            setCurrentOccurrenceId(targetOccurrence.id);
           }
         } catch (error) {
           console.error('Error fetching initial session data:', error);
@@ -1747,9 +1751,11 @@ const OpenPlayDetailPage: React.FC = () => {
       setRawSessionData(updatedSessionData);
       console.log('Raw session data from API:', updatedSessionData);
       
-      // Set the current occurrence ID from the first occurrence if not already set
+      // Set the current occurrence ID from the URL parameter id if not already set
       if (!currentOccurrenceId && updatedSessionData.occurrences && updatedSessionData.occurrences.length > 0) {
-        setCurrentOccurrenceId(updatedSessionData.occurrences[0].id);
+        // Use the URL parameter id to find the correct occurrence, fallback to first occurrence
+        const targetOccurrence = updatedSessionData.occurrences.find((occ: any) => occ.id === id) || updatedSessionData.occurrences[0];
+        setCurrentOccurrenceId(targetOccurrence.id);
       }
       
       // If we have occurrence-specific data, find the matching occurrence
