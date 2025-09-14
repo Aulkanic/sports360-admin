@@ -50,6 +50,7 @@ const OpenPlayDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation() as Location & { state?: LocationState };
+  console.log(location)
   const [tab, setTab] = useState<"details" | "game">("details");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<Set<string>>(new Set());
   const [isRemovingPlayer, setIsRemovingPlayer] = useState(false);
@@ -123,8 +124,22 @@ const OpenPlayDetailPage: React.FC = () => {
 
   // Helper function to find matchId for a given courtId
   const findMatchIdByCourtId = (courtId: string): string | null => {
-    const match = gameMatches.find(match => match.courtId === courtId);
-    return match ? match.id : null;
+    console.log('🔍 Finding match for court:', courtId);
+    console.log('🔍 Available game matches:', gameMatches.map(m => ({ id: m.id, courtId: m.courtId, status: m.matchStatusId })));
+    
+    const match = gameMatches.find(match => {
+      const matches = match.courtId === courtId;
+      console.log(`🔍 Checking match ${match.id}: courtId ${match.courtId} === ${courtId} = ${matches}`);
+      return matches;
+    });
+    
+    if (match) {
+      console.log('✅ Found match:', { id: match.id, courtId: match.courtId, status: match.matchStatusId });
+      return match.id;
+    } else {
+      console.log('❌ No match found for court:', courtId);
+      return null;
+    }
   };
 
   // Helper function to map player status from description
@@ -847,7 +862,14 @@ const OpenPlayDetailPage: React.FC = () => {
   };
 
   async function moveToCourtTeam(courtId: string, teamKey: "A" | "B", participant: Participant) {
+    // Check if participant is already being processed
+    if (isAddingPlayersToMatch.has(participant.id)) {
+      console.log(`Player ${participant.name} is already being processed`);
+      return;
+    }
+
     // Check if court is closed
+    console.log(participant)
     const court = courts.find(c => c.id === courtId);
     if (court?.status === "Closed") {
       alert("Cannot add players to a closed court");
@@ -869,98 +891,112 @@ const OpenPlayDetailPage: React.FC = () => {
       await removePlayerFromMatchAPI(participant.id, currentMatchId);
     }
 
-    setCourtTeams((prev) => {
-      const next = deepClone(prev);
-      if (!next[courtId]) next[courtId] = { A: [], B: [] };
-
-      // Ensure participant is not on any team on any court
-      for (const k of Object.keys(next)) {
-        next[k].A = next[k].A.filter((p) => p.id !== participant.id);
-        next[k].B = next[k].B.filter((p) => p.id !== participant.id);
-      }
-
-      const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
-      if (next[courtId][teamKey].length >= perTeam) return prev;
-
-      next[courtId][teamKey].push({ ...participant, status: "IN-GAME" });
-      return next;
-    });
-
-    // Call API to add player to match
+    // Set loading state immediately
     setIsAddingPlayersToMatch(prev => new Set(prev).add(participant.id));
+
+    // Store original state for rollback
+    const originalCourtTeams = deepClone(courtTeams);
+
     try {
       // Check if this is dummy data
       if (isDummySession) {
         console.log('Dummy session detected, skipping API call for player assignment');
-        setIsAddingPlayersToMatch(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(participant.id);
-          return newSet;
+        // Update local state for dummy data
+        setCourtTeams((prev) => {
+          const next = deepClone(prev);
+          if (!next[courtId]) next[courtId] = { A: [], B: [] };
+
+          // Ensure participant is not on any team on any court
+          for (const k of Object.keys(next)) {
+            next[k].A = next[k].A.filter((p) => p.id !== participant.id);
+            next[k].B = next[k].B.filter((p) => p.id !== participant.id);
+          }
+
+          const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
+          if (next[courtId][teamKey].length >= perTeam) return prev;
+
+          next[courtId][teamKey].push({ ...participant, status: "IN-GAME" });
+          return next;
         });
         return;
       }
 
       // Find the matchId for this court
-      const matchId = findMatchIdByCourtId(courtId);
+      let matchId = findMatchIdByCourtId(courtId);
+      
+      // If no match found, try to refresh game matches and try again
       if (!matchId) {
-        console.error(`No match found for court ${courtId}`);
-        alert('No active match found for this court');
+        console.log('No match found, refreshing game matches...');
+        try {
+          await fetchGameMatches();
+          matchId = findMatchIdByCourtId(courtId);
+        } catch (refreshError) {
+          console.error('Failed to refresh game matches:', refreshError);
+        }
+      }
+      
+      if (!matchId) {
+        console.error(`No match found for court ${courtId} after refresh`);
+        alert('No active match found for this court. Please create a match first.');
         return;
       }
 
       // Convert team key to team number (A = 1, B = 2)
       const teamNumber = teamKey === 'A' ? 1 : 2;
       
-      // Assign player to team
+      // Assign player to team via API first
       console.log(`Assigning player ${participant.name} (ID: ${participant.id}) to team ${teamKey} (${teamNumber}) in match ${matchId} (court ${courtId})`);
       const assignmentResult = await assignPlayerToTeam(matchId, participant.id, teamNumber);
       console.log(`Player assignment API response:`, assignmentResult);
-      console.log(`Player ${participant.name} assigned to team ${teamKey} (${teamNumber}) in match ${matchId} (court ${courtId})`);
+      
+      // Only update local state after successful API call
+      setCourtTeams((prev) => {
+        const next = deepClone(prev);
+        if (!next[courtId]) next[courtId] = { A: [], B: [] };
+
+        // Ensure participant is not on any team on any court
+        for (const k of Object.keys(next)) {
+          next[k].A = next[k].A.filter((p) => p.id !== participant.id);
+          next[k].B = next[k].B.filter((p) => p.id !== participant.id);
+        }
+
+        const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
+        if (next[courtId][teamKey].length >= perTeam) return prev;
+
+        next[courtId][teamKey].push({ ...participant, status: "IN-GAME" });
+        return next;
+      });
       
       // Update player status from BENCH to active (if they were on bench)
       try {
         console.log(`🔄 Updating player status for ${participant.name} (ID: ${participant.id}) from BENCH to active`);
-        console.log(`🔄 Status update payload:`, { 
-          playerStatus: 'ready',
-          teamNumber: teamNumber,
-          position: 'active'
-        });
-        
         const statusUpdateResult = await updatePlayerStatus(participant.id, { 
           playerStatus: 'ready',
           teamNumber: teamNumber,
           position: 'active'
         });
-        
         console.log(`✅ Player status updated successfully for ${participant.name}:`, statusUpdateResult);
       } catch (statusError) {
         console.error(`❌ Failed to update player status for ${participant.name}:`, statusError);
-        console.error(`❌ Status error details:`, {
-          participantId: participant.id,
-          participantName: participant.name,
-          error: statusError
-        });
         // Don't fail the entire operation if status update fails
       }
       
-      // Add a longer delay to ensure server has processed both assignment and status update
+      // Refresh data after successful assignment
       setTimeout(async () => {
         try {
-          console.log('🔄 Fetching latest data from server after team assignment and status update...');
+          console.log('🔄 Fetching latest data from server after team assignment...');
           await fetchGameMatches();
           console.log('✅ Data refresh completed after team assignment');
         } catch (error) {
           console.error('❌ Error fetching latest data after team assignment:', error);
         }
-      }, 2000); // 2 second delay to ensure both operations complete
+      }, 1000); // Reduced delay since we're doing API first
+      
     } catch (error) {
       console.error('Error in player assignment process:', error);
-      // Revert the local state change on API error
-      setCourtTeams((prev) => {
-        const next = deepClone(prev);
-        next[courtId][teamKey] = next[courtId][teamKey].filter((p) => p.id !== participant.id);
-        return next;
-      });
+      
+      // Revert to original state on API error
+      setCourtTeams(originalCourtTeams);
       
       // Enhanced error handling
       let errorMessage = 'Failed to assign player to team. Please try again.';
@@ -996,6 +1032,12 @@ const OpenPlayDetailPage: React.FC = () => {
       return;
     }
 
+    // Check if participant is already being processed
+    if (isAddingPlayersToMatch.has(participant.id)) {
+      console.log(`Player ${participant.name} is already being processed, ignoring drag operation`);
+      return;
+    }
+
     console.log('Drag end - participant:', {
       id: participant.id,
       name: participant.name,
@@ -1007,44 +1049,66 @@ const OpenPlayDetailPage: React.FC = () => {
     // Check if participant is currently in a match
     const currentMatchId = findParticipantMatchId(participant.id);
 
-    // Queues - when dragging from match to queue, remove from match first
-    if (overId === "ready") {
-      if (currentMatchId) {
-        await removePlayerFromMatchAPI(participant.id, currentMatchId);
+    try {
+      // Queues - when dragging from match to queue, remove from match first
+      if (overId === "ready") {
+        if (currentMatchId) {
+          await removePlayerFromMatchAPI(participant.id, currentMatchId);
+        }
+        removeFromAllTeams(participant.id);
+        await updateStatus(participant.id, "READY");
+        return;
       }
-      removeFromAllTeams(participant.id);
-      await updateStatus(participant.id, "READY");
-      return;
-    }
-    if (overId === "resting") {
-      if (currentMatchId) {
-        await removePlayerFromMatchAPI(participant.id, currentMatchId);
+      if (overId === "resting") {
+        if (currentMatchId) {
+          await removePlayerFromMatchAPI(participant.id, currentMatchId);
+        }
+        removeFromAllTeams(participant.id);
+        await updateStatus(participant.id, "RESTING");
+        return;
       }
-      removeFromAllTeams(participant.id);
-      await updateStatus(participant.id, "RESTING");
-      return;
-    }
-    if (overId === "reserve") {
-      if (currentMatchId) {
-        await removePlayerFromMatchAPI(participant.id, currentMatchId);
+      if (overId === "reserve") {
+        if (currentMatchId) {
+          await removePlayerFromMatchAPI(participant.id, currentMatchId);
+        }
+        removeFromAllTeams(participant.id);
+        await updateStatus(participant.id, "RESERVE");
+        return;
       }
-      removeFromAllTeams(participant.id);
-      await updateStatus(participant.id, "RESERVE");
-      return;
-    }
-    if (overId === "waitlist") {
-      if (currentMatchId) {
-        await removePlayerFromMatchAPI(participant.id, currentMatchId);
+      if (overId === "waitlist") {
+        if (currentMatchId) {
+          await removePlayerFromMatchAPI(participant.id, currentMatchId);
+        }
+        removeFromAllTeams(participant.id);
+        await updateStatus(participant.id, "WAITLIST");
+        return;
       }
-      removeFromAllTeams(participant.id);
-      await updateStatus(participant.id, "WAITLIST");
-      return;
-    }
 
-    // Court targets: "court-1:A" | "court-1:B"
-    const [courtId, teamKey] = overId.split(":");
-    if (courtId && (teamKey === "A" || teamKey === "B")) {
-      await moveToCourtTeam(courtId, teamKey, participant);
+      // Court targets: "court-1:A" | "court-1:B"
+      const [courtId, teamKey] = overId.split(":");
+      if (courtId && (teamKey === "A" || teamKey === "B")) {
+        // Validate court exists
+        const court = courts.find(c => c.id === courtId);
+        if (!court) {
+          console.error(`Court ${courtId} not found`);
+          alert('Court not found. Please refresh and try again.');
+          return;
+        }
+
+        // Validate team key
+        if (teamKey !== "A" && teamKey !== "B") {
+          console.error(`Invalid team key: ${teamKey}`);
+          return;
+        }
+
+        await moveToCourtTeam(courtId, teamKey, participant);
+      } else {
+        console.log('Invalid drop target:', overId);
+      }
+    } catch (error) {
+      console.error('Error in drag and drop operation:', error);
+      // Show user-friendly error message
+      alert('Failed to move player. Please try again.');
     }
   }
 
@@ -1139,7 +1203,17 @@ const OpenPlayDetailPage: React.FC = () => {
 
   async function startGame(courtId: string) {
     try {
-      console.log('🚀 STARTING GAME for court/match ID:', courtId);
+      console.log('🚀 STARTING GAME for court ID:', courtId);
+      
+      // Find the match ID for this court
+      const matchId = findMatchIdByCourtId(courtId);
+      if (!matchId) {
+        console.error(`No match found for court ${courtId}`);
+        alert('No active match found for this court. Please create a match first.');
+        return;
+      }
+      
+      console.log('🚀 Using match ID:', matchId);
       
       // Set loading state
       setIsStartingGame(prev => new Set(prev).add(courtId));
@@ -1151,14 +1225,14 @@ const OpenPlayDetailPage: React.FC = () => {
         startTime: new Date().toISOString()
       };
       
-      console.log('📡 CALLING updateGameMatch API with data:', updateData);
-      await updateGameMatch(courtId, updateData);
+      console.log('📡 CALLING updateGameMatch API with match ID:', matchId, 'and data:', updateData);
+      await updateGameMatch(matchId, updateData);
       console.log('✅ GAME MATCH UPDATED SUCCESSFULLY');
       
       // Update local state
-    setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "IN-GAME" } : c)));
-    const t = courtTeams[courtId] ?? { A: [], B: [] };
-    await Promise.all([...t.A, ...t.B].map((p) => updateStatus(p.id, "IN-GAME")));
+      setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "IN-GAME" } : c)));
+      const t = courtTeams[courtId] ?? { A: [], B: [] };
+      await Promise.all([...t.A, ...t.B].map((p) => updateStatus(p.id, "IN-GAME")));
       
       console.log('✅ GAME STARTED SUCCESSFULLY');
     } catch (error) {
@@ -1182,14 +1256,24 @@ const OpenPlayDetailPage: React.FC = () => {
 
   async function confirmGameEnd(courtId: string, winner: "A" | "B", score?: string) {
     try {
-      console.log('🏁 ENDING GAME for court/match ID:', courtId, 'Winner:', winner, 'Score:', score);
+      console.log('🏁 ENDING GAME for court ID:', courtId, 'Winner:', winner, 'Score:', score);
+      
+      // Find the match ID for this court
+      const matchId = findMatchIdByCourtId(courtId);
+      if (!matchId) {
+        console.error(`No match found for court ${courtId}`);
+        alert('No active match found for this court. Cannot end game.');
+        return;
+      }
+      
+      console.log('🏁 Using match ID:', matchId);
       
       // Set loading state
       setIsEndingGame(prev => new Set(prev).add(courtId));
       
       // Use the new endGameMatch API to end the game
-      console.log('📡 CALLING endGameMatch API for match ID:', courtId);
-      await endGameMatch(courtId);
+      console.log('📡 CALLING endGameMatch API for match ID:', matchId);
+      await endGameMatch(matchId);
       console.log('✅ GAME MATCH ENDED SUCCESSFULLY');
       
       // Update local state
@@ -1398,6 +1482,14 @@ const OpenPlayDetailPage: React.FC = () => {
     // Allow opening matchup screen even if no players are assigned
     // Courts without players will show WaitingMatchCard
 
+    // Find the match ID for this court
+    const matchId = findMatchIdByCourtId(courtId);
+    if (!matchId) {
+      console.error(`No match found for court ${courtId}`);
+      alert('No active match found for this court. Please create a match first.');
+      return;
+    }
+
     // Save the active court and occurrence to localStorage
     localStorage.setItem('activeCourtId', courtId);
     if (currentOccurrenceId) {
@@ -1449,14 +1541,14 @@ const OpenPlayDetailPage: React.FC = () => {
     // Check if matchup window is already open
     const existingWindow = window.open('', 'matchupWindow');
     if (existingWindow && !existingWindow.closed) {
-      // Update existing window with occurrence ID
-      existingWindow.location.href = `/matchup-multi/${courtId}?occurrenceId=${occurrenceId}`;
+      // Update existing window with match ID instead of court ID
+      existingWindow.location.href = `/matchup-multi/${matchId}?occurrenceId=${occurrenceId}`;
       existingWindow.focus();
       // Send updated data
       existingWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
     } else {
-      // Open new Multi-Court TV Display window with occurrence ID
-      const newWindow = window.open(`/matchup-multi/${courtId}?occurrenceId=${occurrenceId}`, 'matchupWindow', 'width=1920,height=1080');
+      // Open new Multi-Court TV Display window with match ID instead of court ID
+      const newWindow = window.open(`/matchup-multi/${matchId}?occurrenceId=${occurrenceId}`, 'matchupWindow', 'width=1920,height=1080');
       
       // Pass the matchup data to the new window
       if (newWindow) {

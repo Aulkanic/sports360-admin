@@ -141,6 +141,11 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
       match.matchStatusId && 
       match.matchStatusId !== 10 // Assuming 10 is COMPLETED status
     );
+    console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
+      gameMatches: gameMatches.length,
+      hasActive,
+      matches: gameMatches.filter(m => m.courtId === courtId)
+    });
     return hasActive;
   };
 
@@ -148,6 +153,17 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const filteredReadyList = useMemo(() => {
     let filtered = readyList;
 
+    console.log('🔍 SKILL LEVEL FILTER DEBUG:', {
+      selectedSkillLevel,
+      totalReadyList: readyList.length,
+      readyListSkillLevels: readyList.map(p => ({
+        name: p.name,
+        skillLevel: getSkillLevel(p),
+        skillLevelAsLevel: getSkillLevelAsLevel(p)
+      }))
+    });
+
+    // Filter by skill level
     if (selectedSkillLevel !== "All") {
       filtered = filtered.filter(participant => {
         const skillLevel = getSkillLevel(participant).toUpperCase();
@@ -338,6 +354,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                     showQueueInfo={true}
                     hasPriority={p.hasPriority}
                     priorityTime={p.priorityTime}
+                    isLoading={isAddingPlayersToMatch.has(p.id)}
                   />
                 ))}
                 {readyListWithQueuePositions.length === 0 && (
@@ -359,7 +376,11 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 childrenClassName="grid grid-cols-1"
               >
                 {restingList.map((p) => (
-                  <DraggablePill key={p.id} participant={p} />
+                  <DraggablePill 
+                    key={p.id} 
+                    participant={p} 
+                    isLoading={isAddingPlayersToMatch.has(p.id)}
+                  />
                 ))}
                 {restingList.length === 0 && (
                   <p className="text-xs text-muted-foreground">No players resting</p>
@@ -374,7 +395,11 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 childrenClassName="grid grid-cols-1"
               >
                 {reserveList.map((p) => (
-                  <DraggablePill key={p.id} participant={p} />
+                  <DraggablePill 
+                    key={p.id} 
+                    participant={p} 
+                    isLoading={isAddingPlayersToMatch.has(p.id)}
+                  />
                 ))}
                 {reserveList.length === 0 && (
                   <p className="text-xs text-muted-foreground">No players in reserve</p>
@@ -389,7 +414,11 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 childrenClassName="grid grid-cols-1"
               >
                 {waitlistList.map((p) => (
-                  <DraggablePill key={p.id} participant={p} />
+                  <DraggablePill 
+                    key={p.id} 
+                    participant={p} 
+                    isLoading={isAddingPlayersToMatch.has(p.id)}
+                  />
                 ))}
                 {waitlistList.length === 0 && (
                   <p className="text-xs text-muted-foreground">No players in waitlist</p>
@@ -408,12 +437,16 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        // Open matchup screen with the first court, or any available court
-                        const firstCourt = courts[0];
-                        if (firstCourt) {
-                          onViewMatchupScreen(firstCourt.id);
+                        // Open matchup screen with the first court that has an active match
+                        const courtWithMatch = courts.find(court => {
+                          const hasMatch = courtTeams[court.id] && (courtTeams[court.id].A.length > 0 || courtTeams[court.id].B.length > 0);
+                          return hasMatch;
+                        });
+                        
+                        if (courtWithMatch) {
+                          onViewMatchupScreen(courtWithMatch.id);
                         } else {
-                          alert("No courts available to display");
+                          alert("No courts with active matches available to display");
                         }
                       }}
                       className="bg-primary text-white hover:bg-primary/90"
@@ -459,6 +492,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {displayCourts.map((court, idx) => {
+                      console.log(court)
                       const teams = courtTeams[court.id] ?? { A: [], B: [] };
                       const perTeam = Math.floor(court.capacity / 2);
                       const hasMatch = teams.A.length > 0 || teams.B.length > 0;

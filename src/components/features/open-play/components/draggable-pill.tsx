@@ -4,7 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import React from "react";
 import type { Participant } from "../types";
 import { getStatusString, getSkillLevel } from "../types";
-import { Trophy, Clock, Star } from "lucide-react";
+import { Trophy, Clock, Star, Loader2 } from "lucide-react";
 
 interface DraggablePillProps {
   participant: Participant;
@@ -12,6 +12,7 @@ interface DraggablePillProps {
   showQueueInfo?: boolean;
   hasPriority?: boolean;
   priorityTime?: Date | null;
+  isLoading?: boolean;
 }
 
 const DraggablePill: React.FC<DraggablePillProps> = ({ 
@@ -19,7 +20,8 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
   queuePosition, 
   showQueueInfo = false,
   hasPriority = false,
-  priorityTime = null
+  priorityTime = null,
+  isLoading = false
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `p-${participant.id}`,
@@ -27,7 +29,7 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
   });
 
   const style = {
-    opacity: isDragging ? 0.65 : 1,
+    opacity: isDragging ? 0.65 : (isLoading ? 0.7 : 1),
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } as React.CSSProperties;
   console.log('draggable pill', participant);
@@ -35,9 +37,11 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className="rounded-lg border relative bg-card p-3 flex items-center gap-3 hover:shadow-sm transition"
+      {...(isLoading ? {} : listeners)}
+      {...(isLoading ? {} : attributes)}
+      className={`rounded-lg border relative bg-card p-3 flex items-center gap-3 hover:shadow-sm transition ${
+        isLoading ? 'cursor-not-allowed' : ''
+      }`}
     >
       {/* Queue Position Badge */}
       {showQueueInfo && queuePosition && (
@@ -55,6 +59,15 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
         <div className="absolute top-0 -right-2 transform -translate-y-1/2">
           <div className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
             <Star className="h-2.5 w-2.5 text-white fill-current" />
+          </div>
+        </div>
+      )}
+      
+      {/* Loading Indicator */}
+      {isLoading && (
+        <div className="absolute top-0 -right-2 transform -translate-y-1/2">
+          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+            <Loader2 className="h-2.5 w-2.5 text-white animate-spin" />
           </div>
         </div>
       )}

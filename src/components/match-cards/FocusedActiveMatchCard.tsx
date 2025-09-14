@@ -55,6 +55,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
   const teamACardsRef = useRef<HTMLDivElement>(null);
   const teamBCardsRef = useRef<HTMLDivElement>(null);
   const go8PowerRef = useRef<HTMLImageElement>(null);
+  const courtInfoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -89,6 +90,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
       opacity: 0
     });
 
+    gsap.set(courtInfoRef.current, {
+      y: '50px',
+      opacity: 0
+    });
+
     // Animation sequence
     tl
       // 1. TL and TR abstract slide in from opposite sides
@@ -117,6 +123,13 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
         duration: 0.5,
         ease: 'power2.out'
       }, '-=0.2')
+      // 3.5. Court info slides up
+      .to(courtInfoRef.current, {
+        y: '0%',
+        opacity: 1,
+        duration: 0.6,
+        ease: 'power2.out'
+      }, '-=0.1')
       // 4. Team A and B cards slide up from bottom
       .to([teamACardsRef.current, teamBCardsRef.current], {
         y: '0%',
@@ -161,6 +174,33 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
           <img ref={pickleRef} src="/pickle.jpg"className='z-50 w-40 rounded-full' alt="" />
         </div>
         <img ref={teamUpRef} src="/teamup.png" className='z-50' alt="" />
+        {/* Court Information */}
+        <div ref={courtInfoRef} className="mt-4 z-50 text-center">
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-8 py-4 border-2 border-green-400/50">
+            <h2 className="text-3xl font-bold text-white mb-2">
+              {court.name}
+            </h2>
+            <div className="flex items-center justify-center gap-4 text-lg">
+              <span className={`px-4 py-2 rounded-full font-semibold ${
+                court.status === 'Open' ? 'bg-green-500 text-white' :
+                court.status === 'In-Game' ? 'bg-blue-500 text-white' :
+                'bg-red-500 text-white'
+              }`}>
+                {court.status}
+              </span>
+              <span className="text-gray-300">
+                Capacity: {court.capacity}
+              </span>
+            </div>
+            {court.startTime && court.endTime && (
+              <div className="mt-2 text-gray-300">
+                <span className="text-sm">
+                  {new Date(court.startTime).toLocaleTimeString()} - {new Date(court.endTime).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       <div className='flex flex-1 relative justify-center gap-64 w-full items-center'>
         {/* Team A */}
