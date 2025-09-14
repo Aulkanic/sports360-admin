@@ -58,7 +58,6 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
   onUpdateStatus,
   onRemoveFromAllTeams,
   onApproveWaitlistParticipant,
-  onRejectWaitlistParticipant,
   onAddPlayer,
   onPlayerAddSuccess,
   onPlayerAddError,
@@ -192,7 +191,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
               </div>
 
               {/* Waitlist Section */}
-              {waitlistList.length > 0 && (
+              {/* {waitlistList.length > 0 && (
                 <div className="p-6 border-b bg-yellow-50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -298,7 +297,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                     })}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* All Participants */}
               <div className="p-6">
