@@ -187,8 +187,9 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
           phoneNumber: '', // No phone number required
           skillId: formData.levelId, // Pass the skill level ID instead of description
           paymentMethodId: 1, // Default to walk-in
-          paymentAmount: 0, // No payment required
-          paymentStatus: 'confirmed' // Default to confirmed
+          paymentAmount: 100, // No payment required
+          paymentStatus: 'confirmed', // Default to confirmed
+          profilePicture: formData.profilePicture // Include profile picture for guest players
         };
 
         // Call the API
@@ -303,232 +304,229 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
             <h3 className="text-lg font-semibold text-foreground">Player Information</h3>
           </div>
 
-            {/* Player Type Selection */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">Player Type *</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleInputChange('playerType', 'guest')}
-                  className={cn(
-                    "p-4 border rounded-lg text-left transition-all hover:shadow-md",
-                    formData.playerType === 'guest'
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <UserPlus className="h-5 w-5" />
-                    <div>
-                      <div className="font-medium">Guest Player</div>
-                      <div className="text-sm text-muted-foreground">One-time participant</div>
-                    </div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInputChange('playerType', 'user')}
-                  className={cn(
-                    "p-4 border rounded-lg text-left transition-all hover:shadow-md",
-                    formData.playerType === 'user'
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5" />
-                    <div>
-                      <div className="font-medium">Registered User</div>
-                      <div className="text-sm text-muted-foreground">Existing member</div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Personal Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">First Name *</label>
-                <Input
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  placeholder="Enter first name"
-                  className={cn("h-11", errors.firstName && "border-red-500")}
-                />
-                {errors.firstName && (
-                  <p className="text-sm text-red-600">{errors.firstName}</p>
+          {/* Player Type Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">Player Type *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleInputChange('playerType', 'guest')}
+                className={cn(
+                  "p-4 border rounded-lg text-left transition-all hover:shadow-md",
+                  formData.playerType === 'guest'
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/50"
                 )}
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Last Name *</label>
-                <Input
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Enter last name"
-                  className={cn("h-11", errors.lastName && "border-red-500")}
-                />
-                {errors.lastName && (
-                  <p className="text-sm text-red-600">{errors.lastName}</p>
+              >
+                <div className="flex items-center gap-3">
+                  <UserPlus className="h-5 w-5" />
+                  <div>
+                    <div className="font-medium">Guest Player</div>
+                    <div className="text-sm text-muted-foreground">One-time participant</div>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInputChange('playerType', 'user')}
+                className={cn(
+                  "p-4 border rounded-lg text-left transition-all hover:shadow-md",
+                  formData.playerType === 'user'
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/50"
                 )}
-              </div>
+              >
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5" />
+                  <div>
+                    <div className="font-medium">Registered User</div>
+                    <div className="text-sm text-muted-foreground">Existing member</div>
+                  </div>
+                </div>
+              </button>
             </div>
+          </div>
 
+          {/* Personal Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Email {formData.playerType === 'user' && '*'}
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Enter email address"
-                  className={cn("h-11 pl-10", errors.email && "border-red-500")}
-                  type="email"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email}</p>
+              <label className="text-sm font-medium text-foreground">First Name *</label>
+              <Input
+                value={formData.firstName}
+                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                placeholder="Enter first name"
+                className={cn("h-11", errors.firstName && "border-red-500")}
+              />
+              {errors.firstName && (
+                <p className="text-sm text-red-600">{errors.firstName}</p>
               )}
             </div>
-
-            {/* Account ID field - only shown for registered users */}
-            {formData.playerType === 'user' && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Account ID/Number *</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={formData.accountId}
-                    onChange={(e) => handleInputChange('accountId', e.target.value)}
-                    placeholder="Enter player's account ID or number"
-                    className={cn("h-11 pl-10", errors.accountId && "border-red-500")}
-                  />
-                </div>
-                {errors.accountId && (
-                  <p className="text-sm text-red-600">{errors.accountId}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Enter the registered player's account ID or member number
-                </p>
-              </div>
-            )}
-
-            {/* Skill Level */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">Skill Level *</label>
-              <div className="grid grid-cols-3 gap-3">
-                {([
-                  { level: 'Beginner' as const, id: 1 },
-                  { level: 'Intermediate' as const, id: 2 },
-                  { level: 'Advanced' as const, id: 3 }
-                ]).map(({ level, id }) => (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => {
-                      handleInputChange('level', level);
-                      handleInputChange('levelId', id);
-                    }}
-                    className={cn(
-                      "p-3 border rounded-lg text-center transition-all hover:shadow-md",
-                      formData.level === level
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <Badge className={cn("text-xs", levelColors[level])}>
-                      {level}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Last Name *</label>
+              <Input
+                value={formData.lastName}
+                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                placeholder="Enter last name"
+                className={cn("h-11", errors.lastName && "border-red-500")}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-red-600">{errors.lastName}</p>
+              )}
             </div>
+          </div>
 
-            {/* Profile Picture Upload - Only for Guest Players */}
-            {formData.playerType === 'guest' && (
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">Profile Picture (Optional)</label>
-                <div className="space-y-3">
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  
-                  {/* Image Preview or Upload Area */}
-                  {formData.profilePictureUrl ? (
-                    <div className="relative">
-                      <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
-                        <img
-                          src={formData.profilePictureUrl}
-                          alt="Profile preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={handleImageClick}
-                      className="w-32 h-32 mx-auto border-2 border-dashed border-primary/30 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
-                    >
-                      <Camera className="h-8 w-8 text-primary/60 mb-2" />
-                      <span className="text-xs text-muted-foreground text-center px-2">
-                        Click to upload
-                      </span>
-                    </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Email {formData.playerType === 'user' && '*'}
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Enter email address"
+                className={cn("h-11 pl-10", errors.email && "border-red-500")}
+                type="email"
+              />
+            </div>
+            {errors.email && (
+              <p className="text-sm text-red-600">{errors.email}</p>
+            )}
+          </div>
+
+          {/* Account ID field - only shown for registered users */}
+          {formData.playerType === 'user' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Account ID/Number *</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={formData.accountId}
+                  onChange={(e) => handleInputChange('accountId', e.target.value)}
+                  placeholder="Enter player's account ID or number"
+                  className={cn("h-11 pl-10", errors.accountId && "border-red-500")}
+                />
+              </div>
+              {errors.accountId && (
+                <p className="text-sm text-red-600">{errors.accountId}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Enter the registered player's account ID or member number
+              </p>
+            </div>
+          )}
+
+          {/* Skill Level */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">Skill Level *</label>
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { level: 'Beginner' as const, id: 1 },
+                { level: 'Intermediate' as const, id: 2 },
+                { level: 'Advanced' as const, id: 3 }
+              ]).map(({ level, id }) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => {
+                    handleInputChange('level', level);
+                    handleInputChange('levelId', id);
+                  }}
+                  className={cn(
+                    "p-3 border rounded-lg text-center transition-all hover:shadow-md",
+                    formData.level === level
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
                   )}
-                  
-                  {/* Upload Button */}
-                  <div className="flex justify-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleImageClick}
-                      className="h-9"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {formData.profilePicture ? 'Change Photo' : 'Upload Photo'}
-                    </Button>
+                >
+                  <Badge className={cn("text-xs", levelColors[level])}>
+                    {level}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Profile Picture Upload */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground">Profile Picture (Optional)</label>
+            <div className="space-y-3">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              
+              {/* Image Preview or Upload Area */}
+              {formData.profilePictureUrl ? (
+                <div className="relative">
+                  <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                    <img
+                      src={formData.profilePictureUrl}
+                      alt="Profile preview"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  
-                  {/* File info */}
-                  {formData.profilePicture && (
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">
-                        {formData.profilePicture.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {(formData.profilePicture.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Error message */}
-                  {errors.profilePicture && (
-                    <p className="text-sm text-red-600 text-center">{errors.profilePicture}</p>
-                  )}
-                  
-                  {/* Help text */}
-                  <p className="text-xs text-muted-foreground text-center">
-                    Recommended: Square image, max 5MB. JPG, PNG, or WebP formats.
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={handleImageClick}
+                  className="w-32 h-32 mx-auto border-2 border-dashed border-primary/30 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+                >
+                  <Camera className="h-8 w-8 text-primary/60 mb-2" />
+                  <span className="text-xs text-muted-foreground text-center px-2">
+                    Click to upload
+                  </span>
+                </div>
+              )}
+              
+              {/* Upload Button */}
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImageClick}
+                  className="h-9"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {formData.profilePicture ? 'Change Photo' : 'Upload Photo'}
+                </Button>
+              </div>
+              
+              {/* File info */}
+              {formData.profilePicture && (
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    {formData.profilePicture.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(formData.profilePicture.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
-              </div>
-            )}
-
+              )}
+              
+              {/* Error message */}
+              {errors.profilePicture && (
+                <p className="text-sm text-red-600 text-center">{errors.profilePicture}</p>
+              )}
+              
+              {/* Help text */}
+              <p className="text-xs text-muted-foreground text-center">
+                Recommended: Square image, max 5MB. JPG, PNG, or WebP formats.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Error Display */}

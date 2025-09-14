@@ -137,11 +137,17 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
 
   // Helper function to check if a court has any active matches
   const courtHasActiveMatch = (courtId: string): boolean => {
-    return gameMatches.some(match => 
+    const hasActive = gameMatches.some(match => 
       match.courtId === courtId && 
       match.matchStatusId && 
       match.matchStatusId !== 10 // Assuming 10 is COMPLETED status
     );
+    console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
+      gameMatches: gameMatches.length,
+      hasActive,
+      matches: gameMatches.filter(m => m.courtId === courtId)
+    });
+    return hasActive;
   };
 
   // Filter ready list by skill level and search query
@@ -481,8 +487,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       const perTeam = Math.floor(court.capacity / 2);
                       const hasMatch = teams.A.length > 0 || teams.B.length > 0;
                       const hasActiveMatch = courtHasActiveMatch(court.id);
-                      console.log('teams', teams);
-                      console.log('teams court', court);
+                      console.log('🏟️ Court analysis for court', court.id, ':', {
+                        teams,
+                        perTeam,
+                        hasMatch,
+                        hasActiveMatch,
+                        shouldShowCreateButton: !hasMatch && !hasActiveMatch
+                      });
                       return (
                         <div key={idx}>
                           <div className="p-2">
@@ -519,8 +530,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                                   <Button
                                     size="sm"
                                     onClick={() => {
+                                      console.log('🎯 CREATE MATCH BUTTON CLICKED for court:', court);
+                                      console.log('🎯 Court ID type:', typeof court.id, 'Value:', court.id);
+                                      console.log('🎯 Setting selectedCourt:', court);
+                                      console.log('🎯 Setting showAddCourtModal to true');
                                       setSelectedCourt(court);
                                       setShowAddCourtModal(true);
+                                      console.log('🎯 Modal state should be updated');
                                     }}
                                     className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-7 px-3"
                                   >
@@ -710,6 +726,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
       <AddCourtModal
         open={showAddCourtModal}
         onClose={() => {
+          console.log('🚪 MODAL CLOSING');
           setShowAddCourtModal(false);
           setSelectedCourt(undefined);
         }}

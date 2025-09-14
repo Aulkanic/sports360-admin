@@ -462,8 +462,8 @@ export const addPlayerToSession = async (playerData: AddPlayerRequest): Promise<
         }
       });
       
-      // Add profile picture
-      formData.append('profilePicture', playerData.profilePicture);
+      // Add profile picture with key name "photo"
+      formData.append('photo', playerData.profilePicture);
       
       // Set content type for FormData
       response = await apiClient.post('/openplay/add-player', formData, {

@@ -29,6 +29,34 @@ export const getImageUrl = (imagePath: string): string => {
 };
 
 /**
+ * Get user profile image URL
+ * @param user - User object with personalInfo.upload.filePath
+ * @returns Complete URL for the user profile image or default avatar
+ */
+export const getUserProfileImageUrl = (user: any): string => {
+  if (!user?.personalInfo?.upload?.filePath) {
+    return '/default_avatar.png'; // Default avatar path
+  }
+  
+  const imagePath = user.personalInfo.upload.filePath;
+  
+  // If the image path already includes the full URL, return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // If the image path starts with '/', it's a relative path from the server root
+  if (imagePath.startsWith('/')) {
+    const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+    return `${baseUrl}${imagePath}`;
+  }
+  
+  // If it's just a filename, assume it's in the uploads directory
+  const baseUrl = API_CONFIG.BASE_URL.replace('/api', '');
+  return `${baseUrl}/uploads/${imagePath}`;
+};
+
+/**
  * Get image preview URL for both File objects and string URLs
  * @param image - Either a File object or a string URL
  * @returns URL for displaying the image

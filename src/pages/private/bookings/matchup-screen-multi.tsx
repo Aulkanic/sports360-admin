@@ -7,6 +7,7 @@ import { AllCourtsView, FocusedCourtView } from "@/components/matchup";
 import { getGameMatchesByOccurrenceId } from "@/services/game-match.service";
 import { getOpenPlaySessionById } from "@/services/open-play.service";
 import { getAllCourts } from "@/services/court.service";
+import { getUserProfileImageUrl } from "@/utils/image.utils";
 import { 
   ArrowLeft,
   Play,
@@ -29,6 +30,11 @@ interface Participant {
       firstName: string;
       lastName: string;
       contactNo?: string;
+      upload?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+      };
     };
   };
 }
@@ -144,7 +150,7 @@ const MatchupScreenMulti: React.FC = () => {
               name: fullParticipant.user?.personalInfo ? 
                 `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
                 fullParticipant.user?.userName || 'Unknown Player',
-              avatar: fullParticipant.user?.personalInfo?.photoUrl || '',
+              avatar: fullParticipant.user ? getUserProfileImageUrl(fullParticipant.user) : '',
               initials: fullParticipant.user?.personalInfo ? 
                 `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                 fullParticipant.user?.userName?.[0] || '?',
@@ -297,7 +303,7 @@ const MatchupScreenMulti: React.FC = () => {
                 name: participant.user?.personalInfo ? 
                   `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}`.trim() :
                   participant.user?.userName || 'Unknown Player',
-                avatar: '', // No avatar in API response
+                avatar: participant.user ? getUserProfileImageUrl(participant.user) : '',
                 initials: participant.user?.personalInfo ? 
                   `${participant.user.personalInfo.firstName?.[0] || ''}${participant.user.personalInfo.lastName?.[0] || ''}` :
                   participant.user?.userName?.[0] || 'U',

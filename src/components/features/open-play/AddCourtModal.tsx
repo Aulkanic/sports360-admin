@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,12 +34,22 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
   onAddCourt,
   selectedCourt
 }) => {
+  console.log('🔍 AddCourtModal props:', { open, selectedCourt, onAddCourt: !!onAddCourt });
   const [formData, setFormData] = useState({
     courtId: selectedCourt?.id || '',
     team1Name: '',
     team2Name: '',
     matchDuration: 60
   });
+
+  // Debug: Log when selectedCourt changes
+  useEffect(() => {
+    console.log('🔍 AddCourtModal selectedCourt changed:', selectedCourt);
+    console.log('🔍 Form data courtId:', formData.courtId);
+    if (selectedCourt) {
+      setFormData(prev => ({ ...prev, courtId: selectedCourt.id }));
+    }
+  }, [selectedCourt]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +104,9 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
     if (validateForm()) {
       setIsSubmitting(true);
       try {
+        console.log('Submitting form data:', formData);
         await onAddCourt(formData);
+        console.log('Form submitted successfully, closing modal');
         // Reset form
         setFormData({
           courtId: selectedCourt?.id || '',
@@ -107,6 +119,7 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
       } catch (error) {
         console.error('Error creating game match:', error);
         // Error is already handled in the parent component
+        // Don't close modal on error
       } finally {
         setIsSubmitting(false);
       }
@@ -124,7 +137,12 @@ const AddCourtModal: React.FC<AddCourtModalProps> = ({
     onClose();
   };
 
-  if (!open) return null;
+  console.log('🔍 AddCourtModal render check - open:', open);
+  if (!open) {
+    console.log('🔍 AddCourtModal not rendering because open is false');
+    return null;
+  }
+  console.log('🔍 AddCourtModal rendering modal');
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

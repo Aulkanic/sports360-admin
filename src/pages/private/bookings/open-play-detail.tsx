@@ -17,6 +17,7 @@ import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, remo
 import { useCourts } from "@/hooks";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
+import { getUserProfileImageUrl } from "@/utils/image.utils";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,8 @@ const OpenPlayDetailPage: React.FC = () => {
         ...participant,
         gamesPlayed: participant.gamesPlayed ?? Math.floor(Math.random() * 15), // Mock data
         readyTime: participant.readyTime ?? (getStatusString(participant.status) === 'Ready' ? Date.now() - Math.random() * 3600000 : undefined),
-        skillScore: participant.skillScore ?? getSkillScore(participant)
+        skillScore: participant.skillScore ?? getSkillScore(participant),
+        avatar: participant.user ? getUserProfileImageUrl(participant.user) : participant.avatar
       }));
     }
   );
@@ -501,10 +503,11 @@ const OpenPlayDetailPage: React.FC = () => {
             personalInfo: participant.user.personalInfo ? {
               firstName: participant.user.personalInfo.firstName,
               lastName: participant.user.personalInfo.lastName,
-              contactNo: participant.user.personalInfo.contactNo
+              contactNo: participant.user.personalInfo.contactNo,
+              upload: (participant.user.personalInfo as any).upload
             } : undefined
           } : undefined,
-          avatar: undefined,
+          avatar: participant.user ? getUserProfileImageUrl(participant.user) : undefined,
           initials: participant.user ? 
             (participant.user.personalInfo ? 
               `${participant.user.personalInfo.firstName?.[0]}${participant.user.personalInfo.lastName?.[0]}` : 
@@ -589,7 +592,7 @@ const OpenPlayDetailPage: React.FC = () => {
           status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
           playerStatus: p.playerStatus,
           skillLevel: getSkillLevel(p),
-          avatar: undefined,
+          avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
             p.user?.userName?.[0] || 'U',
@@ -624,7 +627,7 @@ const OpenPlayDetailPage: React.FC = () => {
           status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
           playerStatus: p.playerStatus,
           skillLevel: getSkillLevel(p),
-          avatar: undefined,
+          avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
           initials: p.user?.personalInfo ? 
             `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
             p.user?.userName?.[0] || 'U',
@@ -1005,9 +1008,21 @@ const OpenPlayDetailPage: React.FC = () => {
     team2Name: string;
     matchDuration: number;
   }) {
+    console.log('🏗️ ADD COURT called with data:', data);
+    console.log('🏗️ Available courts:', availableCourts.map(c => ({ id: c.id, name: c.name })));
+    console.log('🏗️ Looking for court ID:', data.courtId);
+    
     const selectedCourt = availableCourts.find(c => c.id === data.courtId);
-    if (!selectedCourt) return;
+    if (!selectedCourt) {
+      console.error('❌ Selected court not found:', data.courtId);
+      console.error('❌ Available court IDs:', availableCourts.map(c => c.id));
+      console.error('❌ Court ID being searched:', data.courtId);
+      console.error('❌ Type of court ID being searched:', typeof data.courtId);
+      console.error('❌ Available court ID types:', availableCourts.map(c => ({ id: c.id, type: typeof c.id })));
+      throw new Error(`Selected court not found. Court ID: ${data.courtId}, Available IDs: ${availableCourts.map(c => c.id).join(', ')}`);
+    }
 
+    console.log('🏗️ Setting isCreatingGameMatch to true');
     setIsCreatingGameMatch(true);
     
     try {
@@ -1022,6 +1037,7 @@ const OpenPlayDetailPage: React.FC = () => {
           status: "Open" as const
         };
         setCourts(prev => [...prev, newCourt]);
+        console.log('✅ Dummy court added successfully');
         setIsCreatingGameMatch(false);
         return;
       }
@@ -1037,17 +1053,21 @@ const OpenPlayDetailPage: React.FC = () => {
         organizerNotes: `Game match created for ${selectedCourt.name} - ${data.matchDuration} minutes`
       };
 
+      console.log('🏗️ Creating game match with data:', gameMatchData);
       const createdMatch = await createGameMatch(gameMatchData);
-
-      console.log('Game match created successfully:', createdMatch);
+      console.log('✅ Game match created successfully:', createdMatch);
       
       // Refetch the matches list to get updated data from server
+      console.log('🔄 Refetching game matches...');
       await fetchGameMatches();
+      console.log('✅ Game matches refetched successfully');
     } catch (error) {
-      console.error('Error creating game match:', error);
+      console.error('❌ Error creating game match:', error);
       // Show error to user (you might want to add a toast notification here)
       alert('Failed to create game match. Please try again.');
+      throw error; // Re-throw to let the modal handle it
     } finally {
+      console.log('🏗️ Setting isCreatingGameMatch to false');
       setIsCreatingGameMatch(false);
     }
   }
@@ -1712,7 +1732,7 @@ const OpenPlayDetailPage: React.FC = () => {
             status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
             skillLevel: getSkillLevel(p),
-            avatar: undefined,
+            avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
               p.user?.userName?.[0] || 'U',
@@ -1747,7 +1767,7 @@ const OpenPlayDetailPage: React.FC = () => {
             status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
             playerStatus: p.playerStatus,
             skillLevel: getSkillLevel(p),
-            avatar: undefined,
+            avatar: p.user ? getUserProfileImageUrl(p.user) : undefined,
             initials: p.user?.personalInfo ? 
               `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
               p.user?.userName?.[0] || 'U',
