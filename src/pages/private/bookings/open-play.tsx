@@ -839,9 +839,7 @@ const OpenPlayPage: React.FC = () => {
     const end = new Date(endDate);
     const current = new Date(start);
     let count = 0;
-    const maxOccurrences = 100; // Limit to prevent performance issues
-
-    while (current <= end && count < maxOccurrences) {
+    while (current <= end) {
       occurrences.push({
         date: current.toISOString().split('T')[0], // Format as YYYY-MM-DD
         startTime: startTime,
@@ -865,9 +863,6 @@ const OpenPlayPage: React.FC = () => {
       }
     }
 
-    if (count >= maxOccurrences) {
-      console.warn(`Generated maximum ${maxOccurrences} occurrences. Consider reducing the date range.`);
-    }
 
     return occurrences;
   };
@@ -986,12 +981,7 @@ const OpenPlayPage: React.FC = () => {
           createForm.maxPlayers || 10
         );
         
-        // Validate number of occurrences
-        if (occurrences.length > 100) {
-          alert(`Too many sessions! You're trying to create ${occurrences.length} sessions. Please reduce the date range or frequency. Maximum allowed is 100 sessions.`);
-          setIsLoading(false);
-          return;
-        }
+        // No limit on number of occurrences
         
         if (occurrences.length > 50) {
           const confirm = window.confirm(`You're about to create ${occurrences.length} sessions. This may take a moment. Do you want to continue?`);
@@ -1043,23 +1033,23 @@ const OpenPlayPage: React.FC = () => {
       // Close form and reset
       setCreateOpen(false);
       setCreateError(null); // Clear any errors
-      setCreateForm({
-        title: "",
-        description: "",
-        date: "",
-        startTime: "",
-        endTime: "",
-        maxPlayers: 10,
-        price: 0,
-        isFreeJoin: false,
-        eventType: "one-time",
-        frequency: "weekly",
-        endDate: "",
-        tournamentFormat: "single-elimination",
-        prize: "",
-        registrationDeadline: "",
-        levels: { Beginner: true, Intermediate: false, Advanced: false },
-      });
+        setCreateForm({
+          title: "",
+          description: "",
+          date: "",
+          startTime: "",
+          endTime: "",
+          maxPlayers: 10,
+          price: 0,
+          isFreeJoin: false,
+          eventType: "one-time",
+          frequency: "weekly",
+          endDate: "",
+          tournamentFormat: "single-elimination",
+          prize: "",
+          registrationDeadline: "",
+          levels: { Beginner: true, Intermediate: false, Advanced: false },
+        });
       
     } catch (error: any) {
       console.error('Error creating session:', error);
@@ -1898,7 +1888,6 @@ const OpenPlayPage: React.FC = () => {
                 <Input
                   type="number"
                   min={1}
-                  max={20}
                   value={createForm.maxPlayers}
                   onChange={(e) => setCreateForm((p) => ({ ...p, maxPlayers: Number(e.target.value) }))}
                   className="h-11"
