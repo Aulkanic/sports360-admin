@@ -272,7 +272,7 @@ const OpenPlayDetailPage: React.FC = () => {
               console.log('getFullParticipantInfo: Full participant found:', fullParticipant);
               return {
                 id: fullParticipant.id.toString(),
-                name: fullParticipant.user?.personalInfo ? 
+                name: fullParticipant.user?.personalInfo ?
                   `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
                   fullParticipant.user?.userName || 'Unknown Player',
                 level: getSkillLevelAsLevel(fullParticipant),
@@ -280,7 +280,7 @@ const OpenPlayDetailPage: React.FC = () => {
                 playerStatus: fullParticipant.playerStatus,
                 skillLevel: getSkillLevel(fullParticipant),
                 avatar: getUserAvatarUrl(fullParticipant.user),
-                initials: fullParticipant.user?.personalInfo ? 
+                initials: fullParticipant.user?.personalInfo ?
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                   fullParticipant.user?.userName?.[0] || '?',
                 paymentAmount: fullParticipant.paymentAmount,
@@ -288,6 +288,7 @@ const OpenPlayDetailPage: React.FC = () => {
                 user: fullParticipant.user,
                 isApproved: fullParticipant.playerStatusId === 1, // playerStatusId 1 means READY/approved
                 paymentStatus: undefined, // Not displaying payment status
+
                 // Add additional fields that might be useful
                 email: fullParticipant.user?.email,
                 contactNo: fullParticipant.user?.personalInfo?.contactNo,
@@ -304,7 +305,7 @@ const OpenPlayDetailPage: React.FC = () => {
                 // Additional skill-related fields
                 skillScore: fullParticipant.skillScore,
                 gamesPlayed: fullParticipant.gamesPlayed
-              } as Participant & {
+              } as unknown as Participant & {
                 email?: string;
                 contactNo?: string;
                 address?: string;
@@ -479,10 +480,10 @@ const OpenPlayDetailPage: React.FC = () => {
       gameMatch.participants.forEach(participant => {
         const participantData: Participant = {
           id: participant.userId,
-          name: participant.user ? 
-            (participant.user.personalInfo ? 
-              `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
-              participant.user.userName) : 
+          name: participant.user ?
+            (participant.user.personalInfo ?
+              `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` :
+              participant.user.userName) :
             `User ${participant.userId}`,
           skillLevel: 'Intermediate', // Default value, could be enhanced
           level: 'Intermediate' as const,
@@ -502,7 +503,9 @@ const OpenPlayDetailPage: React.FC = () => {
               lastName: participant.user.personalInfo.lastName,
               contactNo: participant.user.personalInfo.contactNo
             } : undefined
-          } : undefined
+          } : undefined,
+          firstName: undefined,
+          lastName: undefined
         };
         
         if (participant.team === 'A') {
@@ -549,17 +552,17 @@ const OpenPlayDetailPage: React.FC = () => {
         console.log('Processing participant:', participantId);
         const participantData: Participant = {
           id: participantId,
-          name: participant.user ? 
-            (participant.user.personalInfo ? 
-              `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
-              participant.user.userName) : 
+          name: participant.user ?
+            (participant.user.personalInfo ?
+              `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` :
+              participant.user.userName) :
             `Player ${participantId}`,
           skillLevel: 'Intermediate',
           level: 'Intermediate' as const,
           status: 'IN-GAME',
-          playerStatus: { 
-            id: (participant as any).playerStatusId || 1, 
-            description: 'IN-GAME' 
+          playerStatus: {
+            id: (participant as any).playerStatusId || 1,
+            description: 'IN-GAME'
           },
           isApproved: true,
           gamesPlayed: (participant as any).matchCount || 0,
@@ -580,10 +583,12 @@ const OpenPlayDetailPage: React.FC = () => {
           avatar: getUserAvatarUrl(participant.user),
           initials: participant.user
             ? (participant.user.personalInfo
-                ? `${participant.user.personalInfo.firstName?.[0] ?? ''}${participant.user.personalInfo.lastName?.[0] ?? ''}`
-                : participant.user.userName?.[0] ?? '')
-            : 
-            `P${participantId}`
+              ? `${participant.user.personalInfo.firstName?.[0] ?? ''}${participant.user.personalInfo.lastName?.[0] ?? ''}`
+              : participant.user.userName?.[0] ?? '')
+            :
+            `P${participantId}`,
+          firstName: undefined,
+          lastName: undefined
         };
         
         console.log('Created participant data:', participantData);

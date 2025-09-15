@@ -1,8 +1,8 @@
-import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trophy, Users, Clock } from 'lucide-react';
+import { Clock, Trophy } from 'lucide-react';
+import React from 'react';
 import type { Match } from '../types';
 
 interface CourtMatchCardProps {

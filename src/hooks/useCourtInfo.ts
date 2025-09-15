@@ -123,10 +123,10 @@ export const useCourtInfo = ({
       matchWithParticipants.participants.forEach(participant => {
         const participantData: Participant = {
           id: participant.userId,
-          name: participant.user ? 
-            (participant.user.personalInfo ? 
-              `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` : 
-              participant.user.userName) : 
+          name: participant.user ?
+            (participant.user.personalInfo ?
+              `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}` :
+              participant.user.userName) :
             `User ${participant.userId}`,
           skillLevel: 'Intermediate',
           level: 'Intermediate' as const,
@@ -146,7 +146,9 @@ export const useCourtInfo = ({
               lastName: participant.user.personalInfo.lastName,
               contactNo: participant.user.personalInfo.contactNo
             } : undefined
-          } : undefined
+          } : undefined,
+          firstName: undefined,
+          lastName: undefined
         };
         
         if (participant.team === 'A') {
