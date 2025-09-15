@@ -333,6 +333,7 @@ const OpenPlayDetailPage: React.FC = () => {
   // Enrich court teams with full participant information
   const enrichedCourtTeams = useMemo(() => {
     console.log('🏟️ ENRICHING COURT TEAMS:', courtTeams);
+    console.log('🏟️ CURRENT GAME MATCHES:', gameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId, courtId: m.courtId })));
     const enriched: Record<string, { A: Participant[]; B: Participant[] }> = {};
     
     Object.entries(courtTeams).forEach(([courtId, teams]) => {
@@ -1377,8 +1378,22 @@ const OpenPlayDetailPage: React.FC = () => {
     );
     const hasInGameMatch = courtMatches.some(match => match.matchStatusId === 5);
     
-    // Game can only start if court is open, has exactly 4 players, has an active match, but is not already in-game
-    return court?.status === "Open" && totalPlayers === 4 && hasActiveMatch && !hasInGameMatch;
+    const canStart = court?.status === "Open" && totalPlayers === 4 && hasActiveMatch && !hasInGameMatch;
+    
+    console.log(`🎮 canStartGame for court ${courtId}:`, {
+      courtStatus: court?.status,
+      totalPlayers,
+      hasActiveMatch,
+      hasInGameMatch,
+      canStart,
+      courtMatches: courtMatches.map(m => ({
+        id: m.id,
+        matchStatusId: m.matchStatusId,
+        isActive: m.matchStatusId && m.matchStatusId <= 10
+      }))
+    });
+    
+    return canStart;
   }
 
   function canEndGame(courtId: string): boolean {
@@ -1581,13 +1596,28 @@ const OpenPlayDetailPage: React.FC = () => {
       const newCourts: Court[] = [];
       
       // Filter matches to show both active (<= 10) and completed (> 10) matches
-      const activeGameMatches = fetchedGameMatches.filter(gameMatch => 
-        gameMatch.matchStatusId && gameMatch.matchStatusId <= 10
-      );
+      const activeGameMatches = fetchedGameMatches.filter(gameMatch => {
+        const statusId = gameMatch.matchStatusId;
+        const isActive = statusId && Number(statusId) <= 10;
+        console.log(`🔍 Filtering match ${gameMatch.id}:`, { matchStatusId: statusId, type: typeof statusId, isActive });
+        return isActive;
+      });
       
-      const completedGameMatches = fetchedGameMatches.filter(gameMatch => 
-        gameMatch.matchStatusId && gameMatch.matchStatusId > 10
-      );
+      const completedGameMatches = fetchedGameMatches.filter(gameMatch => {
+        const statusId = gameMatch.matchStatusId;
+        const isCompleted = statusId && Number(statusId) > 10;
+        console.log(`🔍 Filtering completed match ${gameMatch.id}:`, { matchStatusId: statusId, type: typeof statusId, isCompleted });
+        return isCompleted;
+      });
+      
+      console.log('🔍 MATCH FILTERING DEBUG:', {
+        totalMatches: fetchedGameMatches.length,
+        activeMatches: activeGameMatches.length,
+        completedMatches: completedGameMatches.length,
+        activeMatchIds: activeGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId })),
+        completedMatchIds: completedGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId })),
+        allMatchStatusIds: fetchedGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId, type: typeof m.matchStatusId }))
+      });
       
       console.log(`Filtered ${activeGameMatches.length} active matches and ${completedGameMatches.length} completed matches out of ${fetchedGameMatches.length} total matches`);
       
@@ -1602,11 +1632,13 @@ const OpenPlayDetailPage: React.FC = () => {
       
       // Process each court and its matches
       Object.entries(matchesByCourt).forEach(([courtId, courtMatches]) => {
-        console.log(`Processing court ${courtId} with ${courtMatches.length} matches`);
-        console.log(`Court ${courtId} match statuses:`, courtMatches.map(m => ({
+        console.log(`🏟️ Processing court ${courtId} with ${courtMatches.length} matches`);
+        console.log(`🏟️ Court ${courtId} match statuses:`, courtMatches.map(m => ({
           id: m.id,
+          matchStatusId: m.matchStatusId,
           matchStatus: m.matchStatus,
-          gameStatus: m.gameStatus
+          gameStatus: m.gameStatus,
+          participants: m.participants?.length || 0
         })));
         
         // Find the match with the most participants (or the first one if all are empty)

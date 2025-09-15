@@ -25,6 +25,7 @@ const CourtMatchmakingCard: React.FC<{
   isEndingGame?: boolean;
   hasMatch?: boolean;
   hasActiveMatch?: boolean; // Add this prop
+  hasAnyMatch?: boolean; // Add this prop for completed matches
   onRemovePlayer?: (participant: Participant, team: 'A' | 'B') => void;
   showRemoveButtons?: boolean;
   currentMatch?: {
@@ -37,7 +38,7 @@ const CourtMatchmakingCard: React.FC<{
     endTime?: string;
     duration?: number;
   };
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, onCreateMatch, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, onRemovePlayer, showRemoveButtons = false, currentMatch }) => {
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, onCreateMatch, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, hasAnyMatch = false, onRemovePlayer, showRemoveButtons = false, currentMatch }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 54;
   const nvz = 7;
@@ -51,7 +52,7 @@ const CourtMatchmakingCard: React.FC<{
       <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
         <div className="flex items-center gap-2">
           <p className="font-semibold uppercase tracking-wide">{court.name}</p>
-          {court.status === "Open" && !canStartGame && (
+          {court.status === "Open" && !canStartGame && !hasAnyMatch && (
             <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded-full">
               Need 4 players
             </span>
@@ -59,6 +60,11 @@ const CourtMatchmakingCard: React.FC<{
           {court.status === "Open" && canStartGame && (
             <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
               Ready to start
+            </span>
+          )}
+          {hasAnyMatch && !hasActiveMatch && (
+            <span className="text-xs bg-gray-500 text-white px-2 py-1 rounded-full">
+              All matches completed
             </span>
           )}
         </div>

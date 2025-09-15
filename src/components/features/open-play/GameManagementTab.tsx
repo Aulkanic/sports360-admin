@@ -146,12 +146,12 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
     const hasActive = courtMatches.some(match => {
       const statusId = match.matchStatusId;
       // Active statuses: 1-9 (assuming 10+ are completed/ended statuses)
-      // Also check if match has participants or is in progress
+      // Only consider matches with active status, not just any match with participants
       const isActiveStatus = statusId && statusId < 10;
-      const hasParticipants = match.participants && match.participants.length > 0;
       const isInProgress = statusId === 5; // Assuming 5 is IN_PROGRESS
       
-      return isActiveStatus || hasParticipants || isInProgress;
+      // Only return true if the match has an active status, regardless of participants
+      return isActiveStatus || isInProgress;
     });
     
     console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
@@ -160,6 +160,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
         id: m.id,
         matchName: m.matchName,
         matchStatusId: m.matchStatusId,
+        isActive: m.matchStatusId && m.matchStatusId < 10,
         participantsCount: m.participants?.length || 0,
         currentPlayers: m.currentPlayers
       })),
@@ -531,8 +532,31 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       console.log(court)
                       const teams = courtTeams[court.id] ?? { A: [], B: [] };
                       const perTeam = Math.floor(court.capacity / 2);
-                      const hasMatch = teams.A.length > 0 || teams.B.length > 0;
+                      // Check if there are any active matches (not completed) for this court
                       const hasActiveMatch = courtHasActiveMatch(court.id);
+                      
+                      // Check if there are any matches at all (active or completed) for this court
+                      const courtMatches = gameMatches.filter(match => match.courtId === court.id);
+                      const hasAnyMatch = courtMatches.length > 0;
+                      
+                      // hasMatch should only be true if there's an active match, not just any match
+                      const hasMatch = hasActiveMatch;
+                      
+                      // Debug logging
+                      console.log(`🏟️ Court ${court.id} match status:`, {
+                        courtName: court.name,
+                        hasActiveMatch,
+                        hasAnyMatch,
+                        hasMatch,
+                        courtMatches: courtMatches.map(m => ({
+                          id: m.id,
+                          matchName: m.matchName,
+                          matchStatusId: m.matchStatusId,
+                          isActive: m.matchStatusId && m.matchStatusId < 10,
+                          isCompleted: m.matchStatusId && m.matchStatusId >= 10,
+                          participants: m.participants?.length || 0
+                        }))
+                      });
                       
                       // Get current match information for this court
                       const currentMatch = gameMatches.find(match => 
@@ -587,6 +611,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                        isAddingPlayers={isAddingPlayersToMatch.size > 0}
                        hasMatch={hasMatch}
                        hasActiveMatch={hasActiveMatch}
+                       hasAnyMatch={hasAnyMatch}
                        onRemovePlayer={(participant, team) => handleRemovePlayer(participant, team, court.id)}
                        showRemoveButtons={hasMatch || hasActiveMatch}
                        currentMatch={currentMatchInfo}
@@ -611,16 +636,16 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                                   </Button>
                                 </>
                               )}
-                              {!hasMatch && hasActiveMatch && (
+                              {hasAnyMatch && !hasActiveMatch && (
                                 <>
-                                  <p className="text-[10px] text-blue-600 text-center">
-                                    Match exists - waiting for players
+                                  <p className="text-[10px] text-gray-600 text-center">
+                                    All matches completed
                                   </p>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => onViewMatchupScreen(court.id)}
-                                    className="text-xs h-7 px-3 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                                    className="text-xs h-7 px-3 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                                   >
                                     <Trophy className="h-3 w-3 mr-1" />
                                     View Match
