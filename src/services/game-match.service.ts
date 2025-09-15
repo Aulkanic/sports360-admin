@@ -16,6 +16,7 @@ export interface GameMatch {
   courtId: string;
   matchName?: string;
   matchStatus: string;
+  matchStatusId?: number;
   gameStatus: string;
   requiredPlayers: number;
   currentPlayers: number;

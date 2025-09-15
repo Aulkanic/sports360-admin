@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import ResponsiveOverlay from '@/components/responsive-overlay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,9 +51,10 @@ const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
   isLoading = false
 }) => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   
-  // Get occurrence ID from URL path parameter
-  const occurrenceId = id || '';
+  // Get occurrence ID from URL parameters, fallback to session ID
+  const occurrenceId = searchParams.get('occurrenceId') || id || '';
   const [formData, setFormData] = useState<PlayerFormData>({
     playerType: 'guest',
     firstName: '',

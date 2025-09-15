@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useMemo, useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate, useParams, type Location } from "react-router-dom";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
 
 import { SAMPLE_SESSIONS } from "@/components/features/open-play/data/sample-sessions";
 import type {
@@ -12,12 +12,13 @@ import type {
 import { getStatusString, getSkillLevelAsLevel, getSkillLevel } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
-import { getOpenPlaySessionById, updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
+import { updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
 import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, endGameMatch, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
 import { useCourts } from "@/hooks";
+import { useOpenPlaySession } from "@/hooks/useOpenPlaySession";
+import { useCourtInfo } from "@/hooks/useCourtInfo";
 import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
 import GameManagementTab from "@/components/features/open-play/GameManagementTab";
-import { getUserProfileImageUrl } from "@/utils/image.utils";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,6 @@ import {
   Clock,
   MapPin,
 } from "lucide-react";
-import { API_CONFIG } from "@/config/api";
 
 /** Safe deep-clone that works on simple JSONy objects */
 function deepClone<T>(obj: T): T {
@@ -49,9 +49,20 @@ type LocationState = {
 
 const OpenPlayDetailPage: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
   const location = useLocation() as Location & { state?: LocationState };
   console.log(location)
+  
+  // Use custom hook for session management
+  const {
+    rawSessionData,
+    currentOccurrenceId,
+    participants,
+    setParticipants,
+    isLoading,
+    refreshSessionData,
+    getUserAvatarUrl,
+  } = useOpenPlaySession();
+  
   const [tab, setTab] = useState<"details" | "game">("details");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<Set<string>>(new Set());
   const [isRemovingPlayer, setIsRemovingPlayer] = useState(false);
@@ -59,9 +70,10 @@ const OpenPlayDetailPage: React.FC = () => {
   const stateSession = location.state?.session;
   const occurrence = location.state?.occurrence;
   const sessionById = useMemo(
-    () => stateSession ?? SAMPLE_SESSIONS.find((s) => s.id === id),
-    [stateSession, id]
+    () => stateSession ?? SAMPLE_SESSIONS.find((s) => s.id === rawSessionData?.id),
+    [stateSession, rawSessionData?.id]
   );
+
 
   // Convert skill level to numeric score for sorting
   const getSkillScore = (participant: Participant): number => {
@@ -74,25 +86,6 @@ const OpenPlayDetailPage: React.FC = () => {
     }
   };
 
-  const [participants, setParticipants] = useState<Participant[]>(
-    () => {
-      // Use occurrence participants if available, otherwise use session participants
-      const sourceParticipants = occurrence?.participants || sessionById?.participants || [];
-      const initialParticipants = sourceParticipants as Participant[];
-      
-      return initialParticipants.map(participant => ({
-        ...participant,
-        gamesPlayed: participant.gamesPlayed ?? Math.floor(Math.random() * 15), // Mock data
-        readyTime: participant.readyTime ?? (getStatusString(participant.status) === 'Ready' ? Date.now() - Math.random() * 3600000 : undefined),
-        skillScore: participant.skillScore ?? getSkillScore(participant),
-        avatar: participant?.user && (participant.user as any)?.upload?.fileName
-          ? `${API_CONFIG.IMG_URL}/uploads/${(participant.user as any).upload.fileName}`
-          : (participant.user as any)?.upload?.filePath
-            ? (participant.user as any).upload.filePath
-            : '/default_avatar.png'
-      }));
-    }
-  );
 
   const [courts, setCourts] = useState<Court[]>([]);
   
@@ -107,6 +100,13 @@ const OpenPlayDetailPage: React.FC = () => {
     status: "Open" as const
   }));
 
+  // Initialize courts with all available courts from court management
+  useEffect(() => {
+    if (availableCourts.length > 0 && courts.length === 0) {
+      setCourts(availableCourts);
+    }
+  }, [availableCourts, courts.length]);
+
   const [courtTeams, setCourtTeams] = useState<
     Record<string, { A: Participant[]; B: Participant[] }>
   >({ "court-1": { A: [], B: [] } });
@@ -117,7 +117,6 @@ const OpenPlayDetailPage: React.FC = () => {
   const [teamNames, setTeamNames] = useState<Record<string, { A: string; B: string }>>({});
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCreatingGameMatch, setIsCreatingGameMatch] = useState(false);
   const [isAddingPlayersToMatch, setIsAddingPlayersToMatch] = useState<Set<string>>(new Set());
   const [isLoadingGameMatches, setIsLoadingGameMatches] = useState(false);
@@ -125,6 +124,23 @@ const OpenPlayDetailPage: React.FC = () => {
   const [isEndingGame, setIsEndingGame] = useState<Set<string>>(new Set());
   const [gameMatches, setGameMatches] = useState<any[]>([]); // Store raw game matches from API
   const hasFetchedGameMatches = useRef(false);
+
+  // Initialize court info hook
+  const {
+    courtInfoList,
+    getCourtInfo,
+    updateCourtTeams: updateCourtTeamsFromHook,
+    updateTeamNames: updateTeamNamesFromHook,
+    refreshCourtInfo
+  } = useCourtInfo({
+    courts,
+    gameMatches,
+    courtTeams,
+    teamNames
+  });
+
+  // Court info hook provides structured court data
+  // Available functions: getCourtInfo, updateCourtTeamsFromHook, updateTeamNamesFromHook, refreshCourtInfo
 
   // Helper function to find matchId for a given courtId
   const findMatchIdByCourtId = (courtId: string): string | null => {
@@ -191,8 +207,7 @@ const OpenPlayDetailPage: React.FC = () => {
         return 'READY';
     }
   };
-  const [currentOccurrenceId, setCurrentOccurrenceId] = useState<string>("");
-  const [rawSessionData, setRawSessionData] = useState<any>(null);
+
   
   // Check if the current session is dummy data
   const isDummySession = useMemo(() => {
@@ -231,24 +246,24 @@ const OpenPlayDetailPage: React.FC = () => {
             });
             
             if (fullParticipant) {
-   
+              console.log('getFullParticipantInfo: Full participant found:', fullParticipant);
               return {
                 id: fullParticipant.id.toString(),
                 name: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
                   fullParticipant.user?.userName || 'Unknown Player',
                 level: getSkillLevelAsLevel(fullParticipant),
-                status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || fullParticipant.status?.description || 'READY',
+                status: mapPlayerStatusFromDescription(fullParticipant.playerStatus?.description) || 'READY',
                 playerStatus: fullParticipant.playerStatus,
                 skillLevel: getSkillLevel(fullParticipant),
-                avatar: fullParticipant.user?.upload?.fileName ? `${API_CONFIG.IMG_URL}/uploads/${fullParticipant.user?.upload?.fileName}` : fullParticipant.user?.personalInfo?.photoUrl ? fullParticipant.user?.personalInfo?.photoUrl : fullParticipant.user?.upload?.filePath ? fullParticipant.user?.upload?.filePath : '/default_avatar.png',
+                avatar: getUserAvatarUrl(fullParticipant.user),
                 initials: fullParticipant.user?.personalInfo ? 
                   `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                   fullParticipant.user?.userName?.[0] || '?',
                 paymentAmount: fullParticipant.paymentAmount,
                 notes: fullParticipant.notes,
                 user: fullParticipant.user,
-                isApproved: fullParticipant.statusId === 5, // Assuming statusId 5 means approved
+                isApproved: fullParticipant.playerStatusId === 1, // playerStatusId 1 means READY/approved
                 paymentStatus: undefined, // Not displaying payment status
                 // Add additional fields that might be useful
                 email: fullParticipant.user?.email,
@@ -367,7 +382,7 @@ const OpenPlayDetailPage: React.FC = () => {
       console.log('participants', participants);
       console.log('inAnyTeam', Array.from(inAnyTeam));
       const ready = participants.filter((p) => {
-        const statusString = getStatusString(p.status ?? '');
+        const statusString = getStatusString(p.playerStatus ?? '');
         const isReady = statusString?.toUpperCase() === "READY";
         const notInTeam = !inAnyTeam.has(p.id);
         console.log(`Player ${p.id} (${p.name}): isReady=${isReady}, notInTeam=${notInTeam}, status=${statusString}`);
@@ -394,7 +409,7 @@ const OpenPlayDetailPage: React.FC = () => {
         }
         
         // If neither has timestamp, maintain original order (fallback to name for consistency)
-        return a.name.localeCompare(b.name);
+        return (a.name || '').localeCompare(b.name || '');
       });
       
       return sortedReady;
@@ -404,13 +419,13 @@ const OpenPlayDetailPage: React.FC = () => {
   const restingList = useMemo(
     () => {
       const resting = participants.filter((p) => {
-        const statusString = getStatusString(p.status)?.toUpperCase();
+        const statusString = getStatusString(p.playerStatus)?.toUpperCase();
         const isResting = statusString === "RESTING";
         const notInTeam = !inAnyTeam.has(p.id);
         console.log(`Player ${p.id} (${p.name}): status=${statusString}, isResting=${isResting}, notInTeam=${notInTeam}`);
         return isResting && notInTeam;
       });
-      console.log('🛌 RESTING LIST:', resting.map(p => ({ id: p.id, name: p.name, status: getStatusString(p.status) })));
+      console.log('🛌 RESTING LIST:', resting.map(p => ({ id: p.id, name: p.name, status: getStatusString(p.playerStatus) })));
       return resting;
     },
     [participants, inAnyTeam]
@@ -482,7 +497,13 @@ const OpenPlayDetailPage: React.FC = () => {
       teamB,
       teamAName: gameMatch.team1Name,
       teamBName: gameMatch.team2Name,
-      status: gameMatch.matchStatus === 'completed' ? 'Completed' : 'Scheduled',
+      status: (() => {
+        // Map matchStatusId to display status
+        if (gameMatch.matchStatusId === 6) return 'Completed';
+        if (gameMatch.matchStatusId === 5) return 'IN-GAME';
+        if (gameMatch.matchStatusId && gameMatch.matchStatusId > 10) return 'Completed';
+        return 'Scheduled';
+      })(),
       winner: undefined,
       score: undefined
     };
@@ -501,7 +522,7 @@ const OpenPlayDetailPage: React.FC = () => {
         
         // Use participantId instead of userId for the ID
         const participantId = (participant as any).participantId?.toString() || participant.userId?.toString();
-        
+        console.log('Processing participant:', participantId);
         const participantData: Participant = {
           id: participantId,
           name: participant.user ? 
@@ -532,11 +553,7 @@ const OpenPlayDetailPage: React.FC = () => {
               upload: (participant.user.personalInfo as any).upload
             } : undefined
           } : undefined,
-          avatar: participant.user && (participant.user as any)?.upload?.fileName
-            ? `${API_CONFIG.IMG_URL}/uploads/${(participant.user as any).upload.fileName}`
-            : participant.user
-              ? getUserProfileImageUrl(participant.user)
-              : '/default_avatar.png',
+          avatar: getUserAvatarUrl(participant.user),
           initials: participant.user
             ? (participant.user.personalInfo
                 ? `${participant.user.personalInfo.firstName?.[0] ?? ''}${participant.user.personalInfo.lastName?.[0] ?? ''}`
@@ -589,116 +606,9 @@ const OpenPlayDetailPage: React.FC = () => {
   };
 
 
-  // Set initial occurrence ID from navigation state or session data
-  useEffect(() => {
-    if (occurrence?.id) {
-      setCurrentOccurrenceId(id || "");
-    } else if (id && !rawSessionData) {
-      // If no raw session data, fetch it using the ID from URL
-      const fetchInitialSessionData = async () => {
-        try {
-          // Check if this is dummy data first
-          if (sessionById?.isDummy) {
-            console.log('Dummy session detected, skipping API call');
-            // For dummy data, use the session data directly
-            setRawSessionData(sessionById);
-            if (sessionById.occurrences && sessionById.occurrences.length > 0) {
-              setCurrentOccurrenceId(id || "");
-            }
-            return;
-          }
-          
-          const sessionData = await getOpenPlaySessionById(id);
-          setRawSessionData(sessionData);
-          if (sessionData.occurrences && sessionData.occurrences.length > 0) {
-            setCurrentOccurrenceId(id);
-          }
-        } catch (error) {
-          console.error('Error fetching initial session data:', error);
-        }
-      };
-      fetchInitialSessionData();
-    }
-  }, [occurrence?.id, id, rawSessionData, sessionById]);
 
-  // Process participants when rawSessionData changes (for initial load)
-  useEffect(() => {
-    if (!rawSessionData) return;
-    
-    console.log('Processing participants from rawSessionData:', rawSessionData);
-    
-    // If we have occurrence-specific data, find the matching occurrence
-    if (occurrence?.id && rawSessionData.occurrences) {
-      const matchingOccurrence = rawSessionData.occurrences.find((occ: any) => occ.id === occurrence.id);
-      if (matchingOccurrence?.participants) {
-        console.log('Using occurrence-specific participants (initial load):', matchingOccurrence.participants);
-        
-        // Use raw participants data without conversion
-        const freshParticipants = matchingOccurrence.participants.map((p: any) => ({
-          id: p.id.toString(),
-          name: p.user?.personalInfo ? 
-            `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
-            p.user?.userName || 'Unknown Player',
-          level: getSkillLevelAsLevel(p),
-          status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
-          playerStatus: p.playerStatus,
-          skillLevel: getSkillLevel(p),
-          avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
-          initials: p.user?.personalInfo ? 
-            `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
-            p.user?.userName?.[0] || 'U',
-          isApproved: p.statusId === 1, // CONFIRMED
-          checkedInAt: p.checkedInAt,
-          joinedAt: p.registeredAt,
-          notes: p.notes,
-          gamesPlayed: 0,
-          skillScore: getSkillScore(p),
-          readyTime: undefined,
-          paymentStatus: undefined, // Not displaying payment status
-          user: p.user
-        }));
-        
-        // Update participants with fresh data from server
-        setParticipants(freshParticipants);
-        console.log('Updated participants from occurrence (initial load):', freshParticipants);
-      }
-    } else if (rawSessionData.occurrences && rawSessionData.occurrences.length > 0) {
-      // Use first occurrence participants if no specific occurrence
-      const firstOccurrence = rawSessionData.occurrences[0];
-      if (firstOccurrence?.participants) {
-        console.log('Using first occurrence participants (initial load):', firstOccurrence.participants);
-        
-        // Use raw participants data without conversion
-        const freshParticipants = firstOccurrence.participants.map((p: any) => ({
-          id: p.id.toString(),
-          name: p.user?.personalInfo ? 
-            `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
-            p.user?.userName || 'Unknown Player',
-          level: getSkillLevelAsLevel(p),
-          status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
-          playerStatus: p.playerStatus,
-          skillLevel: getSkillLevel(p),
-          avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
-          initials: p.user?.personalInfo ? 
-            `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
-            p.user?.userName?.[0] || 'U',
-          isApproved: p.statusId === 1, // CONFIRMED
-          checkedInAt: p.checkedInAt,
-          joinedAt: p.registeredAt,
-          notes: p.notes,
-          gamesPlayed: 0,
-          skillScore: getSkillScore(p),
-          readyTime: undefined,
-          paymentStatus: undefined, // Not displaying payment status
-          user: p.user
-        }));
-        
-        // Update participants with fresh data from server
-        setParticipants(freshParticipants);
-        console.log('Updated participants from first occurrence (initial load):', freshParticipants);
-      }
-    }
-  }, [rawSessionData, occurrence?.id]);
+  // Note: Participant processing is now handled in the initial fetch useEffect above
+  // to match the same logic as refreshSessionData
 
   // Fetch game matches on component mount and when occurrence changes
   useEffect(() => {
@@ -757,7 +667,7 @@ const OpenPlayDetailPage: React.FC = () => {
       if (isDummySession) {
         console.log('Dummy session detected, skipping API call for status update');
         // For dummy data, just update the local state
-        setParticipants(prev => prev.map(p => 
+        setParticipants((prev: Participant[]) => prev.map((p: Participant) => 
           p.id === participantId 
             ? { ...p, status: status }
             : p
@@ -859,8 +769,8 @@ const OpenPlayDetailPage: React.FC = () => {
       });
 
       // Update participants status back to READY
-      setParticipants(prev => 
-        prev.map(p => 
+      setParticipants((prev: Participant[]) => 
+        prev.map((p: Participant) => 
           p.id === participant.id 
             ? { ...p, status: { id: 1, description: 'READY' }, playerStatus: { id: 1, description: 'READY' } }
             : p
@@ -1292,16 +1202,11 @@ const OpenPlayDetailPage: React.FC = () => {
       console.log('✅ GAME MATCH ENDED SUCCESSFULLY');
       
       // Update local state
-    setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
-    const t = courtTeams[courtId] ?? { A: [], B: [] };
-    
-      // Update participants to resting
-      console.log('🔄 UPDATING PARTICIPANTS TO RESTING:', t.A.concat(t.B).map(p => ({ id: p.id, name: p.name })));
-    await Promise.all([...t.A, ...t.B].map(async (p) => {
-        console.log(`🔄 UPDATING PARTICIPANT ${p.id} (${p.name}) TO RESTING`);
-      await updateStatus(p.id, "RESTING");
-      }));
-      console.log('✅ ALL PARTICIPANTS UPDATED TO RESTING');
+      setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
+      const t = courtTeams[courtId] ?? { A: [], B: [] };
+      
+      // Note: Participant status updates are handled by the backend after successful game end
+      console.log('✅ Game ended successfully - backend will handle participant status updates');
     
     // Create a match record for this completed game
     const newMatch: Match = {
@@ -1449,8 +1354,8 @@ const OpenPlayDetailPage: React.FC = () => {
     // Sort by priority: Ready first, then by games played (ascending), then by skill level
     const sortedPlayers = enhancedPlayers.sort((a, b) => {
       // First priority: Ready status (already filtered, but for safety)
-      if (a.status !== b.status) {
-        return a.status === 'READY' ? -1 : 1;
+      if (a.playerStatus !== b.playerStatus) {
+        return a.playerStatus === 'READY' ? -1 : 1;
       }
       
       // Second priority: Fewer games played (give new players a chance)
@@ -1477,14 +1382,24 @@ const OpenPlayDetailPage: React.FC = () => {
     const teams = courtTeams[courtId] ?? { A: [], B: [] };
     const totalPlayers = teams.A.length + teams.B.length;
     
-    // Game can only start if court is open and has exactly 4 players
-    return court?.status === "Open" && totalPlayers === 4;
+    // Check if there's an active match for this court
+    const courtMatches = gameMatches.filter(match => match.courtId === courtId);
+    const hasActiveMatch = courtMatches.some(match => 
+      match.matchStatusId && match.matchStatusId <= 10 && match.matchStatusId !== 5
+    );
+    const hasInGameMatch = courtMatches.some(match => match.matchStatusId === 5);
+    
+    // Game can only start if court is open, has exactly 4 players, has an active match, but is not already in-game
+    return court?.status === "Open" && totalPlayers === 4 && hasActiveMatch && !hasInGameMatch;
   }
 
   function canEndGame(courtId: string): boolean {
-    const court = courts.find(c => c.id === courtId);
-    // Game can only end if it's currently in-game
-    return court?.status === "IN-GAME";
+    // Check if there's an in-game match for this court
+    const courtMatches = gameMatches.filter(match => match.courtId === courtId);
+    const hasInGameMatch = courtMatches.some(match => match.matchStatusId === 5);
+    
+    // Game can only end if it's currently in-game (matchStatusId === 5)
+    return hasInGameMatch;
   }
 
   function canCloseCourt(courtId: string): boolean {
@@ -1677,9 +1592,20 @@ const OpenPlayDetailPage: React.FC = () => {
       const newTeamNames: Record<string, { A: string; B: string }> = {};
       const newCourts: Court[] = [];
       
+      // Filter matches to show both active (<= 10) and completed (> 10) matches
+      const activeGameMatches = fetchedGameMatches.filter(gameMatch => 
+        gameMatch.matchStatusId && gameMatch.matchStatusId <= 10
+      );
+      
+      const completedGameMatches = fetchedGameMatches.filter(gameMatch => 
+        gameMatch.matchStatusId && gameMatch.matchStatusId > 10
+      );
+      
+      console.log(`Filtered ${activeGameMatches.length} active matches and ${completedGameMatches.length} completed matches out of ${fetchedGameMatches.length} total matches`);
+      
       // Group matches by courtId to handle multiple matches per court
       const matchesByCourt: Record<string, any[]> = {};
-      fetchedGameMatches.forEach(gameMatch => {
+      activeGameMatches.forEach(gameMatch => {
         if (!matchesByCourt[gameMatch.courtId]) {
           matchesByCourt[gameMatch.courtId] = [];
         }
@@ -1784,6 +1710,14 @@ const OpenPlayDetailPage: React.FC = () => {
         console.log(`Court ${courtId} final teams:`, courtTeams);
       });
       
+      // Process completed matches and add them to convertedMatches
+      console.log(`Processing ${completedGameMatches.length} completed matches`);
+      completedGameMatches.forEach(gameMatch => {
+        console.log(`Processing completed match ${gameMatch.id} for court ${gameMatch.courtId}`);
+        const completedMatch = convertGameMatchToMatch(gameMatch);
+        convertedMatches.push(completedMatch);
+      });
+      
       // Update state - merge with existing data instead of overriding
       setMatches(convertedMatches);
       setCourtTeams(prev => {
@@ -1808,7 +1742,33 @@ const OpenPlayDetailPage: React.FC = () => {
         return merged;
       });
       setTeamNames(prev => ({ ...prev, ...newTeamNames }));
-      setCourts(newCourts);
+      
+      // Merge new courts with all available courts from court management
+      setCourts(prev => {
+        const mergedCourts = [...prev];
+        
+        // Update existing courts with match data
+        newCourts.forEach(newCourt => {
+          const existingIndex = mergedCourts.findIndex(c => c.id === newCourt.id);
+          if (existingIndex >= 0) {
+            // Update existing court with new status and data
+            mergedCourts[existingIndex] = { ...mergedCourts[existingIndex], ...newCourt };
+          } else {
+            // Add new court if it doesn't exist
+            mergedCourts.push(newCourt);
+          }
+        });
+        
+        // Ensure all courts from court management are included
+        availableCourts.forEach(availableCourt => {
+          const exists = mergedCourts.some(c => c.id === availableCourt.id);
+          if (!exists) {
+            mergedCourts.push(availableCourt);
+          }
+        });
+        
+        return mergedCourts;
+      });
       
       // Debug: Log the updated court teams
       console.log('Updated court teams:', newCourtTeams);
@@ -1827,117 +1787,6 @@ const OpenPlayDetailPage: React.FC = () => {
     }
   };
 
-  // Function to refresh session data from API
-  const refreshSessionData = async () => {
-    if (isRefreshing) return; // Prevent multiple simultaneous refreshes
-    
-    try {
-      setIsRefreshing(true);
-      
-      if (!session?.id) {
-        console.error('No session ID available for refresh');
-        return;
-      }
-      
-      // Check if this is dummy data
-      if (isDummySession) {
-        console.log('Dummy session detected, skipping API call for refresh');
-        setIsRefreshing(false);
-        return;
-      }
-      
-      const sessionId = session.id || session.id;
-      
-      const updatedSessionData = await getOpenPlaySessionById(sessionId);
-      
-      // Store raw API response
-      setRawSessionData(updatedSessionData);
-      console.log('Raw session data from API:', updatedSessionData);
-      
-      // Set the current occurrence ID from the URL parameter id if not already set
-      if (!currentOccurrenceId && updatedSessionData.occurrences && updatedSessionData.occurrences.length > 0) {
-        setCurrentOccurrenceId(id || "");
-      }
-      
-      // If we have occurrence-specific data, find the matching occurrence
-      if (occurrence?.id && updatedSessionData.occurrences) {
-        const matchingOccurrence = updatedSessionData.occurrences.find((occ: any) => occ.id === occurrence.id);
-        if (matchingOccurrence?.participants) {
-          console.log('Using occurrence-specific participants (raw):', matchingOccurrence.participants);
-          
-          // Use raw participants data without conversion
-          const freshParticipants = matchingOccurrence.participants.map((p: any) => ({
-            id: p.id.toString(),
-            name: p.user?.personalInfo ? 
-              `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
-              p.user?.userName || 'Unknown Player',
-            level: getSkillLevelAsLevel(p),
-            status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
-            playerStatus: p.playerStatus,
-            skillLevel: getSkillLevel(p),
-            avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
-            initials: p.user?.personalInfo ? 
-              `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
-              p.user?.userName?.[0] || 'U',
-            isApproved: p.statusId === 1, // CONFIRMED
-            checkedInAt: p.checkedInAt,
-            joinedAt: p.registeredAt,
-            notes: p.notes,
-            gamesPlayed: 0,
-            skillScore: getSkillScore(p),
-            readyTime: undefined,
-            paymentStatus: undefined, // Not displaying payment status
-            user: p.user
-          }));
-          
-          // Update participants with fresh data from server
-          setParticipants(freshParticipants);
-          console.log('Updated participants from occurrence (raw):', freshParticipants);
-        }
-      } else if (updatedSessionData.occurrences && updatedSessionData.occurrences.length > 0) {
-        // Use first occurrence participants if no specific occurrence
-        const firstOccurrence = updatedSessionData.occurrences[0];
-        if (firstOccurrence?.participants) {
-          console.log('Using first occurrence participants (raw):', firstOccurrence.participants);
-          
-          // Use raw participants data without conversion
-          const freshParticipants = firstOccurrence.participants.map((p: any) => ({
-            id: p.id.toString(),
-            name: p.user?.personalInfo ? 
-              `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}`.trim() :
-              p.user?.userName || 'Unknown Player',
-            level: getSkillLevelAsLevel(p),
-            status: mapPlayerStatusFromDescription(p.playerStatus?.description) || p.status?.description || 'READY',
-            playerStatus: p.playerStatus,
-            skillLevel: getSkillLevel(p),
-            avatar: p.user?.upload ? `${API_CONFIG.IMG_URL}/uploads/${p.user?.upload.filePath}` : p.user ? getUserProfileImageUrl(p.user) : undefined,
-            initials: p.user?.personalInfo ? 
-              `${p.user.personalInfo.firstName?.[0] || ''}${p.user.personalInfo.lastName?.[0] || ''}` :
-              p.user?.userName?.[0] || 'U',
-            isApproved: p.statusId === 1, // CONFIRMED
-            checkedInAt: p.checkedInAt,
-            joinedAt: p.registeredAt,
-            notes: p.notes,
-            gamesPlayed: 0,
-            skillScore: getSkillScore(p),
-            readyTime: undefined,
-            paymentStatus: undefined, // Not displaying payment status
-            user: p.user
-          }));
-          
-          // Update participants with fresh data from server
-          setParticipants(freshParticipants);
-          console.log('Updated participants from first occurrence (raw):', freshParticipants);
-        }
-      }
-      
-      console.log('Session data refreshed successfully');
-    } catch (error) {
-      console.error('Error refreshing session data:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   // Handle adding new player
   const handleAddPlayer = async (playerData: PlayerFormData) => {
@@ -1973,7 +1822,7 @@ const OpenPlayDetailPage: React.FC = () => {
     // You could add a toast notification here to show the error
   };
 
-  if (!id || !session) {
+  if (!rawSessionData?.id || !session) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -2039,9 +1888,9 @@ const OpenPlayDetailPage: React.FC = () => {
                 variant="outline"
                 className="text-black border-white/30 hover:bg-white/10"
                 onClick={refreshSessionData}
-                disabled={isRefreshing}
+                disabled={isLoading}
               >
-                {isRefreshing ? "Refreshing..." : "Refresh"}
+                {isLoading ? "Refreshing..." : "Refresh"}
               </Button>
               <Button
                 variant="outline"
@@ -2139,6 +1988,7 @@ const OpenPlayDetailPage: React.FC = () => {
           reserveList={reserveList}
           waitlistList={waitlistList}
           gameMatches={gameMatches}
+          courtInfoList={courtInfoList}
           onDragEnd={onDragEnd}
           onAddCourt={addCourt}
           isCreatingGameMatch={isCreatingGameMatch}

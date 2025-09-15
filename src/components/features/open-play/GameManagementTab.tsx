@@ -8,6 +8,7 @@ import DraggablePill from "@/components/features/open-play/components/draggable-
 import AddCourtModal from "@/components/features/open-play/AddCourtModal";
 import RemovePlayerDialog from "@/components/features/open-play/components/RemovePlayerDialog";
 import type { Court, Match, Participant, Level } from "@/components/features/open-play/types";
+import type { CourtInfo } from "@/hooks/useCourtInfo";
 import { getSkillLevel, getSkillLevelAsLevel } from "@/components/features/open-play/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface GameManagementTabProps {
   reserveList: Participant[];
   waitlistList: Participant[];
   gameMatches?: any[]; // Add game matches from API
+  courtInfoList?: CourtInfo[]; // Add structured court info
   onDragEnd: (e: DragEndEvent) => Promise<void>;
   onAddCourt: (data: {
     courtId: string;
@@ -70,6 +72,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   reserveList,
   waitlistList,
   gameMatches = [],
+  courtInfoList = [],
   onDragEnd,
   onAddCourt,
   onRenameCourt,
@@ -92,6 +95,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   isRemovingPlayer = false,
 }) => {
   console.log(courtTeams)
+  console.log(matches)
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | undefined>(undefined);
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<Level | "All">("All");
@@ -221,16 +225,43 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   // Merge all courts with existing game courts
   const displayCourts = useMemo(() => {
     // Convert all courts to the format expected by the game management
-    const convertedAllCourts = allCourts.map(court => ({
-      id: court.id,
-      name: court.name,
-      capacity: court.capacity || 4,
-      status: "Open" as const,
-      location: court.location,
-      hourlyRate: court.hourlyRate,
-      images: court.images?.filter((img): img is string => typeof img === 'string'),
-      // Add any other properties needed for display
-    }));
+    const convertedAllCourts = allCourts.map(court => {
+      // Find matches for this court to determine status
+      const courtMatches = gameMatches.filter(match => match.courtId === court.id);
+      console.log(courtMatches)
+      // Determine court status based on matchStatusId
+      let courtStatus: "Open" | "IN-GAME" | "Closed" = "Open";
+      
+      if (courtMatches.length > 0) {
+        // Check if any match is in progress (matchStatusId === 5)
+        const hasInProgressMatch = courtMatches.some(match => match.matchStatusId === 5);
+        
+        if (hasInProgressMatch) {
+          courtStatus = "IN-GAME";
+        } else {
+          // Check for other active statuses (assuming 1-9 are active, 10+ are completed/ended)
+          const hasActiveMatch = courtMatches.some(match => {
+            const statusId = match.matchStatusId;
+            return statusId && statusId < 10 && statusId !== 5;
+          });
+          
+          if (hasActiveMatch) {
+            courtStatus = "Closed"; // Court is occupied but not in active gameplay
+          }
+        }
+      }
+      
+      return {
+        id: court.id,
+        name: court.name,
+        capacity: court.capacity || 4,
+        status: courtStatus,
+        location: court.location,
+        hourlyRate: court.hourlyRate,
+        images: court.images?.filter((img): img is string => typeof img === 'string'),
+        // Add any other properties needed for display
+      };
+    });
 
     // Create a map of existing game courts by ID
     const existingGameCourts = new Map(courts.map(court => [court.id, court]));
@@ -240,7 +271,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
       const existingGameCourt = existingGameCourts.get(court.id);
       return existingGameCourt || court;
     });
-  }, [allCourts, courts]);
+  }, [allCourts, courts, gameMatches]);
   return (
     <DndContext onDragEnd={onDragEnd}>
       <div className="flex-1 overflow-y-auto">
@@ -460,9 +491,9 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       Play Screen
                     </Button>
                     </div>
-                    {courts.length > 0 && (
+                    {(courtInfoList.length > 0 ? courtInfoList : courts).length > 0 && (
                       <p className="text-sm text-muted-foreground">
-                        {courts.length} court{courts.length !== 1 ? 's' : ''} loaded • {courts.filter(c => {
+                        {(courtInfoList.length > 0 ? courtInfoList : courts).length} court{(courtInfoList.length > 0 ? courtInfoList : courts).length !== 1 ? 's' : ''} loaded • {(courtInfoList.length > 0 ? courtInfoList : courts).filter(c => {
                           const teams = courtTeams[c.id] ?? { A: [], B: [] };
                           return teams.A.length > 0 || teams.B.length > 0;
                         }).length} with players
@@ -484,7 +515,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       Fetching all available courts...
                     </p>
                   </div>
-                ) : displayCourts.length === 0 ? (
+                ) : (courtInfoList.length > 0 ? courtInfoList : displayCourts).length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-6">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <Users className="h-8 w-8 text-gray-400" />
@@ -496,19 +527,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {displayCourts.map((court, idx) => {
+                    {(courtInfoList.length > 0 ? courtInfoList : displayCourts).map((court, idx) => {
                       console.log(court)
                       const teams = courtTeams[court.id] ?? { A: [], B: [] };
                       const perTeam = Math.floor(court.capacity / 2);
                       const hasMatch = teams.A.length > 0 || teams.B.length > 0;
                       const hasActiveMatch = courtHasActiveMatch(court.id);
-                      console.log('🏟️ Court analysis for court', court.id, ':', {
-                        teams,
-                        perTeam,
-                        hasMatch,
-                        hasActiveMatch,
-                        shouldShowCreateButton: !hasMatch && !hasActiveMatch
-                      });
+                   
                       return (
                         <div key={idx}>
                           <div className="p-2">
@@ -591,35 +616,157 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
               <div className="bg-white rounded-xl border shadow-sm p-4">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-sm font-semibold">Matches</p>
-                  <span className="text-xs text-muted-foreground">{matches.length} scheduled</span>
+                  <span className="text-xs text-muted-foreground">
+                    {matches.length} total • {matches.filter(m => m.status === 'Completed').length} completed • {matches.filter(m => m.status === 'Scheduled' || m.status === 'IN-GAME').length} active
+                  </span>
                 </div>
 
                 {matches.length === 0 ? (
                   <div className="rounded-md border p-3 text-xs text-muted-foreground">
-                    No matches yet. Confirm matches to generate them from court assignments.
+                    No matches yet. Create matches to see active and completed game results.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {matches.map((m) => (
-                      <div key={m.id} className="rounded-2xl border bg-card p-3 space-y-2">
+                      <div key={m.id} className={`rounded-2xl border-2 bg-card p-4 space-y-3 shadow-sm transition-all hover:shadow-md ${
+                        m.status === "Completed" 
+                          ? "border-gray-200 bg-gradient-to-br from-gray-50 to-white" 
+                          : m.status === "IN-GAME"
+                          ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
+                          : "border-gray-200 bg-gradient-to-br from-gray-50 to-white"
+                      }`}>
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold">{m.courtName}</p>
-                          <Badge variant={m.status === "Completed" ? "secondary" : "outline"}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${
+                              m.status === "Completed" ? "bg-gray-400" : 
+                              m.status === "IN-GAME" ? "bg-blue-500 animate-pulse" : 
+                              "bg-gray-300"
+                            }`}></div>
+                            <p className="text-sm font-semibold text-gray-800">{m.courtName}</p>
+                          </div>
+                          <Badge variant={
+                            m.status === "Completed" ? "secondary" : 
+                            m.status === "IN-GAME" ? "default" : 
+                            "outline"
+                          } className="text-xs">
                             {m.status}
                           </Badge>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <p className="font-medium">Team A {m.teamAName && `(${m.teamAName})`}</p>
-                            <p className="text-muted-foreground truncate">
-                              {m.teamA.map((p) => p.name).join(", ")}
-                            </p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Team A */}
+                          <div className={`p-3 rounded-lg border-2 transition-all ${
+                            m.status === "Completed" && m.winner === "A" 
+                              ? "border-green-200 bg-green-50" 
+                              : m.status === "Completed" && m.winner === "B"
+                              ? "border-gray-200 bg-gray-50 opacity-60"
+                              : "border-gray-200 bg-gray-50"
+                          }`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                m.status === "Completed" && m.winner === "A" 
+                                  ? "bg-green-500" 
+                                  : m.status === "Completed" && m.winner === "B"
+                                  ? "bg-gray-400"
+                                  : "bg-blue-500"
+                              }`}></div>
+                              <p className="font-semibold text-sm">
+                                Team A {m.teamAName && `(${m.teamAName})`}
+                              </p>
+                              {m.status === "Completed" && m.winner === "A" && (
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                  WINNER
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {m.teamA.map((player, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                                    m.status === "Completed" && m.winner === "A"
+                                      ? "bg-green-200 text-green-800"
+                                      : m.status === "Completed" && m.winner === "B"
+                                      ? "bg-gray-200 text-gray-500"
+                                      : "bg-blue-200 text-blue-800"
+                                  }`}>
+                                    {player.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className={`text-xs truncate ${
+                                      m.status === "Completed" && m.winner === "B"
+                                        ? "text-gray-500"
+                                        : "text-gray-700"
+                                    }`}>
+                                      {player.name}
+                                    </span>
+                                    <span className={`text-xs ${
+                                      m.status === "Completed" && m.winner === "B"
+                                        ? "text-gray-400"
+                                        : "text-gray-500"
+                                    }`}>
+                                      {player.skillLevel}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">Team B {m.teamBName && `(${m.teamBName})`}</p>
-                            <p className="text-muted-foreground truncate">
-                              {m.teamB.map((p) => p.name).join(", ")}
-                            </p>
+
+                          {/* Team B */}
+                          <div className={`p-3 rounded-lg border-2 transition-all ${
+                            m.status === "Completed" && m.winner === "B" 
+                              ? "border-green-200 bg-green-50" 
+                              : m.status === "Completed" && m.winner === "A"
+                              ? "border-gray-200 bg-gray-50 opacity-60"
+                              : "border-gray-200 bg-gray-50"
+                          }`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                m.status === "Completed" && m.winner === "B" 
+                                  ? "bg-green-500" 
+                                  : m.status === "Completed" && m.winner === "A"
+                                  ? "bg-gray-400"
+                                  : "bg-blue-500"
+                              }`}></div>
+                              <p className="font-semibold text-sm">
+                                Team B {m.teamBName && `(${m.teamBName})`}
+                              </p>
+                              {m.status === "Completed" && m.winner === "B" && (
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                  WINNER
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {m.teamB.map((player, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                                    m.status === "Completed" && m.winner === "B"
+                                      ? "bg-green-200 text-green-800"
+                                      : m.status === "Completed" && m.winner === "A"
+                                      ? "bg-gray-200 text-gray-500"
+                                      : "bg-blue-200 text-blue-800"
+                                  }`}>
+                                    {player.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className={`text-xs truncate ${
+                                      m.status === "Completed" && m.winner === "A"
+                                        ? "text-gray-500"
+                                        : "text-gray-700"
+                                    }`}>
+                                      {player.name}
+                                    </span>
+                                    <span className={`text-xs ${
+                                      m.status === "Completed" && m.winner === "A"
+                                        ? "text-gray-400"
+                                        : "text-gray-500"
+                                    }`}>
+                                      {player.skillLevel}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                         {m.status === "Scheduled" ? (
@@ -639,23 +786,57 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                               </Button>
                             </div>
                           </div>
-                        ) : (
+                        ) : m.status === "IN-GAME" ? (
                           <div className="text-xs">
-                            <p>
-                              Winner:{" "}
-                              <span className="font-medium">
-                                {m.winner === "A"
-                                  ? m.teamAName || m.teamA.map((p) => p.name).join(", ")
-                                  : m.teamBName || m.teamB.map((p) => p.name).join(", ")}
-                              </span>
-                            </p>
-                            <p className="text-muted-foreground">
-                              Loser:{" "}
-                              {m.winner === "A"
-                                ? m.teamBName || m.teamB.map((p) => p.name).join(", ")
-                                : m.teamAName || m.teamA.map((p) => p.name).join(", ")}
-                              {m.score ? ` • Score: ${m.score}` : ""}
-                            </p>
+                            <p className="text-blue-600 font-medium mb-2">Match in progress...</p>
+                            <div className="flex items-center justify-between gap-2">
+                              <Input
+                                className="h-8 w-28"
+                                placeholder="Score"
+                                value={scoreEntry[m.id] ?? ""}
+                                onChange={(e) => onSetScoreEntry(m.id, e.target.value)}
+                              />
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" variant="outline" onClick={() => onSetResult(m.id, "A")}>
+                                  Set A Win
+                                </Button>
+                                <Button size="sm" onClick={() => onSetResult(m.id, "B")}>
+                                  Set B Win
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-gray-700">Match Result</span>
+                              </div>
+                              {m.score && (
+                                <span className="text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded">
+                                  {m.score}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">Winner:</span>
+                                <span className="text-sm font-semibold text-green-700">
+                                  {m.winner === "A"
+                                    ? m.teamAName || "Team A"
+                                    : m.teamBName || "Team B"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">Loser:</span>
+                                <span className="text-sm text-gray-500">
+                                  {m.winner === "A"
+                                    ? m.teamBName || "Team B"
+                                    : m.teamAName || "Team A"}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>

@@ -67,7 +67,7 @@ export type Match = {
   teamB: Participant[];
   teamAName?: string;
   teamBName?: string;
-  status: "Scheduled" | "Completed";
+  status: "Scheduled" | "IN-GAME" | "Completed";
   winner?: "A" | "B";
   score?: string;
 };

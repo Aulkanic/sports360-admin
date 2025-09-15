@@ -399,7 +399,9 @@ const OpenPlayPage: React.FC = () => {
       setShowOccurrenceSelector(true);
     } else {
       // For single sessions or recurring sessions with only one occurrence, go directly to management
-      navigate(`/open-play/${session.id}`, { state: { session } });
+      // Use first occurrence ID for one-time sessions
+      const firstOccurrenceId = (session as any).occurrences?.[0]?.id || session.id;
+      navigate(`/open-play/${session.id}?occurrenceId=${firstOccurrenceId}`, { state: { session } });
     }
   };
 
@@ -415,7 +417,7 @@ const OpenPlayPage: React.FC = () => {
         occurrenceId: occurrence.id
       };
       
-      navigate(`/open-play/${selectedSessionForOccurrence.id}`, { 
+      navigate(`/open-play/${selectedSessionForOccurrence.id}?occurrenceId=${occurrence.id}`, { 
         state: { 
           session: sessionWithOccurrence,
           occurrence: occurrence
@@ -871,7 +873,10 @@ const OpenPlayPage: React.FC = () => {
                 isActive ? "border-green-200/50 bg-green-50/30" : "border-primary/10",
                 s.isDummy ? "border-dashed border-orange-300 bg-orange-50/20" : ""
               )}
-              onClick={() => navigate(`/open-play/${s.id}`, { state: { session: s } })}
+              onClick={() => {
+                const firstOccurrenceId = (s as any).occurrences?.[0]?.id || s.id;
+                navigate(`/open-play/${s.id}?occurrenceId=${firstOccurrenceId}`, { state: { session: s } });
+              }}
               role="button"
             >
               {/* Enhanced gradient accent */}
@@ -1667,7 +1672,8 @@ const OpenPlayPage: React.FC = () => {
               }}
               onSelectEvent={(event: RBCEvent) => {
                 const session = (event as any).resource as OpenPlaySession;
-                navigate(`/open-play/${session.id}`, { state: { session } });
+                const firstOccurrenceId = (session as any).occurrences?.[0]?.id || session.id;
+                navigate(`/open-play/${session.id}?occurrenceId=${firstOccurrenceId}`, { state: { session } });
               }}
               views={[Views.MONTH, Views.WEEK, Views.DAY]}
               date={calDate}
@@ -1700,7 +1706,10 @@ const OpenPlayPage: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">{session.when} • Court TBD • {session.eventType}</p>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => navigate(`/open-play/${session.id}`, { state: { session } })}>View</Button>
+                  <Button size="sm" onClick={() => {
+                    const firstOccurrenceId = (session as any).occurrences?.[0]?.id || session.id;
+                    navigate(`/open-play/${session.id}?occurrenceId=${firstOccurrenceId}`, { state: { session } });
+                  }}>View</Button>
                   <Button size="sm" variant="destructive" onClick={() => setDeleteId(session.id)}>Delete</Button>
                 </div>
               </div>
