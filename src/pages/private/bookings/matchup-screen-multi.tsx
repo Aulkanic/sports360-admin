@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import SplashVideo from "@/components/SplashVideo";
 import { AllCourtsView, FocusedCourtView } from "@/components/matchup";
 import { getGameMatchesByOccurrenceId } from "@/services/game-match.service";
-import { getOpenPlaySessionById } from "@/services/open-play.service";
 import { getAllCourts } from "@/services/court.service";
 import { getUserProfileImageUrl } from "@/utils/image.utils";
 import { API_CONFIG } from "@/config/api";
@@ -107,58 +106,52 @@ const MatchupScreenMulti: React.FC = () => {
   
   // Helper function to get avatar URL from user data (same as useOpenPlaySession hook)
   const getUserAvatarUrl = (user: any): string => {
-    console.log('getUserAvatarUrl: Processing user:', user);
     if (!user) {
-      console.log('getUserAvatarUrl: No user provided');
       return '/default_avatar.png';
     }
     
     // For registered users: check user.upload first
     if (user.upload?.filePath) {
-      console.log('getUserAvatarUrl: Found user.upload.filePath:', user.upload.filePath);
+      console.log('Setting avatar from user.upload.filePath:', user.upload.filePath);
       // If upload.filePath is a full URL, use it directly
       if (user.upload.filePath.startsWith('http')) {
-        console.log('getUserAvatarUrl: Using full URL from user.upload.filePath');
         return user.upload.filePath;
       }
       // If it's a relative path, construct URL with API_CONFIG.IMG_URL
-      console.log('getUserAvatarUrl: Constructing URL with API_CONFIG.IMG_URL');
-      return `${API_CONFIG.IMG_URL}/uploads/${user.upload.filePath}`;
+      return `${API_CONFIG.IMG_URL}${user.upload.filePath}`;
     }
     
     // For registered users: if upload.fileName exists, construct URL with API_CONFIG.IMG_URL
     if (user.upload?.fileName) {
-      console.log('getUserAvatarUrl: Found user.upload.fileName:', user.upload.fileName);
+      console.log('Setting avatar from user.upload.fileName:', user.upload.fileName);
       return `${API_CONFIG.IMG_URL}/uploads/${user.upload.fileName}`;
     }
     
     // For guest users: check user.personalInfo.upload
     if (user.personalInfo?.upload?.filePath) {
-      console.log('getUserAvatarUrl: Found user.personalInfo.upload.filePath:', user.personalInfo.upload.filePath);
+      console.log('Setting avatar from user.personalInfo.upload.filePath:', user.personalInfo.upload.filePath);
       // If upload.filePath is a full URL, use it directly
       if (user.personalInfo.upload.filePath.startsWith('http')) {
-        console.log('getUserAvatarUrl: Using full URL from user.personalInfo.upload.filePath');
         return user.personalInfo.upload.filePath;
       }
       // If it's a relative path, construct URL with API_CONFIG.IMG_URL
-      console.log('getUserAvatarUrl: Constructing URL with API_CONFIG.IMG_URL for personalInfo');
-      return `${API_CONFIG.IMG_URL}/uploads/${user.personalInfo.upload.filePath}`;
+      return `${API_CONFIG.IMG_URL}${user.personalInfo.upload.filePath}`;
     }
     
     // For guest users: if personalInfo.upload.fileName exists, construct URL with API_CONFIG.IMG_URL
     if (user.personalInfo?.upload?.fileName) {
-      console.log('getUserAvatarUrl: Found user.personalInfo.upload.fileName:', user.personalInfo.upload.fileName);
+      console.log('Setting avatar from user.personalInfo.upload.fileName:', user.personalInfo.upload.fileName);
       return `${API_CONFIG.IMG_URL}/uploads/${user.personalInfo.upload.fileName}`;
     }
     
     // If personalInfo.photoUrl exists, use it
     if (user.personalInfo?.photoUrl) {
-      console.log('getUserAvatarUrl: Found user.personalInfo.photoUrl:', user.personalInfo.photoUrl);
+      console.log('Setting avatar from user.personalInfo.photoUrl:', user.personalInfo.photoUrl);
       return user.personalInfo.photoUrl;
     }
     
     // Fallback to getUserProfileImageUrl utility
-    console.log('getUserAvatarUrl: Using fallback getUserProfileImageUrl');
+    console.log('Using fallback avatar from getUserProfileImageUrl');
     return getUserProfileImageUrl(user);
   };
   
@@ -173,128 +166,56 @@ const MatchupScreenMulti: React.FC = () => {
   const [pendingCourtId, setPendingCourtId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionData, setSessionData] = useState<any>(null);
 
-  // Debug session data changes
-  useEffect(() => {
-    console.log('🔍 SESSION DATA CHANGED:', sessionData);
-    if (sessionData?.occurrences) {
-      console.log('📊 SESSION DATA OCCURRENCES:', sessionData.occurrences);
-      sessionData.occurrences.forEach((occ: any, index: number) => {
-        console.log(`🏟️ OCCURRENCE ${index}:`, {
-          id: occ.id,
-          participantsCount: occ.participants?.length,
-          participants: occ.participants?.map((p: any) => ({
-            id: p.id,
-            participantId: p.id,
-            name: p.user?.personalInfo?.firstName,
-            email: p.user?.email,
-            userId: p.user?.id
-          }))
-        });
-      });
-    } else {
-      console.log('❌ NO SESSION DATA OCCURRENCES FOUND');
-    }
-  }, [sessionData]);
+  // Convert game match participant to our Participant interface
+  const convertGameMatchParticipant = (participant: any): Participant => {
+    console.log('Converting game match participant:', {
+      id: participant.id,
+      participantId: participant.participantId,
+      name: participant.user?.personalInfo?.firstName,
+      teamNumber: participant.teamNumber
+    });
 
-  // Get full participant information by matching participant ID
-  const getFullParticipantInfo = (participantId: string) => {
-    
-    // First check if we have session data with occurrence participants
-    if (sessionData?.occurrences) {
-      console.log('✅ SESSION DATA HAS OCCURRENCES, SEARCHING...');
-      for (const occurrence of sessionData.occurrences) {
-        console.log(`🏟️ CHECKING OCCURRENCE ${occurrence.id}:`, {
-          id: occurrence.id,
-          participantsCount: occurrence.participants?.length,
-          participants: occurrence.participants?.map((p: any) => ({
-            id: p.id,
-            idType: typeof p.id,
-            name: p.user?.personalInfo?.firstName
-          }))
-        });
-        
-        if (occurrence.participants) {
-          console.log('👥 OCCURRENCE PARTICIPANTS:', occurrence.participants.map((p: any) => ({ 
-            id: p.id, 
-            idString: p.id.toString(),
-            name: p.user?.personalInfo?.firstName 
-          })));
-          
-          const fullParticipant = occurrence.participants.find((p: any) => {
-            const match = p.id.toString() === participantId;
-            console.log(`🔍 COMPARING: ${p.id} (${typeof p.id}) === ${participantId} (${typeof participantId}) = ${match}`);
-            return match;
-          });
-          
-          if (fullParticipant) {
-            console.log('✅ FOUND FULL PARTICIPANT:', {
-              id: fullParticipant.id,
-              name: fullParticipant.user?.personalInfo?.firstName,
-              email: fullParticipant.user?.email,
-              user: fullParticipant.user
-            });
-            
-            const enrichedParticipant = {
-              id: fullParticipant.id.toString(),
-              name: fullParticipant.user?.personalInfo ? 
-                `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
-                fullParticipant.user?.userName || 'Unknown Player',
-              avatar: fullParticipant.user ? getUserAvatarUrl(fullParticipant.user) : '',
-              initials: fullParticipant.user?.personalInfo ? 
-                `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
-                fullParticipant.user?.userName?.[0] || '?',
-              level: (fullParticipant.user?.personalInfo?.skill?.description || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-              status: (fullParticipant.playerStatus?.description === 'READY' ? 'Ready' : 
-                      fullParticipant.playerStatus?.description === 'IN-GAME' ? 'In-Game' :
-                      fullParticipant.playerStatus?.description === 'RESTING' ? 'Resting' :
-                      fullParticipant.playerStatus?.description === 'RESERVE' ? 'Reserve' :
-                      fullParticipant.playerStatus?.description === 'WAITLIST' ? 'Waitlist' : 'Ready') as any,
-              // API fields
-              playerStatusId: fullParticipant.playerStatusId,
-              registeredAt: fullParticipant.registeredAt,
-              notes: fullParticipant.notes,
-              statusId: fullParticipant.statusId,
-              paymentAmount: fullParticipant.paymentAmount,
-              apiPaymentStatus: fullParticipant.paymentStatus,
-              updatedPlayerStatusAt: fullParticipant.updatedPlayerStatusAt,
-              user: fullParticipant.user ? {
-                ...fullParticipant.user,
-                personalInfo: fullParticipant.user.personalInfo ? {
-                  ...fullParticipant.user.personalInfo,
-                  upload: fullParticipant.user.personalInfo.upload || undefined
-                } : undefined
-              } : undefined,
-              apiStatus: fullParticipant.status,
-              playerStatus: fullParticipant.playerStatus,
-              email: fullParticipant.user?.email,
-              contactNo: fullParticipant.user?.personalInfo?.contactNo || undefined,
-              paymentStatus: (fullParticipant.paymentStatus === 'Paid' ? 'Paid' : 
-                             fullParticipant.paymentStatus === 'Pending' ? 'Pending' : 
-                             fullParticipant.paymentStatus === 'Rejected' ? 'Rejected' : 'Paid') as 'Paid' | 'Pending' | 'Rejected',
-              skillLevel: fullParticipant.user?.personalInfo?.skill?.description || 'Intermediate',
-              matchCount: fullParticipant.matchCount || 0
-            };
-            
-            console.log('🎯 RETURNING ENRICHED PARTICIPANT:', enrichedParticipant);
-            return enrichedParticipant;
-          }
-        }
-      }
-    } else {
-      console.log('❌ NO SESSION DATA OCCURRENCES AVAILABLE');
-    }
-    
-    console.log('❌ NO FULL PARTICIPANT FOUND FOR ID:', participantId);
-    console.log('📊 AVAILABLE SESSION DATA:', sessionData);
-    return null;
+    return {
+      id: participant.id.toString(),
+      name: participant.user?.personalInfo ? 
+        `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}`.trim() :
+        participant.user?.userName || 'Unknown Player',
+      avatar: participant.user ? getUserAvatarUrl(participant.user) : '',
+      initials: participant.user?.personalInfo ? 
+        `${participant.user.personalInfo.firstName?.[0]}${participant.user.personalInfo.lastName?.[0]}` :
+        participant.user?.userName?.[0] || 'U',
+      level: (participant.user?.personalInfo?.skill?.description || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+      status: 'Ready' as any, // Default status for game match participants
+      // API fields
+      playerStatusId: participant.playerStatusId,
+      registeredAt: participant.joinedAt,
+      notes: null,
+      statusId: participant.playerStatusId,
+      paymentAmount: null,
+      apiPaymentStatus: null,
+      updatedPlayerStatusAt: participant.updatedAt,
+      user: participant.user ? {
+        ...participant.user,
+        personalInfo: participant.user.personalInfo ? {
+          ...participant.user.personalInfo,
+          upload: participant.user.personalInfo.upload || undefined
+        } : undefined
+      } : undefined,
+      apiStatus: undefined,
+      playerStatus: undefined,
+      email: participant.user?.email,
+      contactNo: participant.user?.personalInfo?.contactNo || undefined,
+      paymentStatus: 'Paid' as 'Paid' | 'Pending' | 'Rejected',
+      skillLevel: participant.user?.personalInfo?.skill?.description || 'Intermediate',
+      matchCount: participant.matchCount || 0
+    };
   };
 
   // Log state changes (reduced logging)
   useEffect(() => {
     if (showSplashVideo) {
-      console.log('🔄 SPLASH VIDEO STATE - showSplashVideo:', showSplashVideo, 'pendingCourtId:', pendingCourtId);
+      console.log('Splash video state changed:', { showSplashVideo, pendingCourtId });
     }
   }, [showSplashVideo, pendingCourtId]);
 
@@ -306,94 +227,34 @@ const MatchupScreenMulti: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch real data based on occurrence ID
+  // Fetch real data based on occurrence ID using only two APIs
   const fetchMatchupData = async (occurrenceId: string) => {
-    console.log('🚀 FETCHING MATCHUP DATA FOR OCCURRENCE:', occurrenceId);
     setIsLoading(true);
     setError(null);
     
     try {
-      // First, get session info to get the hub ID
-      let sessionInfo = null;
-      let hubId = null;
+      // Get hubId from localStorage or use default
+      const hubId = localStorage.getItem('activeHubId') || '1';
       
-      let gameMatches: any[] = [];
+      // Fetch game matches and courts in parallel
+      const [gameMatches, allCourts] = await Promise.all([
+        getGameMatchesByOccurrenceId(occurrenceId),
+        getAllCourts({ hubId: hubId })
+      ]);
       
-      try {
-        // First fetch game matches to get session ID
-        console.log('📡 CALLING getGameMatchesByOccurrenceId...');
-        gameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
-        console.log('📊 FETCHED GAME MATCHES:', {
-          occurrenceId,
-          matchesCount: gameMatches.length,
-          matches: gameMatches.map((match, index) => ({
-            index,
-            id: match.id,
-            occurrenceId: match.occurrenceId,
-            courtId: match.courtId,
-            participantsCount: match.participants?.length,
-            participants: match.participants?.map((p: any) => ({
-              id: p.id,
-              participantId: p.participantId,
-              teamNumber: p.teamNumber,
-              hasUser: !!p.user
-            }))
-          }))
-        });
-        
-        if (gameMatches.length > 0 && gameMatches[0]?.occurrence?.sessionId) {
-          const sessionId = gameMatches[0].occurrence.sessionId;
-          console.log('📡 CALLING getOpenPlaySessionById with sessionId:', sessionId);
-          // Fetch session info using the session ID from the occurrence
-          sessionInfo = await getOpenPlaySessionById(sessionId);
-          hubId = (sessionInfo as any)?.hubId;
-          // Store session data for participant matching
-          setSessionData(sessionInfo);
-          console.log('✅ FETCHED SESSION INFO:', {
-            sessionId,
-            hubId,
-            occurrencesCount: sessionInfo?.occurrences?.length,
-            firstOccurrenceParticipants: sessionInfo?.occurrences?.[0]?.participants?.length,
-            participants: sessionInfo?.occurrences?.[0]?.participants?.map((p: any) => ({
-              id: p.id,
-              name: p.user?.personalInfo?.firstName,
-              email: p.user?.email,
-              userId: p.user?.id
-            }))
-          });
-        } else {
-          console.warn('❌ NO SESSION ID FOUND IN GAME MATCHES');
-        }
-      } catch (sessionError) {
-        console.warn('Could not fetch session info:', sessionError);
-      }
-      
-      // If we don't have hubId from session, try to get it from localStorage or use a default
-      if (!hubId) {
-        // You might want to store hubId in localStorage when opening the matchup
-        hubId = localStorage.getItem('activeHubId') || '1'; // Default fallback
-      }
-      
-      // Fetch all courts from the hub using the correct API
-      console.log('Fetching courts for hubId:', hubId);
-      const allCourts = await getAllCourts({ hubId: hubId });
-      console.log('Fetched all courts from /courts/get-all-courts:', allCourts);
+      console.log('Fetched game matches:', gameMatches.length);
+      console.log('Fetched courts:', allCourts.length);
       
       // Filter to show only active matches (matchStatusId <= 10)
       const activeGameMatches = gameMatches.filter((match: any) => {
         const statusId = match.matchStatusId;
         const isActive = statusId && Number(statusId) <= 10;
-        console.log(`🔍 Filtering matchup match ${match.id}:`, { matchStatusId: statusId, type: typeof statusId, isActive });
         return isActive;
       });
       
-      console.log('Using active game matches only:', {
-        totalMatches: gameMatches.length,
-        activeMatches: activeGameMatches.length,
-        activeMatchIds: activeGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId }))
-      });
+      console.log('Active game matches:', activeGameMatches.length);
       
-      // Create a map of courtId to match for quick lookup (only active matches)
+      // Create a map of courtId to match for quick lookup
       const courtToMatchMap = new Map();
       activeGameMatches.forEach((match: any) => {
         if (match.courtId) {
@@ -411,84 +272,14 @@ const MatchupScreenMulti: React.FC = () => {
           const teamB: Participant[] = [];
           
           if (match.participants && match.participants.length > 0) {
-            console.log(`🎮 PROCESSING MATCH ${match.id} PARTICIPANTS:`, match.participants.length);
-            match.participants.forEach((participant: any, index: number) => {
-              // Use participantId instead of id for matching
-              const participantId = (participant as any).participantId?.toString() || participant.id?.toString() || `p${index}`;
-              console.log(`👤 PROCESSING PARTICIPANT ${index}:`, {
-                participantId,
-                teamNumber: participant.teamNumber,
-                hasUser: !!participant.user,
-                user: participant.user
-              });
-              
-              // Try to get full participant info from session data
-              console.log(`🔍 CALLING getFullParticipantInfo for participantId: ${participantId}`);
-              const fullParticipantInfo = getFullParticipantInfo(participantId);
-              console.log(`📊 getFullParticipantInfo result:`, fullParticipantInfo);
-              
-              const player: Participant = fullParticipantInfo || {
-                id: participantId,
-                name: participant.user?.personalInfo ? 
-                  `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}`.trim() :
-                  participant.user?.userName || 'Unknown Player',
-                avatar: participant.user ? getUserAvatarUrl(participant.user) : '',
-                initials: participant.user?.personalInfo ? 
-                  `${participant.user.personalInfo.firstName?.[0] || ''}${participant.user.personalInfo.lastName?.[0] || ''}` :
-                  participant.user?.userName?.[0] || 'U',
-                level: (participant.user?.personalInfo?.skill?.description || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-                status: (match.gameStatus === 5 || match.gameStatus === '5' || 
-                    match.gameStatus?.toLowerCase() === 'ingame' || 
-                    match.gameStatus?.toLowerCase() === 'in_progress') ? 'In-Game' : 'Ready' as any,
-                // API fields
-                playerStatusId: participant.playerStatusId,
-                registeredAt: participant.registeredAt,
-                notes: participant.notes,
-                statusId: participant.statusId,
-                paymentAmount: participant.paymentAmount,
-                apiPaymentStatus: participant.paymentStatus,
-                updatedPlayerStatusAt: participant.updatedPlayerStatusAt,
-                user: participant.user ? {
-                  ...participant.user,
-                  personalInfo: participant.user.personalInfo ? {
-                    ...participant.user.personalInfo,
-                    upload: participant.user.personalInfo.upload || undefined
-                  } : undefined
-                } : undefined,
-                apiStatus: participant.status,
-                playerStatus: participant.playerStatus,
-                email: participant.user?.email,
-                contactNo: participant.user?.personalInfo?.contactNo || undefined,
-                paymentStatus: (participant.paymentStatus === 'Paid' ? 'Paid' : 
-                               participant.paymentStatus === 'Pending' ? 'Pending' : 
-                               participant.paymentStatus === 'Rejected' ? 'Rejected' : 'Paid') as 'Paid' | 'Pending' | 'Rejected',
-                skillLevel: participant.user?.personalInfo?.skill?.description || 'Intermediate',
-                matchCount: participant.matchCount || 0
-              };
-              
-              console.log(`🎯 CREATED PLAYER OBJECT:`, {
-                id: player.id,
-                name: player.name,
-                teamNumber: participant.teamNumber,
-                hasUser: !!player.user
-              });
+            match.participants.forEach((participant: any) => {
+              const player = convertGameMatchParticipant(participant);
               
               // Distribute players between teams based on teamNumber (1 = Team A, 2 = Team B)
-              if ((participant as any).teamNumber === 1) {
+              if (participant.teamNumber === 1) {
                 teamA.push(player);
-                console.log(`✅ ADDED TO TEAM A:`, player.name);
-              } else if ((participant as any).teamNumber === 2) {
+              } else if (participant.teamNumber === 2) {
                 teamB.push(player);
-                console.log(`✅ ADDED TO TEAM B:`, player.name);
-              } else {
-                // Fallback to alternating if no teamNumber
-                if (index % 2 === 0) {
-                  teamA.push(player);
-                  console.log(`✅ ADDED TO TEAM A (fallback):`, player.name);
-                } else {
-                  teamB.push(player);
-                  console.log(`✅ ADDED TO TEAM B (fallback):`, player.name);
-                }
               }
             });
           }
@@ -497,12 +288,8 @@ const MatchupScreenMulti: React.FC = () => {
             id: court.id,
             name: court.courtName || `Court ${court.id}`,
             capacity: court.capacity || 4,
-            status: (match.gameStatus === 5 || match.gameStatus === '5' || 
-                    match.gameStatus?.toLowerCase() === 'ingame' || 
-                    match.gameStatus?.toLowerCase() === 'in_progress') ? 'In-Game' : 
-                    (match.gameStatus === 6 || match.gameStatus === '6' || 
-                    match.gameStatus?.toLowerCase() === 'ended' || 
-                    match.gameStatus?.toLowerCase() === 'completed') ? 'Closed' : 'Open',
+            status: (match.matchStatusId === 5) ? 'In-Game' : 
+                    (match.matchStatusId === 6) ? 'Closed' : 'Open',
             teamA,
             teamB,
             teamAName: match.team1Name,
@@ -534,8 +321,8 @@ const MatchupScreenMulti: React.FC = () => {
       // Create matchup data
       const matchupData: MatchupData = {
         id: `matchup-${occurrenceId}`,
-        sport: (sessionInfo as any)?.sport?.name || 'Pickleball',
-        hubName: (sessionInfo as any)?.hub?.sportsHubName,
+        sport: gameMatches[0]?.occurrence?.session?.sport?.name || 'Pickleball',
+        hubName: gameMatches[0]?.occurrence?.session?.hub?.sportsHubName,
         occurrenceId: occurrenceId,
         occurrenceDate: gameMatches[0]?.occurrence?.occurrenceDate,
         occurrenceStartTime: gameMatches[0]?.occurrence?.startTime,
@@ -602,11 +389,9 @@ const MatchupScreenMulti: React.FC = () => {
       setFocusedCourtId(location.state.matchup.focusedCourtId || activeCourtId);
     } else if (finalOccurrenceId) {
       // Fetch real data based on occurrence ID (from URL params or localStorage)
-      console.log('Fetching real data for occurrence:', finalOccurrenceId);
       fetchMatchupData(finalOccurrenceId);
     } else {
       // Fallback to sample data if no occurrence ID available
-      console.log('No occurrence ID found, using sample data');
       setMatchup({
         id: id || "match-1",
         sport: "Pickleball",
@@ -651,14 +436,12 @@ const MatchupScreenMulti: React.FC = () => {
   };
 
   const focusCourt = (courtId: string) => {
-    console.log('🎯 FOCUS COURT:', courtId);
     setPendingCourtId(courtId);
     setShowSplashVideo(true);
   };
   
 
   const handleSplashVideoEnd = () => {
-    console.log('🎬 VIDEO ENDED - transitioning to match card');
     if (pendingCourtId) {
       setFocusedCourtId(pendingCourtId);
       localStorage.setItem('activeCourtId', pendingCourtId);
@@ -734,8 +517,8 @@ const MatchupScreenMulti: React.FC = () => {
         src="/splash_screen.mp4"
         show={showSplashVideo}
         onEnd={handleSplashVideoEnd}
-        onPlay={() => console.log("🎥 Video playing")}
-        onError={() => console.error("🎥 Video error")}
+        onPlay={() => console.log("Video playing")}
+        onError={() => console.error("Video error")}
         loadingText="Loading Match..."
         playButtonText="Click to Play Video"
         timeoutMs={7500}
