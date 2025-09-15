@@ -4,10 +4,34 @@ import { ActiveMatchCard, WaitingMatchCard, ClosedMatchCard } from '@/components
 interface Participant {
   id: string;
   name: string;
-  avatar: string;
-  initials: string;
-  level: string;
+  avatar?: string;
+  initials?: string;
+  level?: string;
   status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo?: string;
+      skill?: {
+        id: number;
+        description: string;
+      };
+      upload?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+      };
+    };
+  };
+  email?: string;
+  contactNo?: string;
+  paymentStatus?: 'Paid' | 'Pending' | 'Rejected';
+  skillLevel?: string;
+  matchCount?: number;
 }
 
 interface Court {

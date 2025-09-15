@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { CourtCanvas } from "@/components/features/open-play/components/court-canvas";
 import CourtMatchmakingCard from "@/components/features/open-play/components/court-matching-card";
+import CourtMatchCard from "@/components/features/open-play/components/CourtMatchCard";
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
 import AddCourtModal from "@/components/features/open-play/AddCourtModal";
@@ -10,7 +11,6 @@ import RemovePlayerDialog from "@/components/features/open-play/components/Remov
 import type { Court, Match, Participant, Level } from "@/components/features/open-play/types";
 import type { CourtInfo } from "@/hooks/useCourtInfo";
 import { getSkillLevel, getSkillLevelAsLevel } from "@/components/features/open-play/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trophy, Users, Filter, Search, X, Star } from "lucide-react";
@@ -662,233 +662,51 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
               </CourtCanvas>
 
               {/* Matches */}
-              <div className="bg-white rounded-xl border shadow-sm p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-semibold">Matches</p>
-                  <span className="text-xs text-muted-foreground">
-                    {matches.length} total • {matches.filter(m => m.status === 'Completed').length} completed • {matches.filter(m => m.status === 'Scheduled' || m.status === 'IN-GAME').length} active
-                  </span>
+              <div className="bg-white rounded-xl border shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-800">Court Matches</h2>
+                    <p className="text-sm text-gray-600">Live and completed match results</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-gray-600">
+                        {matches.filter(m => m.status === 'Scheduled' || m.status === 'IN-GAME').length} Active
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <span className="text-gray-600">
+                        {matches.filter(m => m.status === 'Completed').length} Completed
+                      </span>
+                    </div>
+                    <div className="text-gray-500">
+                      {matches.length} Total
+                    </div>
+                  </div>
                 </div>
 
                 {matches.length === 0 ? (
-                  <div className="rounded-md border p-3 text-xs text-muted-foreground">
-                    No matches yet. Create matches to see active and completed game results.
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Trophy className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Matches Yet</h3>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">
+                      Create matches on the courts above to see active and completed game results here.
+                    </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {matches.map((m) => (
-                      <div key={m.id} className={`rounded-2xl border-2 bg-card p-4 space-y-3 shadow-sm transition-all hover:shadow-md ${
-                        m.status === "Completed" 
-                          ? "border-gray-200 bg-gradient-to-br from-gray-50 to-white" 
-                          : m.status === "IN-GAME"
-                          ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
-                          : "border-gray-200 bg-gradient-to-br from-gray-50 to-white"
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                              m.status === "Completed" ? "bg-gray-400" : 
-                              m.status === "IN-GAME" ? "bg-blue-500 animate-pulse" : 
-                              "bg-gray-300"
-                            }`}></div>
-                            <p className="text-sm font-semibold text-gray-800">{m.courtName}</p>
-                          </div>
-                          <Badge variant={
-                            m.status === "Completed" ? "secondary" : 
-                            m.status === "IN-GAME" ? "default" : 
-                            "outline"
-                          } className="text-xs">
-                            {m.status}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Team A */}
-                          <div className={`p-3 rounded-lg border-2 transition-all ${
-                            m.status === "Completed" && m.winner === "A" 
-                              ? "border-green-200 bg-green-50" 
-                              : m.status === "Completed" && m.winner === "B"
-                              ? "border-gray-200 bg-gray-50 opacity-60"
-                              : "border-gray-200 bg-gray-50"
-                          }`}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                m.status === "Completed" && m.winner === "A" 
-                                  ? "bg-green-500" 
-                                  : m.status === "Completed" && m.winner === "B"
-                                  ? "bg-gray-400"
-                                  : "bg-blue-500"
-                              }`}></div>
-                              <p className="font-semibold text-sm">
-                                Team A {m.teamAName && `(${m.teamAName})`}
-                              </p>
-                              {m.status === "Completed" && m.winner === "A" && (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-                                  WINNER
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              {m.teamA.map((player, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                                    m.status === "Completed" && m.winner === "A"
-                                      ? "bg-green-200 text-green-800"
-                                      : m.status === "Completed" && m.winner === "B"
-                                      ? "bg-gray-200 text-gray-500"
-                                      : "bg-blue-200 text-blue-800"
-                                  }`}>
-                                    {player.name.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className={`text-xs truncate ${
-                                      m.status === "Completed" && m.winner === "B"
-                                        ? "text-gray-500"
-                                        : "text-gray-700"
-                                    }`}>
-                                      {player.name}
-                                    </span>
-                                    <span className={`text-xs ${
-                                      m.status === "Completed" && m.winner === "B"
-                                        ? "text-gray-400"
-                                        : "text-gray-500"
-                                    }`}>
-                                      {player.skillLevel}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Team B */}
-                          <div className={`p-3 rounded-lg border-2 transition-all ${
-                            m.status === "Completed" && m.winner === "B" 
-                              ? "border-green-200 bg-green-50" 
-                              : m.status === "Completed" && m.winner === "A"
-                              ? "border-gray-200 bg-gray-50 opacity-60"
-                              : "border-gray-200 bg-gray-50"
-                          }`}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                m.status === "Completed" && m.winner === "B" 
-                                  ? "bg-green-500" 
-                                  : m.status === "Completed" && m.winner === "A"
-                                  ? "bg-gray-400"
-                                  : "bg-blue-500"
-                              }`}></div>
-                              <p className="font-semibold text-sm">
-                                Team B {m.teamBName && `(${m.teamBName})`}
-                              </p>
-                              {m.status === "Completed" && m.winner === "B" && (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-                                  WINNER
-                                </span>
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              {m.teamB.map((player, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                                    m.status === "Completed" && m.winner === "B"
-                                      ? "bg-green-200 text-green-800"
-                                      : m.status === "Completed" && m.winner === "A"
-                                      ? "bg-gray-200 text-gray-500"
-                                      : "bg-blue-200 text-blue-800"
-                                  }`}>
-                                    {player.name.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className={`text-xs truncate ${
-                                      m.status === "Completed" && m.winner === "A"
-                                        ? "text-gray-500"
-                                        : "text-gray-700"
-                                    }`}>
-                                      {player.name}
-                                    </span>
-                                    <span className={`text-xs ${
-                                      m.status === "Completed" && m.winner === "A"
-                                        ? "text-gray-400"
-                                        : "text-gray-500"
-                                    }`}>
-                                      {player.skillLevel}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        {m.status === "Scheduled" ? (
-                          <div className="flex items-center justify-between gap-2">
-                            <Input
-                              className="h-8 w-28"
-                              placeholder="Score"
-                              value={scoreEntry[m.id] ?? ""}
-                              onChange={(e) => onSetScoreEntry(m.id, e.target.value)}
-                            />
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" onClick={() => onSetResult(m.id, "A")}>
-                                Set A Win
-                              </Button>
-                              <Button size="sm" onClick={() => onSetResult(m.id, "B")}>
-                                Set B Win
-                              </Button>
-                            </div>
-                          </div>
-                        ) : m.status === "IN-GAME" ? (
-                          <div className="text-xs">
-                            <p className="text-blue-600 font-medium mb-2">Match in progress...</p>
-                            <div className="flex items-center justify-between gap-2">
-                              <Input
-                                className="h-8 w-28"
-                                placeholder="Score"
-                                value={scoreEntry[m.id] ?? ""}
-                                onChange={(e) => onSetScoreEntry(m.id, e.target.value)}
-                              />
-                              <div className="flex items-center gap-2">
-                                <Button size="sm" variant="outline" onClick={() => onSetResult(m.id, "A")}>
-                                  Set A Win
-                                </Button>
-                                <Button size="sm" onClick={() => onSetResult(m.id, "B")}>
-                                  Set B Win
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-sm font-medium text-gray-700">Match Result</span>
-                              </div>
-                              {m.score && (
-                                <span className="text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded">
-                                  {m.score}
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-600">Winner:</span>
-                                <span className="text-sm font-semibold text-green-700">
-                                  {m.winner === "A"
-                                    ? m.teamAName || "Team A"
-                                    : m.teamBName || "Team B"}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-600">Loser:</span>
-                                <span className="text-sm text-gray-500">
-                                  {m.winner === "A"
-                                    ? m.teamBName || "Team B"
-                                    : m.teamAName || "Team A"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {matches.map((match) => (
+                      <CourtMatchCard
+                        key={match.id}
+                        match={match}
+                        scoreEntry={scoreEntry[match.id] ?? ""}
+                        onSetScoreEntry={(score) => onSetScoreEntry(match.id, score)}
+                        onSetResult={(winner) => onSetResult(match.id, winner)}
+                      />
                     ))}
                   </div>
                 )}

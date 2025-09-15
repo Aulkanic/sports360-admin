@@ -214,7 +214,7 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <div className="font-medium text-gray-900 truncate">
-                            {participant?.name}
+                            {participant?.name || `${participant.firstName} ${participant.lastName}`}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">

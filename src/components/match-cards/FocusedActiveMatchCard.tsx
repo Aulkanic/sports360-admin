@@ -4,9 +4,9 @@ import { gsap } from 'gsap';
 interface Participant {
   id: string;
   name: string;
-  avatar: string;
-  initials: string;
-  level: string;
+  avatar?: string;
+  initials?: string;
+  level?: string;
   status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
   user?: {
     id: string;
@@ -16,12 +16,22 @@ interface Participant {
       firstName: string;
       lastName: string;
       contactNo?: string;
-      photoUrl?: string;
+      skill?: {
+        id: number;
+        description: string;
+      };
+      upload?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+      };
     };
   };
   email?: string;
   contactNo?: string;
   paymentStatus?: 'Paid' | 'Pending' | 'Rejected';
+  skillLevel?: string;
+  matchCount?: number;
 }
 
 interface Court {
@@ -230,6 +240,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                 <span className="text-sm text-gray-300">
                   {court.teamA[0]?.level || 'Intermediate'}
                 </span>
+                {court.teamA[0]?.matchCount && court.teamA[0].matchCount > 0 && (
+                  <span className="bg-white/20 px-1 rounded text-xs">
+                    {court.teamA[0].matchCount}
+                  </span>
+                )}
                 {court.teamA[0]?.paymentStatus && (
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     court.teamA[0].paymentStatus === 'Paid' ? 'bg-green-500' :
@@ -240,9 +255,14 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                   </span>
                 )}
               </div>
-              {(court.teamA[0] as any)?.email && (
+              {court.teamA[0]?.email && (
                 <p className="text-xs text-gray-400 truncate">
-                  {(court.teamA[0] as any).email}
+                  {court.teamA[0].email}
+                </p>
+              )}
+              {court.teamA[0]?.contactNo && (
+                <p className="text-xs text-gray-400 truncate">
+                  {court.teamA[0].contactNo}
                 </p>
               )}
             </div>
@@ -273,6 +293,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                 <span className="text-sm text-gray-300">
                   {court.teamA[1]?.level || 'Intermediate'}
                 </span>
+                {court.teamA[1]?.matchCount && court.teamA[1].matchCount > 0 && (
+                  <span className="bg-white/20 px-1 rounded text-xs">
+                    {court.teamA[1].matchCount}
+                  </span>
+                )}
                 {court.teamA[1]?.paymentStatus && (
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     court.teamA[1].paymentStatus === 'Paid' ? 'bg-green-500' :
@@ -283,9 +308,14 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                   </span>
                 )}
               </div>
-              {(court.teamA[1] as any)?.email && (
+              {court.teamA[1]?.email && (
                 <p className="text-xs text-gray-400 truncate">
-                  {(court.teamA[1] as any).email}
+                  {court.teamA[1].email}
+                </p>
+              )}
+              {court.teamA[1]?.contactNo && (
+                <p className="text-xs text-gray-400 truncate">
+                  {court.teamA[1].contactNo}
                 </p>
               )}
             </div>
@@ -322,6 +352,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                 <span className="text-sm text-gray-300">
                   {court.teamB[0]?.level || 'Intermediate'}
                 </span>
+                {court.teamB[0]?.matchCount && court.teamB[0].matchCount > 0 && (
+                  <span className="bg-white/20 px-1 rounded text-xs">
+                    {court.teamB[0].matchCount}
+                  </span>
+                )}
                 {court.teamB[0]?.paymentStatus && (
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     court.teamB[0].paymentStatus === 'Paid' ? 'bg-green-500' :
@@ -332,9 +367,14 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                   </span>
                 )}
               </div>
-              {(court.teamB[0] as any)?.email && (
+              {court.teamB[0]?.email && (
                 <p className="text-xs text-gray-400 truncate">
-                  {(court.teamB[0] as any).email}
+                  {court.teamB[0].email}
+                </p>
+              )}
+              {court.teamB[0]?.contactNo && (
+                <p className="text-xs text-gray-400 truncate">
+                  {court.teamB[0].contactNo}
                 </p>
               )}
             </div>
@@ -365,6 +405,11 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                 <span className="text-sm text-gray-300">
                   {court.teamB[1]?.level || 'Intermediate'}
                 </span>
+                {court.teamB[1]?.matchCount && court.teamB[1].matchCount > 0 && (
+                  <span className="bg-white/20 px-1 rounded text-xs">
+                    {court.teamB[1].matchCount}
+                  </span>
+                )}
                 {court.teamB[1]?.paymentStatus && (
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     court.teamB[1].paymentStatus === 'Paid' ? 'bg-green-500' :
@@ -375,9 +420,14 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                   </span>
                 )}
               </div>
-              {(court.teamB[1] as any)?.email && (
+              {court.teamB[1]?.email && (
                 <p className="text-xs text-gray-400 truncate">
-                  {(court.teamB[1] as any).email}
+                  {court.teamB[1].email}
+                </p>
+              )}
+              {court.teamB[1]?.contactNo && (
+                <p className="text-xs text-gray-400 truncate">
+                  {court.teamB[1].contactNo}
                 </p>
               )}
             </div>

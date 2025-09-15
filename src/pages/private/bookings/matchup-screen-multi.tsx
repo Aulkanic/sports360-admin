@@ -8,6 +8,7 @@ import { getGameMatchesByOccurrenceId } from "@/services/game-match.service";
 import { getOpenPlaySessionById } from "@/services/open-play.service";
 import { getAllCourts } from "@/services/court.service";
 import { getUserProfileImageUrl } from "@/utils/image.utils";
+import { API_CONFIG } from "@/config/api";
 import { 
   ArrowLeft,
   Play,
@@ -18,25 +19,58 @@ import {
 interface Participant {
   id: string;
   name: string;
-  avatar: string;
-  initials: string;
-  level: string;
+  avatar?: string;
+  initials?: string;
+  level?: string;
   status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
+  // API fields
+  playerStatusId?: number;
+  registeredAt?: string;
+  notes?: string | null;
+  statusId?: number;
+  paymentAmount?: string | null;
+  apiPaymentStatus?: string | null;
+  updatedPlayerStatusAt?: string | null;
   user?: {
     id: string;
     userName: string;
     email: string;
+    upload?: {
+      id: string;
+      fileName: string;
+      filePath: string;
+      fileType?: string;
+      fileSize?: string;
+    } | null;
     personalInfo?: {
       firstName: string;
       lastName: string;
       contactNo?: string;
+      skillId?: number;
       upload?: {
         id: string;
         fileName: string;
         filePath: string;
       };
+      skill?: {
+        id: number;
+        description: string;
+      };
     };
   };
+  apiStatus?: {
+    id: number;
+    description: string;
+  };
+  playerStatus?: {
+    id: number;
+    description: string;
+  };
+  email?: string;
+  contactNo?: string;
+  paymentStatus?: 'Paid' | 'Pending' | 'Rejected';
+  skillLevel?: string;
+  matchCount?: number;
 }
 
 interface Court {
@@ -70,6 +104,63 @@ const MatchupScreenMulti: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
+  
+  // Helper function to get avatar URL from user data (same as useOpenPlaySession hook)
+  const getUserAvatarUrl = (user: any): string => {
+    console.log('getUserAvatarUrl: Processing user:', user);
+    if (!user) {
+      console.log('getUserAvatarUrl: No user provided');
+      return '/default_avatar.png';
+    }
+    
+    // For registered users: check user.upload first
+    if (user.upload?.filePath) {
+      console.log('getUserAvatarUrl: Found user.upload.filePath:', user.upload.filePath);
+      // If upload.filePath is a full URL, use it directly
+      if (user.upload.filePath.startsWith('http')) {
+        console.log('getUserAvatarUrl: Using full URL from user.upload.filePath');
+        return user.upload.filePath;
+      }
+      // If it's a relative path, construct URL with API_CONFIG.IMG_URL
+      console.log('getUserAvatarUrl: Constructing URL with API_CONFIG.IMG_URL');
+      return `${API_CONFIG.IMG_URL}/uploads/${user.upload.filePath}`;
+    }
+    
+    // For registered users: if upload.fileName exists, construct URL with API_CONFIG.IMG_URL
+    if (user.upload?.fileName) {
+      console.log('getUserAvatarUrl: Found user.upload.fileName:', user.upload.fileName);
+      return `${API_CONFIG.IMG_URL}/uploads/${user.upload.fileName}`;
+    }
+    
+    // For guest users: check user.personalInfo.upload
+    if (user.personalInfo?.upload?.filePath) {
+      console.log('getUserAvatarUrl: Found user.personalInfo.upload.filePath:', user.personalInfo.upload.filePath);
+      // If upload.filePath is a full URL, use it directly
+      if (user.personalInfo.upload.filePath.startsWith('http')) {
+        console.log('getUserAvatarUrl: Using full URL from user.personalInfo.upload.filePath');
+        return user.personalInfo.upload.filePath;
+      }
+      // If it's a relative path, construct URL with API_CONFIG.IMG_URL
+      console.log('getUserAvatarUrl: Constructing URL with API_CONFIG.IMG_URL for personalInfo');
+      return `${API_CONFIG.IMG_URL}/uploads/${user.personalInfo.upload.filePath}`;
+    }
+    
+    // For guest users: if personalInfo.upload.fileName exists, construct URL with API_CONFIG.IMG_URL
+    if (user.personalInfo?.upload?.fileName) {
+      console.log('getUserAvatarUrl: Found user.personalInfo.upload.fileName:', user.personalInfo.upload.fileName);
+      return `${API_CONFIG.IMG_URL}/uploads/${user.personalInfo.upload.fileName}`;
+    }
+    
+    // If personalInfo.photoUrl exists, use it
+    if (user.personalInfo?.photoUrl) {
+      console.log('getUserAvatarUrl: Found user.personalInfo.photoUrl:', user.personalInfo.photoUrl);
+      return user.personalInfo.photoUrl;
+    }
+    
+    // Fallback to getUserProfileImageUrl utility
+    console.log('getUserAvatarUrl: Using fallback getUserProfileImageUrl');
+    return getUserProfileImageUrl(user);
+  };
   
   // Get occurrence ID from URL params
   const urlParams = new URLSearchParams(location.search);
@@ -150,13 +241,40 @@ const MatchupScreenMulti: React.FC = () => {
               name: fullParticipant.user?.personalInfo ? 
                 `${fullParticipant.user.personalInfo.firstName} ${fullParticipant.user.personalInfo.lastName}`.trim() :
                 fullParticipant.user?.userName || 'Unknown Player',
-              avatar: fullParticipant.user ? getUserProfileImageUrl(fullParticipant.user) : '',
+              avatar: fullParticipant.user ? getUserAvatarUrl(fullParticipant.user) : '',
               initials: fullParticipant.user?.personalInfo ? 
                 `${fullParticipant.user.personalInfo.firstName?.[0]}${fullParticipant.user.personalInfo.lastName?.[0]}` :
                 fullParticipant.user?.userName?.[0] || '?',
-              level: (fullParticipant.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-              status: 'In-Game' as any,
-              user: fullParticipant.user
+              level: (fullParticipant.user?.personalInfo?.skill?.description || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+              status: (fullParticipant.playerStatus?.description === 'READY' ? 'Ready' : 
+                      fullParticipant.playerStatus?.description === 'IN-GAME' ? 'In-Game' :
+                      fullParticipant.playerStatus?.description === 'RESTING' ? 'Resting' :
+                      fullParticipant.playerStatus?.description === 'RESERVE' ? 'Reserve' :
+                      fullParticipant.playerStatus?.description === 'WAITLIST' ? 'Waitlist' : 'Ready') as any,
+              // API fields
+              playerStatusId: fullParticipant.playerStatusId,
+              registeredAt: fullParticipant.registeredAt,
+              notes: fullParticipant.notes,
+              statusId: fullParticipant.statusId,
+              paymentAmount: fullParticipant.paymentAmount,
+              apiPaymentStatus: fullParticipant.paymentStatus,
+              updatedPlayerStatusAt: fullParticipant.updatedPlayerStatusAt,
+              user: fullParticipant.user ? {
+                ...fullParticipant.user,
+                personalInfo: fullParticipant.user.personalInfo ? {
+                  ...fullParticipant.user.personalInfo,
+                  upload: fullParticipant.user.personalInfo.upload || undefined
+                } : undefined
+              } : undefined,
+              apiStatus: fullParticipant.status,
+              playerStatus: fullParticipant.playerStatus,
+              email: fullParticipant.user?.email,
+              contactNo: fullParticipant.user?.personalInfo?.contactNo || undefined,
+              paymentStatus: (fullParticipant.paymentStatus === 'Paid' ? 'Paid' : 
+                             fullParticipant.paymentStatus === 'Pending' ? 'Pending' : 
+                             fullParticipant.paymentStatus === 'Rejected' ? 'Rejected' : 'Paid') as 'Paid' | 'Pending' | 'Rejected',
+              skillLevel: fullParticipant.user?.personalInfo?.skill?.description || 'Intermediate',
+              matchCount: fullParticipant.matchCount || 0
             };
             
             console.log('🎯 RETURNING ENRICHED PARTICIPANT:', enrichedParticipant);
@@ -261,12 +379,23 @@ const MatchupScreenMulti: React.FC = () => {
       const allCourts = await getAllCourts({ hubId: hubId });
       console.log('Fetched all courts from /courts/get-all-courts:', allCourts);
       
-      // Use the game matches we already fetched
-      console.log('Using game matches already fetched:', gameMatches);
+      // Filter to show only active matches (matchStatusId <= 10)
+      const activeGameMatches = gameMatches.filter((match: any) => {
+        const statusId = match.matchStatusId;
+        const isActive = statusId && Number(statusId) <= 10;
+        console.log(`🔍 Filtering matchup match ${match.id}:`, { matchStatusId: statusId, type: typeof statusId, isActive });
+        return isActive;
+      });
       
-      // Create a map of courtId to match for quick lookup
+      console.log('Using active game matches only:', {
+        totalMatches: gameMatches.length,
+        activeMatches: activeGameMatches.length,
+        activeMatchIds: activeGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId }))
+      });
+      
+      // Create a map of courtId to match for quick lookup (only active matches)
       const courtToMatchMap = new Map();
-      gameMatches.forEach((match: any) => {
+      activeGameMatches.forEach((match: any) => {
         if (match.courtId) {
           courtToMatchMap.set(match.courtId, match);
         }
@@ -303,14 +432,38 @@ const MatchupScreenMulti: React.FC = () => {
                 name: participant.user?.personalInfo ? 
                   `${participant.user.personalInfo.firstName} ${participant.user.personalInfo.lastName}`.trim() :
                   participant.user?.userName || 'Unknown Player',
-                avatar: participant.user ? getUserProfileImageUrl(participant.user) : '',
+                avatar: participant.user ? getUserAvatarUrl(participant.user) : '',
                 initials: participant.user?.personalInfo ? 
                   `${participant.user.personalInfo.firstName?.[0] || ''}${participant.user.personalInfo.lastName?.[0] || ''}` :
                   participant.user?.userName?.[0] || 'U',
-                level: (participant.skillLevel || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+                level: (participant.user?.personalInfo?.skill?.description || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
                 status: (match.gameStatus === 5 || match.gameStatus === '5' || 
                     match.gameStatus?.toLowerCase() === 'ingame' || 
-                    match.gameStatus?.toLowerCase() === 'in_progress') ? 'In-Game' : 'Ready' as any
+                    match.gameStatus?.toLowerCase() === 'in_progress') ? 'In-Game' : 'Ready' as any,
+                // API fields
+                playerStatusId: participant.playerStatusId,
+                registeredAt: participant.registeredAt,
+                notes: participant.notes,
+                statusId: participant.statusId,
+                paymentAmount: participant.paymentAmount,
+                apiPaymentStatus: participant.paymentStatus,
+                updatedPlayerStatusAt: participant.updatedPlayerStatusAt,
+                user: participant.user ? {
+                  ...participant.user,
+                  personalInfo: participant.user.personalInfo ? {
+                    ...participant.user.personalInfo,
+                    upload: participant.user.personalInfo.upload || undefined
+                  } : undefined
+                } : undefined,
+                apiStatus: participant.status,
+                playerStatus: participant.playerStatus,
+                email: participant.user?.email,
+                contactNo: participant.user?.personalInfo?.contactNo || undefined,
+                paymentStatus: (participant.paymentStatus === 'Paid' ? 'Paid' : 
+                               participant.paymentStatus === 'Pending' ? 'Pending' : 
+                               participant.paymentStatus === 'Rejected' ? 'Rejected' : 'Paid') as 'Paid' | 'Pending' | 'Rejected',
+                skillLevel: participant.user?.personalInfo?.skill?.description || 'Intermediate',
+                matchCount: participant.matchCount || 0
               };
               
               console.log(`🎯 CREATED PLAYER OBJECT:`, {
@@ -675,3 +828,5 @@ const MatchupScreenMulti: React.FC = () => {
 };
 
 export default MatchupScreenMulti;
+
+

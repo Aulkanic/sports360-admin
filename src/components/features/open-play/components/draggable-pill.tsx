@@ -77,7 +77,7 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
       </Avatar>
       
       <div className="flex flex-col gap-2 min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{participant?.name}</p>
+        <p className="text-sm font-medium truncate">{participant?.name || `${participant.firstName} ${participant.lastName}`}</p>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-[10px]">
             {getStatusString(participant.playerStatus?.description ?? participant.status)}

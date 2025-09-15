@@ -8,6 +8,8 @@ export type StatusObject = {
 };
 
 export type Participant = {
+  firstName: any;
+  lastName: any;
   playerStatus: any;
   skillLevel: any; // Legacy field for backward compatibility
   id: string;

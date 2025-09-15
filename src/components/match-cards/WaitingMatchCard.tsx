@@ -2,13 +2,46 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Maximize2, Clock, Users } from "lucide-react";
 
+interface Participant {
+  id: string;
+  name: string;
+  avatar?: string;
+  initials?: string;
+  level?: string;
+  status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo?: string;
+      skill?: {
+        id: number;
+        description: string;
+      };
+      upload?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+      };
+    };
+  };
+  email?: string;
+  contactNo?: string;
+  paymentStatus?: 'Paid' | 'Pending' | 'Rejected';
+  skillLevel?: string;
+  matchCount?: number;
+}
+
 interface Court {
   id: string;
   name: string;
   capacity: number;
   status: "Open" | "In-Game" | "Closed";
-  teamA: any[];
-  teamB: any[];
+  teamA: Participant[];
+  teamB: Participant[];
   teamAName?: string;
   teamBName?: string;
   startTime?: string;

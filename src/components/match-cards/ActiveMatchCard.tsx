@@ -5,10 +5,39 @@ import { Maximize2 } from "lucide-react";
 interface Participant {
   id: string;
   name: string;
-  avatar: string;
-  initials: string;
-  level: string;
+  avatar?: string;
+  initials?: string;
+  level?: string;
   status: "In-Game" | "Resting" | "Ready" | "Reserve" | "Waitlist";
+  user?: {
+    id: string;
+    userName: string;
+    email: string;
+    upload?:{
+      id: string;
+      fileName: string;
+      filePath: string;
+    },
+    personalInfo?: {
+      firstName: string;
+      lastName: string;
+      contactNo?: string;
+      skill?: {
+        id: number;
+        description: string;
+      };
+      upload?: {
+        id: string;
+        fileName: string;
+        filePath: string;
+      };
+    };
+  };
+  email?: string;
+  contactNo?: string;
+  paymentStatus?: 'Paid' | 'Pending' | 'Rejected';
+  skillLevel?: string;
+  matchCount?: number;
 }
 
 interface Court {
@@ -136,7 +165,10 @@ const ActiveMatchCard: React.FC<ActiveMatchCardProps> = ({
               avatar: "/default_avatar.png",
               initials: "NA",
               level: "N/A",
-              status: "Ready" as const
+              status: "Ready" as const,
+              email: undefined,
+              matchCount: undefined,
+              paymentStatus: undefined
             }))).map((player, index) => (
               <div key={player?.id ?? `A-${index}`} className={`w-full flex text-center relative ${isFocused ? 'h-80' : 'h-40'}`} style={{
                 backgroundImage: 'url("/card.jpg")',
@@ -195,9 +227,30 @@ const ActiveMatchCard: React.FC<ActiveMatchCardProps> = ({
                   <div className={`text-white/90 mt-1 font-semibold ${isFocused ? 'text-lg' : 'text-sm'} truncate`}>
                     {player?.name ?? "Unknown Player"}
                   </div>
-                  <div className={`text-white/70 mt-1 ${isFocused ? 'text-base' : 'text-xs'}`}>
-                    {player?.level ?? "N/A"}
+                  <div className={`text-white/70 mt-1 ${isFocused ? 'text-base' : 'text-xs'} flex items-center justify-center gap-1`}>
+                    <span>{player?.level ?? "N/A"}</span>
+                    {player?.matchCount && player.matchCount > 0 && (
+                      <span className="bg-white/20 px-1 rounded text-xs">
+                        {player.matchCount}
+                      </span>
+                    )}
                   </div>
+                  {isFocused && player?.email && (
+                    <div className={`text-white/60 mt-1 ${isFocused ? 'text-sm' : 'text-xs'} truncate`}>
+                      {player.email}
+                    </div>
+                  )}
+                  {isFocused && player?.paymentStatus && (
+                    <div className={`mt-1 ${isFocused ? 'text-xs' : 'text-xs'}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        player.paymentStatus === 'Paid' ? 'bg-green-500/80 text-white' :
+                        player.paymentStatus === 'Pending' ? 'bg-yellow-500/80 text-white' :
+                        'bg-red-500/80 text-white'
+                      }`}>
+                        {player.paymentStatus}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -211,7 +264,10 @@ const ActiveMatchCard: React.FC<ActiveMatchCardProps> = ({
               avatar: "/default_avatar.png",
               initials: "NA",
               level: "N/A",
-              status: "Ready" as const
+              status: "Ready" as const,
+              email: undefined,
+              matchCount: undefined,
+              paymentStatus: undefined
             }))).map((player, index) => (
               <div key={player?.id ?? `B-${index}`} className={`flex w-full text-center relative h-40`} style={{
                 backgroundImage: 'url("/card.jpg")',
@@ -270,9 +326,30 @@ const ActiveMatchCard: React.FC<ActiveMatchCardProps> = ({
                   <div className={`text-white/90 mt-1 font-semibold ${isFocused ? 'text-lg' : 'text-sm'} truncate`}>
                     {player?.name ?? "Unknown Player"}
                   </div>
-                  <div className={`text-white/70 mt-1 ${isFocused ? 'text-base' : 'text-xs'}`}>
-                    {player?.level ?? "N/A"}
+                  <div className={`text-white/70 mt-1 ${isFocused ? 'text-base' : 'text-xs'} flex items-center justify-center gap-1`}>
+                    <span>{player?.level ?? "N/A"}</span>
+                    {player?.matchCount && player.matchCount > 0 && (
+                      <span className="bg-white/20 px-1 rounded text-xs">
+                        {player.matchCount}
+                      </span>
+                    )}
                   </div>
+                  {isFocused && player?.email && (
+                    <div className={`text-white/60 mt-1 ${isFocused ? 'text-sm' : 'text-xs'} truncate`}>
+                      {player.email}
+                    </div>
+                  )}
+                  {isFocused && player?.paymentStatus && (
+                    <div className={`mt-1 ${isFocused ? 'text-xs' : 'text-xs'}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        player.paymentStatus === 'Paid' ? 'bg-green-500/80 text-white' :
+                        player.paymentStatus === 'Pending' ? 'bg-yellow-500/80 text-white' :
+                        'bg-red-500/80 text-white'
+                      }`}>
+                        {player.paymentStatus}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
