@@ -8,6 +8,10 @@ interface User {
   email: string | null;
   userType: string;
   userTypeId: number | null;
+  userTypeRef: {
+    id:number;
+    description:string;
+  }
 }
 
 interface AuthContextType {

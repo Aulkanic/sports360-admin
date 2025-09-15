@@ -32,7 +32,6 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
     opacity: isDragging ? 0.65 : (isLoading ? 0.7 : 1),
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } as React.CSSProperties;
-  console.log('draggable pill', participant);
   return (
     <div
       ref={setNodeRef}

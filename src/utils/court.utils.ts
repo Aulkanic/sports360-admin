@@ -101,7 +101,7 @@ export const getDefaultFormData = (): CourtFormData => ({
   description: "",
   hourlyRate: 0,
   minHours: 1,
-  hubId: "",
+  sportshubId: "",
   courtNumber: "",
   isActive: true,
   availability: {

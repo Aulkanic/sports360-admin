@@ -245,15 +245,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                     {court.teamA[0].matchCount}
                   </span>
                 )}
-                {court.teamA[0]?.paymentStatus && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    court.teamA[0].paymentStatus === 'Paid' ? 'bg-green-500' :
-                    court.teamA[0].paymentStatus === 'Pending' ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  }`}>
-                    {court.teamA[0].paymentStatus}
-                  </span>
-                )}
+           
               </div>
               {court.teamA[0]?.email && (
                 <p className="text-xs text-gray-400 truncate">
@@ -298,15 +290,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                     {court.teamA[1].matchCount}
                   </span>
                 )}
-                {court.teamA[1]?.paymentStatus && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    court.teamA[1].paymentStatus === 'Paid' ? 'bg-green-500' :
-                    court.teamA[1].paymentStatus === 'Pending' ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  }`}>
-                    {court.teamA[1].paymentStatus}
-                  </span>
-                )}
+           
               </div>
               {court.teamA[1]?.email && (
                 <p className="text-xs text-gray-400 truncate">
@@ -357,15 +341,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                     {court.teamB[0].matchCount}
                   </span>
                 )}
-                {court.teamB[0]?.paymentStatus && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    court.teamB[0].paymentStatus === 'Paid' ? 'bg-green-500' :
-                    court.teamB[0].paymentStatus === 'Pending' ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  }`}>
-                    {court.teamB[0].paymentStatus}
-                  </span>
-                )}
+       
               </div>
               {court.teamB[0]?.email && (
                 <p className="text-xs text-gray-400 truncate">
@@ -410,15 +386,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
                     {court.teamB[1].matchCount}
                   </span>
                 )}
-                {court.teamB[1]?.paymentStatus && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    court.teamB[1].paymentStatus === 'Paid' ? 'bg-green-500' :
-                    court.teamB[1].paymentStatus === 'Pending' ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  }`}>
-                    {court.teamB[1].paymentStatus}
-                  </span>
-                )}
+    
               </div>
               {court.teamB[1]?.email && (
                 <p className="text-xs text-gray-400 truncate">

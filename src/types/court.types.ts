@@ -81,7 +81,7 @@ export interface CourtFormData {
   description: string;
   hourlyRate: number;
   minHours: number;
-  hubId: string;
+  sportshubId: string;
   rentalId?: string;
   courtNumber: string;
   isActive: boolean;

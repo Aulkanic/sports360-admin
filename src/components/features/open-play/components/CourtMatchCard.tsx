@@ -80,7 +80,6 @@ const CourtMatchCard: React.FC<CourtMatchCardProps> = ({
 
   const teamAStyles = getTeamStyles('A');
   const teamBStyles = getTeamStyles('B');
-  console.log(match);
   return (
     <div className={`relative rounded-2xl border-2 bg-white shadow-lg transition-all duration-300 hover:shadow-xl ${getStatusColor()}`}>
       {/* Court Header */}

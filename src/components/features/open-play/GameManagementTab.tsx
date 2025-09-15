@@ -94,8 +94,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   onRemovePlayer,
   isRemovingPlayer = false,
 }) => {
-  console.log(courtTeams)
-  console.log(matches)
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | undefined>(undefined);
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<Level | "All">("All");
@@ -145,28 +143,10 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
     // Check if any match for this court is active (not completed, cancelled, or ended)
     const hasActive = courtMatches.some(match => {
       const statusId = match.matchStatusId;
-      // Active statuses: 1-9 (assuming 10+ are completed/ended statuses)
-      // Only consider matches with active status, not just any match with participants
       const isActiveStatus = statusId && statusId < 10;
-      const isInProgress = statusId === 5; // Assuming 5 is IN_PROGRESS
-      
-      // Only return true if the match has an active status, regardless of participants
+      const isInProgress = statusId === 5;
       return isActiveStatus || isInProgress;
-    });
-    
-    console.log('🔍 courtHasActiveMatch for court', courtId, ':', {
-      courtMatches: courtMatches.length,
-      matches: courtMatches.map(m => ({
-        id: m.id,
-        matchName: m.matchName,
-        matchStatusId: m.matchStatusId,
-        isActive: m.matchStatusId && m.matchStatusId < 10,
-        participantsCount: m.participants?.length || 0,
-        currentPlayers: m.currentPlayers
-      })),
-      hasActive
-    });
-    
+    });    
     return hasActive;
   };
 
@@ -202,7 +182,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
 
     return filtered;
   }, [readyList, selectedSkillLevel, searchQuery]);
-  console.log(filteredReadyList)
+
   // Create ready list with queue positions and priority info
   const readyListWithQueuePositions = useMemo(() => {
     return filteredReadyList.map((participant, index) => ({
@@ -229,7 +209,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
     const convertedAllCourts = allCourts.map(court => {
       // Find matches for this court to determine status
       const courtMatches = gameMatches.filter(match => match.courtId === court.id);
-      console.log(courtMatches)
       // Determine court status based on matchStatusId
       let courtStatus: "Open" | "IN-GAME" | "Closed" = "Open";
       
@@ -347,7 +326,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                           size="sm"
                           className="h-6 px-2 text-xs font-medium"
                           onClick={() => {
-                            console.log('🔍 FILTER CHANGED: Setting to All');
                             setSelectedSkillLevel("All");
                           }}
                         >
@@ -370,7 +348,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                               size="sm"
                               className="h-6 px-2 text-xs font-medium"
                               onClick={() => {
-                                console.log(`🔍 FILTER CHANGED: Setting to ${level}`);
                                 setSelectedSkillLevel(level);
                               }}
                             >
@@ -529,7 +506,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {(courtInfoList.length > 0 ? courtInfoList : displayCourts).map((court, idx) => {
-                      console.log(court)
+          
                       const teams = courtTeams[court.id] ?? { A: [], B: [] };
                       const perTeam = Math.floor(court.capacity / 2);
                       // Check if there are any active matches (not completed) for this court
@@ -538,25 +515,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       // Check if there are any matches at all (active or completed) for this court
                       const courtMatches = gameMatches.filter(match => match.courtId === court.id);
                       const hasAnyMatch = courtMatches.length > 0;
-                      
-                      // hasMatch should only be true if there's an active match, not just any match
                       const hasMatch = hasActiveMatch;
-                      
-                      // Debug logging
-                      console.log(`🏟️ Court ${court.id} match status:`, {
-                        courtName: court.name,
-                        hasActiveMatch,
-                        hasAnyMatch,
-                        hasMatch,
-                        courtMatches: courtMatches.map(m => ({
-                          id: m.id,
-                          matchName: m.matchName,
-                          matchStatusId: m.matchStatusId,
-                          isActive: m.matchStatusId && m.matchStatusId < 10,
-                          isCompleted: m.matchStatusId && m.matchStatusId >= 10,
-                          participants: m.participants?.length || 0
-                        }))
-                      });
                       
                       // Get current match information for this court
                       const currentMatch = gameMatches.find(match => 
@@ -595,13 +554,8 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                        onToggleOpen={() => onToggleCourtOpen(court.id)}
                        onRandomPick={() => onMatchMakeCourt(court.id)}
                        onCreateMatch={() => {
-                         console.log('🎯 CREATE MATCH BUTTON CLICKED for court:', court);
-                         console.log('🎯 Court ID type:', typeof court.id, 'Value:', court.id);
-                         console.log('🎯 Setting selectedCourt:', court);
-                         console.log('🎯 Setting showAddCourtModal to true');
                          setSelectedCourt(court);
                          setShowAddCourtModal(true);
-                         console.log('🎯 Modal state should be updated');
                        }}
                        canStartGame={canStartGame(court.id)}
                        isStartingGame={isStartingGame.has(court.id)}
@@ -775,7 +729,6 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
       <AddCourtModal
         open={showAddCourtModal}
         onClose={() => {
-          console.log('🚪 MODAL CLOSING');
           setShowAddCourtModal(false);
           setSelectedCourt(undefined);
         }}

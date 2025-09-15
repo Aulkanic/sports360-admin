@@ -112,8 +112,6 @@ const MatchupScreenMulti: React.FC = () => {
     
     // For registered users: check user.upload first
     if (user.upload?.filePath) {
-      console.log('Setting avatar from user.upload.filePath:', user.upload.filePath);
-      // If upload.filePath is a full URL, use it directly
       if (user.upload.filePath.startsWith('http')) {
         return user.upload.filePath;
       }
@@ -121,15 +119,12 @@ const MatchupScreenMulti: React.FC = () => {
       return `${API_CONFIG.IMG_URL}${user.upload.filePath}`;
     }
     
-    // For registered users: if upload.fileName exists, construct URL with API_CONFIG.IMG_URL
     if (user.upload?.fileName) {
-      console.log('Setting avatar from user.upload.fileName:', user.upload.fileName);
       return `${API_CONFIG.IMG_URL}/uploads/${user.upload.fileName}`;
     }
     
     // For guest users: check user.personalInfo.upload
     if (user.personalInfo?.upload?.filePath) {
-      console.log('Setting avatar from user.personalInfo.upload.filePath:', user.personalInfo.upload.filePath);
       // If upload.filePath is a full URL, use it directly
       if (user.personalInfo.upload.filePath.startsWith('http')) {
         return user.personalInfo.upload.filePath;
@@ -140,18 +135,13 @@ const MatchupScreenMulti: React.FC = () => {
     
     // For guest users: if personalInfo.upload.fileName exists, construct URL with API_CONFIG.IMG_URL
     if (user.personalInfo?.upload?.fileName) {
-      console.log('Setting avatar from user.personalInfo.upload.fileName:', user.personalInfo.upload.fileName);
       return `${API_CONFIG.IMG_URL}/uploads/${user.personalInfo.upload.fileName}`;
     }
     
     // If personalInfo.photoUrl exists, use it
     if (user.personalInfo?.photoUrl) {
-      console.log('Setting avatar from user.personalInfo.photoUrl:', user.personalInfo.photoUrl);
       return user.personalInfo.photoUrl;
     }
-    
-    // Fallback to getUserProfileImageUrl utility
-    console.log('Using fallback avatar from getUserProfileImageUrl');
     return getUserProfileImageUrl(user);
   };
   
@@ -169,13 +159,6 @@ const MatchupScreenMulti: React.FC = () => {
 
   // Convert game match participant to our Participant interface
   const convertGameMatchParticipant = (participant: any): Participant => {
-    console.log('Converting game match participant:', {
-      id: participant.id,
-      participantId: participant.participantId,
-      name: participant.user?.personalInfo?.firstName,
-      teamNumber: participant.teamNumber
-    });
-
     return {
       id: participant.id.toString(),
       name: participant.user?.personalInfo ? 
@@ -212,14 +195,6 @@ const MatchupScreenMulti: React.FC = () => {
     };
   };
 
-  // Log state changes (reduced logging)
-  useEffect(() => {
-    if (showSplashVideo) {
-      console.log('Splash video state changed:', { showSplashVideo, pendingCourtId });
-    }
-  }, [showSplashVideo, pendingCourtId]);
-
-  // Update time every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -241,18 +216,12 @@ const MatchupScreenMulti: React.FC = () => {
         getGameMatchesByOccurrenceId(occurrenceId),
         getAllCourts({ hubId: hubId })
       ]);
-      
-      console.log('Fetched game matches:', gameMatches.length);
-      console.log('Fetched courts:', allCourts.length);
-      
-      // Filter to show only active matches (matchStatusId <= 10)
       const activeGameMatches = gameMatches.filter((match: any) => {
         const statusId = match.matchStatusId;
         const isActive = statusId && Number(statusId) <= 10;
         return isActive;
       });
       
-      console.log('Active game matches:', activeGameMatches.length);
       
       // Create a map of courtId to match for quick lookup
       const courtToMatchMap = new Map();
@@ -526,7 +495,7 @@ const MatchupScreenMulti: React.FC = () => {
       
       {focusedCourtId ? (
         // Focused Court Page - Full screen dedicated view
-        <div className="fixed inset-0 h-screen w-screen overflow-hidden relative z-50" style={{ margin: 0, padding: 0 }}>
+        <div className="inset-0 h-screen w-screen overflow-hidden relative z-50" style={{ margin: 0, padding: 0 }}>
           {/* Focused Court Content - Takes full screen */}
           <div className="w-full h-full">
             <FocusedCourtView

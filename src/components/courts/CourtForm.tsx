@@ -84,16 +84,6 @@ const CourtForm: React.FC<CourtFormProps> = ({ form, setForm }) => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Hub ID *</label>
-            <Input
-              value={form.hubId || ''}
-              onChange={(e) => setForm((p) => ({ ...p, hubId: e.target.value }))}
-              placeholder="Enter hub ID"
-              className="h-11"
-              required
-            />
-          </div>
-          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Status</label>
             <select
               className="w-full h-11 rounded-md border bg-background px-3 text-sm"
@@ -134,7 +124,6 @@ const CourtForm: React.FC<CourtFormProps> = ({ form, setForm }) => {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Hourly Rate (₱)</label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="number"
                 min={0}
@@ -142,7 +131,7 @@ const CourtForm: React.FC<CourtFormProps> = ({ form, setForm }) => {
                 value={form.hourlyRate ?? 0}
                 onChange={(e) => setForm((p) => ({ ...p, hourlyRate: Number(e.target.value) }))}
                 placeholder="0.00"
-                className="h-11 pl-10"
+                className="h-11"
               />
             </div>
           </div>

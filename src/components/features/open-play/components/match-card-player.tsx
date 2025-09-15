@@ -16,7 +16,6 @@ const MatchCardPlayer: React.FC<MatchCardPlayerProps> = ({
   showRemoveButton = false,
   isDraggable = false 
 }) => {
-  console.log('match card player', participant);
   
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();

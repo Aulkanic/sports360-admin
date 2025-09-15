@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useCallback } from 'react';
 import type { Court, Match, Participant } from '@/components/features/open-play/types';
 import type { GameMatch } from '@/services/game-match.service';

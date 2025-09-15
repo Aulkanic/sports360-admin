@@ -21,6 +21,7 @@ const OccurrenceSelector: React.FC<OccurrenceSelectorProps> = ({
   occurrences,
   onSelectOccurrence
 }) => {
+  console.log('OccurrenceSelector', { open, sessionTitle, occurrences });
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string | null>(null);
 
   const handleSelectOccurrence = () => {
@@ -79,6 +80,7 @@ const OccurrenceSelector: React.FC<OccurrenceSelectorProps> = ({
       case 3: return 'Active';
       case 4: return 'Completed';
       case 5: return 'Cancelled';
+      case 7: return 'Pending';
       default: return 'Unknown';
     }
   };

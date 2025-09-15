@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useDraggable } from "@dnd-kit/core";
 import React from "react";
 import type { Participant } from "../types";
@@ -13,7 +12,6 @@ const MatchDraggablePill: React.FC<{ participant: Participant }> = ({ participan
     opacity: isDragging ? 0.7 : 1,
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } as React.CSSProperties;
-  console.log('match card pill', participant);
   return (
     <div
       ref={setNodeRef}

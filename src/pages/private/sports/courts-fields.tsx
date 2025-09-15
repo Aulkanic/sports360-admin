@@ -10,8 +10,6 @@ import {
   CourtCard, 
   CourtForm, 
   BookingsModal, 
-  ConflictsModal, 
-  AnalyticsModal,
   StatsCardsSkeleton,
   CourtsGridSkeleton
 } from "@/components/courts";
@@ -19,31 +17,33 @@ import {
 // Import hooks
 import { 
   useCourts, 
-  useConflicts, 
-  useAnalytics, 
   useCourtForm, 
   useCourtModals, 
   useCourtSearch 
 } from "@/hooks";
+import { useAuth } from "@/context/AuthContext";
 
 const CourtsPage: React.FC = () => {
-  // Custom hooks for business logic
-  const { items, apiCourts, isLoading, createCourt, updateCourt, deleteCourt } = useCourts();
-  const { conflicts, resolveConflict } = useConflicts();
-  const { analytics } = useAnalytics(apiCourts);
+ const { user } = useAuth();
+  const sportshubId = user?.userTypeRef.id;
+  const { 
+    items, 
+    isLoading, 
+    error,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    createCourt, 
+    updateCourt, 
+    deleteCourt 
+  } = useCourts();
   const { form, setForm, editing, open, openCreate, openEdit, closeForm } = useCourtForm();
   const { 
     selectedCourt, 
     showBookingsModal, 
-    showConflictsModal, 
-    showAnalyticsModal, 
     confirmId,
     openBookingsModal, 
     closeBookingsModal, 
-    openConflictsModal, 
-    closeConflictsModal, 
-    openAnalyticsModal, 
-    closeAnalyticsModal, 
     openDeleteConfirm, 
     closeDeleteConfirm 
   } = useCourtModals();
@@ -52,9 +52,15 @@ const CourtsPage: React.FC = () => {
   // Event handlers
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Set sportshubId from user context before saving
+    const formWithSportshubId = {
+      ...form,
+      sportshubId: sportshubId?.toString() || ''
+    };
+    
     const success = editing 
-      ? await updateCourt(editing.id, form)
-      : await createCourt(form);
+      ? await updateCourt(editing.id, formWithSportshubId)
+      : await createCourt(formWithSportshubId);
     
     if (success) {
       closeForm();
@@ -70,9 +76,29 @@ const CourtsPage: React.FC = () => {
     }
   };
 
-  const handleResolveConflict = async (conflictId: string, resolution: string, notes?: string) => {
-    await resolveConflict(conflictId, resolution, notes);
-  };
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="text-center py-16">
+          <div className="h-20 w-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Calendar className="h-10 w-10 text-destructive" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Error Loading Courts</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            There was an error loading the courts data. Please try again.
+          </p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -92,22 +118,6 @@ const CourtsPage: React.FC = () => {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <Button
-            onClick={openAnalyticsModal}
-            variant="outline"
-            className="h-11 px-4 border-primary/20 hover:bg-primary/10 hover:border-primary/30 text-primary hover:text-primary"
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            Analytics
-          </Button>
-          <Button
-            onClick={openConflictsModal}
-            variant="outline"
-            className={`h-11 px-4 border-orange-200 hover:bg-orange-50 hover:border-orange-300 text-orange-600 hover:text-orange-700 ${conflicts.length > 0 ? 'animate-pulse' : ''}`}
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            Conflicts ({conflicts.length})
-          </Button>
           <Button 
             onClick={openCreate} 
             className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200 hover:scale-105"
@@ -248,10 +258,10 @@ const CourtsPage: React.FC = () => {
                 type="submit" 
                 form="court-form" 
                 className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/25 transition-all duration-200" 
-                disabled={isLoading}
+                disabled={isCreating || isUpdating}
                 onClick={handleSave}
               >
-                {isLoading ? (
+                {(isCreating || isUpdating) ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     {editing ? "Updating..." : "Adding..."}
@@ -264,7 +274,7 @@ const CourtsPage: React.FC = () => {
           </div>
         }
       >
-        <CourtForm form={form} setForm={setForm} editing={!!editing} isLoading={isLoading} />
+        <CourtForm form={form} setForm={setForm} editing={!!editing} isLoading={isCreating || isUpdating} />
       </ResponsiveOverlay>
 
       {/* Delete Confirmation Modal */}
@@ -295,9 +305,9 @@ const CourtsPage: React.FC = () => {
                 variant="destructive" 
                 onClick={handleDelete}
                 className="h-10 bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg hover:shadow-destructive/25"
-                disabled={isLoading}
+                disabled={isDeleting}
               >
-                {isLoading ? (
+                {isDeleting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Deleting...
@@ -319,19 +329,6 @@ const CourtsPage: React.FC = () => {
         open={showBookingsModal}
         onOpenChange={closeBookingsModal}
         court={selectedCourt}
-      />
-
-      <ConflictsModal
-        open={showConflictsModal}
-        onOpenChange={closeConflictsModal}
-        conflicts={conflicts}
-        onResolveConflict={handleResolveConflict}
-      />
-
-      <AnalyticsModal
-        open={showAnalyticsModal}
-        onOpenChange={closeAnalyticsModal}
-        analytics={analytics}
       />
     </div>
   );
