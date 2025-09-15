@@ -651,21 +651,42 @@ const OpenPlayDetailPage: React.FC = () => {
   useEffect(() => {
     if (tab === "game") {
       const occurrenceId = currentOccurrenceId || occurrence?.id;
-      console.log('Game management tab accessed');
+      console.log('🎮 Game management tab accessed', {
+        occurrenceId,
+        isLoadingGameMatches,
+        courtsLength: courts.length,
+        gameMatchesLength: gameMatches.length,
+        hasFetchedGameMatches: hasFetchedGameMatches.current
+      });
       
-      if (occurrenceId && !isLoadingGameMatches && courts.length === 0) {
-        // Only fetch if not already loading and no courts are loaded
-        console.log('Fetching game matches...');
-        fetchGameMatches();
-      } else if (courts.length > 0) {
-        console.log('Courts already loaded, skipping fetch');
+      // Reset the fetch flag to allow fresh data loading
+      hasFetchedGameMatches.current = false;
+      
+      if (occurrenceId && !isLoadingGameMatches) {
+        // Always fetch game matches when switching to game management tab
+        console.log('🔄 Fetching game matches for game management tab...');
+        // Small delay to ensure tab switch is complete
+        setTimeout(() => {
+          fetchGameMatches();
+        }, 100);
       } else if (isLoadingGameMatches) {
-        console.log('Already loading, skipping fetch');
+        console.log('⏳ Already loading game matches, skipping fetch');
       } else {
-        console.log('No occurrence ID available for fetching game matches');
+        console.log('❌ No occurrence ID available for fetching game matches');
       }
     }
-  }, [tab]); // Only depend on tab to prevent infinite loops
+  }, [tab, occurrence?.id, currentOccurrenceId]); // Include dependencies that affect data availability
+
+  // Additional effect to ensure data is loaded when GameManagementTab is rendered
+  useEffect(() => {
+    if (tab === "game" && gameMatches.length === 0 && !isLoadingGameMatches) {
+      const occurrenceId = currentOccurrenceId || occurrence?.id;
+      if (occurrenceId) {
+        console.log('🔄 GameManagementTab rendered but no data, fetching...');
+        fetchGameMatches();
+      }
+    }
+  }, [tab, gameMatches.length, isLoadingGameMatches, occurrence?.id, currentOccurrenceId]);
 
   
 
@@ -689,12 +710,8 @@ const OpenPlayDetailPage: React.FC = () => {
       // Check if this is dummy data
       if (isDummySession) {
         console.log('Dummy session detected, skipping API call for status update');
-        // For dummy data, just update the local state
-        setParticipants((prev: Participant[]) => prev.map((p: Participant) => 
-          p.id === participantId 
-            ? { ...p, status: status }
-            : p
-        ));
+        // For dummy data, we'll still refresh to maintain consistency
+        await refreshSessionData();
         setIsUpdatingStatus(prev => {
           const newSet = new Set(prev);
           newSet.delete(participantId);
@@ -849,23 +866,8 @@ const OpenPlayDetailPage: React.FC = () => {
       // Check if this is dummy data
       if (isDummySession) {
         console.log('Dummy session detected, skipping API call for player assignment');
-        // Update local state for dummy data
-        setCourtTeams((prev) => {
-          const next = deepClone(prev);
-          if (!next[courtId]) next[courtId] = { A: [], B: [] };
-
-          // Ensure participant is not on any team on any court
-          for (const k of Object.keys(next)) {
-            next[k].A = next[k].A.filter((p) => p.id !== participant.id);
-            next[k].B = next[k].B.filter((p) => p.id !== participant.id);
-          }
-
-          const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
-          if (next[courtId][teamKey].length >= perTeam) return prev;
-
-          next[courtId][teamKey].push({ ...participant, status: "IN-GAME" });
-          return next;
-        });
+        // For dummy data, we'll still refresh to maintain consistency
+        await fetchGameMatches();
         return;
       }
 
@@ -897,23 +899,7 @@ const OpenPlayDetailPage: React.FC = () => {
       const assignmentResult = await assignPlayerToTeam(matchId, participant.id, teamNumber);
       console.log(`Player assignment API response:`, assignmentResult);
       
-      // Only update local state after successful API call
-      setCourtTeams((prev) => {
-        const next = deepClone(prev);
-        if (!next[courtId]) next[courtId] = { A: [], B: [] };
-
-        // Ensure participant is not on any team on any court
-        for (const k of Object.keys(next)) {
-          next[k].A = next[k].A.filter((p) => p.id !== participant.id);
-          next[k].B = next[k].B.filter((p) => p.id !== participant.id);
-        }
-
-        const perTeam = Math.floor((courts.find((c) => c.id === courtId)?.capacity ?? 4) / 2);
-        if (next[courtId][teamKey].length >= perTeam) return prev;
-
-        next[courtId][teamKey].push({ ...participant, status: "IN-GAME" });
-        return next;
-      });
+      // Local state will be updated via API refresh
       
       // Update player status from BENCH to active (if they were on bench)
       try {
@@ -1003,7 +989,6 @@ const OpenPlayDetailPage: React.FC = () => {
         if (currentMatchId) {
           await removePlayerFromMatchAPI(participant.id, currentMatchId);
         }
-        removeFromAllTeams(participant.id);
         await updateStatus(participant.id, "READY");
         return;
       }
@@ -1011,7 +996,6 @@ const OpenPlayDetailPage: React.FC = () => {
         if (currentMatchId) {
           await removePlayerFromMatchAPI(participant.id, currentMatchId);
         }
-        removeFromAllTeams(participant.id);
         await updateStatus(participant.id, "RESTING");
         return;
       }
@@ -1019,7 +1003,6 @@ const OpenPlayDetailPage: React.FC = () => {
         if (currentMatchId) {
           await removePlayerFromMatchAPI(participant.id, currentMatchId);
         }
-        removeFromAllTeams(participant.id);
         await updateStatus(participant.id, "RESERVE");
         return;
       }
@@ -1027,7 +1010,6 @@ const OpenPlayDetailPage: React.FC = () => {
         if (currentMatchId) {
           await removePlayerFromMatchAPI(participant.id, currentMatchId);
         }
-        removeFromAllTeams(participant.id);
         await updateStatus(participant.id, "WAITLIST");
         return;
       }
@@ -1182,11 +1164,6 @@ const OpenPlayDetailPage: React.FC = () => {
       await fetchGameMatches();
       console.log('✅ Data refreshed successfully after game start');
       
-      // Update local state
-      setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "IN-GAME" } : c)));
-      const t = courtTeams[courtId] ?? { A: [], B: [] };
-      await Promise.all([...t.A, ...t.B].map((p) => updateStatus(p.id, "IN-GAME")));
-      
       console.log('✅ GAME STARTED SUCCESSFULLY');
     } catch (error) {
       console.error('❌ ERROR STARTING GAME:', error);
@@ -1234,30 +1211,11 @@ const OpenPlayDetailPage: React.FC = () => {
       await fetchGameMatches();
       console.log('✅ Data refreshed successfully after game end');
       
-      // Update local state
-      setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));
-      const t = courtTeams[courtId] ?? { A: [], B: [] };
-      
       // Note: Participant status updates are handled by the backend after successful game end
       console.log('✅ Game ended successfully - backend will handle participant status updates');
-    
-    // Create a match record for this completed game
-    const newMatch: Match = {
-      id: `${courtId}-${Date.now()}`,
-      courtId,
-      courtName: courts.find(c => c.id === courtId)?.name ?? "Unknown Court",
-      teamA: t.A,
-      teamB: t.B,
-      teamAName: teamNames[courtId]?.A,
-      teamBName: teamNames[courtId]?.B,
-      status: "Completed",
-      winner,
-      score: score || "N/A"
-    };
-    
-    setMatches(prev => [...prev, newMatch]);
-    setCourtTeams((prev) => ({ ...prev, [courtId]: { A: [], B: [] } }));
-    setShowWinnerDialog(null);
+      
+      // Close the winner dialog
+      setShowWinnerDialog(null);
       
       console.log('✅ GAME ENDED SUCCESSFULLY');
     } catch (error) {
@@ -1302,7 +1260,6 @@ const OpenPlayDetailPage: React.FC = () => {
     }
 
     const { A, B } = buildBalancedTeams(selectedPlayers, perTeam);
-    setCourtTeams((prev) => ({ ...prev, [courtId]: { A, B } }));
 
     // Call API to add all players to match (this will also update their status)
     const allPlayers = [...A, ...B];
@@ -1312,6 +1269,8 @@ const OpenPlayDetailPage: React.FC = () => {
       // Check if this is dummy data
       if (isDummySession) {
         console.log('Dummy session detected, skipping API call for random pick');
+        // For dummy data, we'll still refresh to maintain consistency
+        await fetchGameMatches();
         setIsAddingPlayersToMatch(prev => {
           const newSet = new Set(prev);
           allPlayers.forEach(player => newSet.delete(player.id));
@@ -1336,15 +1295,11 @@ const OpenPlayDetailPage: React.FC = () => {
       await Promise.all([...teamAAssignments, ...teamBAssignments]);
       console.log(`All players assigned to teams in match ${matchId} (court ${courtId}) via random pick`);
       
-      // Update local state to reflect the team assignments immediately
-      console.log('Updating local state with team assignments:', { A, B });
-      
-      // Refetch matches to get updated data from server (but don't wait for it)
-      fetchGameMatches().catch(error => {
-        console.warn('Failed to refetch matches after random pick:', error);
-      });
+      // Refetch matches to get updated data from server
+      console.log('Refreshing data after team assignments...');
+      await fetchGameMatches();
+      console.log('Data refreshed successfully after team assignments');
     } catch (error) {
-      setCourtTeams((prev) => ({ ...prev, [courtId]: { A: [], B: [] } }));
       
       // Enhanced error handling for random pick
       let errorMessage = 'Failed to assign players to teams. Please try again.';
