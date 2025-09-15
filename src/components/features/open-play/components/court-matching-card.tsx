@@ -27,7 +27,17 @@ const CourtMatchmakingCard: React.FC<{
   hasActiveMatch?: boolean; // Add this prop
   onRemovePlayer?: (participant: Participant, team: 'A' | 'B') => void;
   showRemoveButtons?: boolean;
-}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, onCreateMatch, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, onRemovePlayer, showRemoveButtons = false }) => {
+  currentMatch?: {
+    id: string;
+    matchName: string;
+    status: string;
+    team1Name?: string;
+    team2Name?: string;
+    startTime?: string;
+    endTime?: string;
+    duration?: number;
+  };
+}> = ({ court, teamA, teamB, capacity, onStart, onEnd, onToggleOpen, onRandomPick, onCreateMatch, canStartGame, canEndGame, canCloseCourt, isAddingPlayers = false, isStartingGame = false, isEndingGame = false, hasMatch = false, hasActiveMatch = false, onRemovePlayer, showRemoveButtons = false, currentMatch }) => {
   const perTeam = Math.floor(capacity / 2);
   const totalLen = 54;
   const nvz = 7;
@@ -56,6 +66,50 @@ const CourtMatchmakingCard: React.FC<{
           {court.status}
         </Badge>
       </div>
+
+      {/* Match Information Display */}
+      {currentMatch && (hasMatch || hasActiveMatch) && (
+        <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                currentMatch.status === "IN-GAME" ? "bg-green-500 animate-pulse" :
+                currentMatch.status === "Completed" ? "bg-gray-400" :
+                "bg-blue-500"
+              }`}></div>
+              <span className="text-sm font-medium text-white">
+                Match: {currentMatch.matchName}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={
+                currentMatch.status === "IN-GAME" ? "default" :
+                currentMatch.status === "Completed" ? "secondary" :
+                "outline"
+              } className="text-xs">
+                {currentMatch.status}
+              </Badge>
+              <span className="text-xs text-white">
+                ID: {currentMatch.id}
+              </span>
+            </div>
+          </div>
+          {(currentMatch.team1Name || currentMatch.team2Name) && (
+            <div className="mt-1 text-xs text-white">
+              {currentMatch.team1Name && currentMatch.team2Name ? (
+                <span>{currentMatch.team1Name} vs {currentMatch.team2Name}</span>
+              ) : (
+                <span>{currentMatch.team1Name || currentMatch.team2Name}</span>
+              )}
+            </div>
+          )}
+          {currentMatch.startTime && (
+            <div className="mt-1 text-xs text-white">
+              Started: {new Date(currentMatch.startTime).toLocaleTimeString()}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="relative p-3 bg-[#B85537]">
         <div

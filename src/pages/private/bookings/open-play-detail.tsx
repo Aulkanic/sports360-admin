@@ -1,24 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 
+import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
 import { SAMPLE_SESSIONS } from "@/components/features/open-play/data/sample-sessions";
+import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
+import GameManagementTab from "@/components/features/open-play/GameManagementTab";
 import type {
   Court,
   Match,
   OpenPlaySession,
   Participant,
 } from "@/components/features/open-play/types";
-import { getStatusString, getSkillLevelAsLevel, getSkillLevel } from "@/components/features/open-play/types";
+import { getSkillLevel, getSkillLevelAsLevel, getStatusString } from "@/components/features/open-play/types";
 import { buildBalancedTeams } from "@/components/features/open-play/utils";
-import AddPlayerModal, { type PlayerFormData } from "@/components/features/open-play/AddPlayerModal";
-import { updateParticipantPlayerStatusByAdmin, mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId } from "@/services/open-play.service";
-import { createGameMatch, assignPlayerToTeam, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, endGameMatch, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
 import { useCourts } from "@/hooks";
-import { useOpenPlaySession } from "@/hooks/useOpenPlaySession";
 import { useCourtInfo } from "@/hooks/useCourtInfo";
-import DetailsParticipantsTab from "@/components/features/open-play/DetailsParticipantsTab";
-import GameManagementTab from "@/components/features/open-play/GameManagementTab";
+import { useOpenPlaySession } from "@/hooks/useOpenPlaySession";
+import { assignPlayerToTeam, createGameMatch, endGameMatch, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
+import { mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId, updateParticipantPlayerStatusByAdmin } from "@/services/open-play.service";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -128,10 +128,7 @@ const OpenPlayDetailPage: React.FC = () => {
   // Initialize court info hook
   const {
     courtInfoList,
-    getCourtInfo,
-    updateCourtTeams: updateCourtTeamsFromHook,
-    updateTeamNames: updateTeamNamesFromHook,
-    refreshCourtInfo
+
   } = useCourtInfo({
     courts,
     gameMatches,
@@ -145,7 +142,13 @@ const OpenPlayDetailPage: React.FC = () => {
   // Helper function to find matchId for a given courtId
   const findMatchIdByCourtId = (courtId: string): string | null => {
     console.log('🔍 Finding match for court:', courtId);
-    console.log('🔍 Available game matches:', gameMatches.map(m => ({ id: m.id, courtId: m.courtId, status: m.matchStatusId })));
+    console.log('🔍 Available game matches:', gameMatches.map(m => ({ 
+      id: m.id, 
+      courtId: m.courtId, 
+      status: m.matchStatusId,
+      participants: m.participants?.length || 0,
+      createdAt: m.createdAt
+    })));
     
     const courtMatches = gameMatches.filter(match => match.courtId === courtId);
     console.log('🔍 Court matches found:', courtMatches.length);
@@ -155,11 +158,35 @@ const OpenPlayDetailPage: React.FC = () => {
       return null;
     }
     
-    // If multiple matches, prioritize by:
+    // Filter to only active matches (not completed)
+    const activeMatches = courtMatches.filter(match => 
+      match.matchStatusId && match.matchStatusId <= 10
+    );
+    
+    console.log('🔍 Active matches (status <= 10):', activeMatches.length);
+    
+    if (activeMatches.length === 0) {
+      console.log('❌ No active matches found for court:', courtId);
+      return null;
+    }
+    
+    // If only one active match, return it
+    if (activeMatches.length === 1) {
+      const match = activeMatches[0];
+      console.log('✅ Only one active match found:', { 
+        id: match.id, 
+        courtId: match.courtId, 
+        status: match.matchStatusId,
+        participants: match.participants?.length || 0,
+        matchName: match.matchName
+      });
+      return match.id;
+    }
+    
+    // If multiple active matches, prioritize by:
     // 1. Matches with participants (active matches)
-    // 2. Matches with higher status ID (more recent/active)
-    // 3. Most recently created match
-    const prioritizedMatch = courtMatches.sort((a, b) => {
+    // 2. Most recently created match (newest first)
+    const prioritizedMatch = activeMatches.sort((a, b) => {
       // First priority: matches with participants
       const aHasParticipants = a.participants && a.participants.length > 0;
       const bHasParticipants = b.participants && b.participants.length > 0;
@@ -167,21 +194,17 @@ const OpenPlayDetailPage: React.FC = () => {
       if (aHasParticipants && !bHasParticipants) return -1;
       if (!aHasParticipants && bHasParticipants) return 1;
       
-      // Second priority: higher status ID (more active)
-      if (a.matchStatusId !== b.matchStatusId) {
-        return (b.matchStatusId || 0) - (a.matchStatusId || 0);
-      }
-      
-      // Third priority: most recently created
+      // Second priority: most recently created (newest first)
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     })[0];
     
-    console.log('✅ Selected match:', { 
+    console.log('✅ Selected prioritized match:', { 
       id: prioritizedMatch.id, 
       courtId: prioritizedMatch.courtId, 
       status: prioritizedMatch.matchStatusId,
       participants: prioritizedMatch.participants?.length || 0,
-      matchName: prioritizedMatch.matchName
+      matchName: prioritizedMatch.matchName,
+      createdAt: prioritizedMatch.createdAt
     });
     
     return prioritizedMatch.id;
@@ -1154,6 +1177,11 @@ const OpenPlayDetailPage: React.FC = () => {
       await updateGameMatch(matchId, updateData);
       console.log('✅ GAME MATCH UPDATED SUCCESSFULLY');
       
+      // Refresh data from backend to ensure UI is synchronized
+      console.log('🔄 Refreshing data from backend after game start...');
+      await fetchGameMatches();
+      console.log('✅ Data refreshed successfully after game start');
+      
       // Update local state
       setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "IN-GAME" } : c)));
       const t = courtTeams[courtId] ?? { A: [], B: [] };
@@ -1200,6 +1228,11 @@ const OpenPlayDetailPage: React.FC = () => {
       console.log('📡 CALLING endGameMatch API for match ID:', matchId);
       await endGameMatch(matchId);
       console.log('✅ GAME MATCH ENDED SUCCESSFULLY');
+      
+      // Refresh data from backend to ensure UI is synchronized
+      console.log('🔄 Refreshing data from backend after game end...');
+      await fetchGameMatches();
+      console.log('✅ Data refreshed successfully after game end');
       
       // Update local state
       setCourts((prev) => prev.map((c) => (c.id === courtId ? { ...c, status: "Open" } : c)));

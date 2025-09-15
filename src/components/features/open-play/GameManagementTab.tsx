@@ -533,6 +533,29 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                       const perTeam = Math.floor(court.capacity / 2);
                       const hasMatch = teams.A.length > 0 || teams.B.length > 0;
                       const hasActiveMatch = courtHasActiveMatch(court.id);
+                      
+                      // Get current match information for this court
+                      const currentMatch = gameMatches.find(match => 
+                        match.courtId === court.id && 
+                        match.matchStatusId && 
+                        match.matchStatusId <= 10
+                      );
+                      
+                      const currentMatchInfo = currentMatch ? {
+                        id: currentMatch.id,
+                        matchName: currentMatch.matchName,
+                        status: (() => {
+                          if (currentMatch.matchStatusId === 6) return 'Completed';
+                          if (currentMatch.matchStatusId === 5) return 'IN-GAME';
+                          if (currentMatch.matchStatusId && currentMatch.matchStatusId > 10) return 'Completed';
+                          return 'Scheduled';
+                        })(),
+                        team1Name: currentMatch.team1Name,
+                        team2Name: currentMatch.team2Name,
+                        startTime: currentMatch.startTime,
+                        endTime: currentMatch.endTime,
+                        duration: currentMatch.duration
+                      } : undefined;
                    
                       return (
                         <div key={idx}>
@@ -566,6 +589,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                        hasActiveMatch={hasActiveMatch}
                        onRemovePlayer={(participant, team) => handleRemovePlayer(participant, team, court.id)}
                        showRemoveButtons={hasMatch || hasActiveMatch}
+                       currentMatch={currentMatchInfo}
                      />
                             <div className="flex flex-col items-center gap-2 mt-2">
                               <p className="text-[11px] text-muted-foreground text-center">
