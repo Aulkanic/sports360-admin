@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
-import { dateFnsLocalizer, Views, type SlotInfo, type Event as RBCEvent } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { format, getDay, parse, startOfWeek } from 'date-fns';
+import { useCallback, useState } from 'react';
+import { dateFnsLocalizer, Views, type Event as RBCEvent, type SlotInfo } from 'react-big-calendar';
 import type { OpenPlaySessionUI } from './useOpenPlay';
 
 // Color coding for event types

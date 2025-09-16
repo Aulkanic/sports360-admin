@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
-import { useOpenPlay, type OpenPlaySessionUI } from './useOpenPlay';
+import { useOpenPlay } from './useOpenPlay';
 
 export const useOpenPlayStats = (originalApiData: any[] = []) => {
   const { stats } = useOpenPlay();

@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
-import { type DragEndEvent, type UniqueIdentifier } from "@dnd-kit/core";
 
 import { SAMPLE_SESSIONS } from "@/components/features/open-play/data/sample-sessions";
 import type {
@@ -10,12 +10,9 @@ import type {
   Participant,
 } from "@/components/features/open-play/types";
 import { getSkillLevel, getSkillLevelAsLevel, getStatusString } from "@/components/features/open-play/types";
-import { buildBalancedTeams } from "@/components/features/open-play/utils";
 import { useCourts } from "@/hooks";
 import { useCourtInfo } from "@/hooks/useCourtInfo";
 import { useOpenPlaySession } from "@/hooks/useOpenPlaySession";
-import { assignPlayerToTeam, endGameMatch, getGameMatchesByOccurrenceId, removePlayerFromMatch, updateGameMatch, updatePlayerStatus, type GameMatch } from "@/services/game-match.service";
-import { mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId, updateParticipantPlayerStatusByAdmin } from "@/services/open-play.service";
 
 type LocationState = {
   session?: OpenPlaySession;
