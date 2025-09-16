@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { CourtCanvas } from "@/components/features/open-play/components/court-canvas";
 import CourtMatchmakingCard from "@/components/features/open-play/components/court-matching-card";
-import CourtMatchCard from "@/components/features/open-play/components/CourtMatchCard";
+import CompletedMatchesSection from "@/components/features/open-play/components/CompletedMatchesSection";
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
 import AddCourtModal from "@/components/features/open-play/AddCourtModal";
@@ -615,56 +615,13 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                 )}
               </CourtCanvas>
 
-              {/* Matches */}
-              <div className="bg-white rounded-xl border shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-800">Court Matches</h2>
-                    <p className="text-sm text-gray-600">Live and completed match results</p>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-gray-600">
-                        {matches.filter(m => m.status === 'Scheduled' || m.status === 'IN-GAME').length} Active
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                      <span className="text-gray-600">
-                        {matches.filter(m => m.status === 'Completed').length} Completed
-                      </span>
-                    </div>
-                    <div className="text-gray-500">
-                      {matches.length} Total
-                    </div>
-                  </div>
-                </div>
-
-                {matches.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Trophy className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">No Matches Yet</h3>
-                    <p className="text-sm text-gray-500 max-w-md mx-auto">
-                      Create matches on the courts above to see active and completed game results here.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {matches.map((match) => (
-                      <CourtMatchCard
-                        key={match.id}
-                        match={match}
-                        scoreEntry={scoreEntry[match.id] ?? ""}
-                        onSetScoreEntry={(score) => onSetScoreEntry(match.id, score)}
-                        onSetResult={(winner) => onSetResult(match.id, winner)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Completed Matches */}
+              <CompletedMatchesSection
+                matches={matches}
+                scoreEntry={scoreEntry}
+                onSetScoreEntry={onSetScoreEntry}
+                onSetResult={onSetResult}
+              />
 
               {/* Winner Selection Dialog */}
               {showWinnerDialog && (

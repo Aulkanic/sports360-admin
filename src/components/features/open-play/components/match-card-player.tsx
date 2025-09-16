@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { X } from "lucide-react";
 import type { Participant } from "../types";

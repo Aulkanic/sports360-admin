@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
@@ -148,9 +149,6 @@ export const useOpenPlayDetail = () => {
       return match.id;
     }
     
-    // If multiple active matches, prioritize by:
-    // 1. Matches with participants (active matches)
-    // 2. Most recently created match (newest first)
     const prioritizedMatch = activeMatches.sort((a, b) => {
       // First priority: matches with participants
       const aHasParticipants = a.participants && a.participants.length > 0;
