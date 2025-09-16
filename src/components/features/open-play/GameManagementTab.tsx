@@ -1,20 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useMemo } from "react";
-import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import AddCourtModal from "@/components/features/open-play/AddCourtModal";
 import { CourtCanvas } from "@/components/features/open-play/components/court-canvas";
 import CourtMatchmakingCard from "@/components/features/open-play/components/court-matching-card";
 import CourtMatchCard from "@/components/features/open-play/components/CourtMatchCard";
 import DroppablePanel from "@/components/features/open-play/components/draggable-panel";
 import DraggablePill from "@/components/features/open-play/components/draggable-pill";
-import AddCourtModal from "@/components/features/open-play/AddCourtModal";
 import RemovePlayerDialog from "@/components/features/open-play/components/RemovePlayerDialog";
-import type { Court, Match, Participant, Level } from "@/components/features/open-play/types";
-import type { CourtInfo } from "@/hooks/useCourtInfo";
+import type { Court, Level, Match, Participant } from "@/components/features/open-play/types";
 import { getSkillLevel, getSkillLevelAsLevel } from "@/components/features/open-play/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trophy, Users, Filter, Search, X, Star } from "lucide-react";
 import { useCourts } from "@/hooks";
+import { useCourtFocus } from "@/hooks/useCourtFocus";
+import type { CourtInfo } from "@/hooks/useCourtInfo";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import { Filter, Search, Star, Trophy, Users, X } from "lucide-react";
+import React, { useMemo, useState } from "react";
 
 interface GameManagementTabProps {
   participants: Participant[];
@@ -98,6 +99,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   const [selectedCourt, setSelectedCourt] = useState<Court | undefined>(undefined);
   const [selectedSkillLevel, setSelectedSkillLevel] = useState<Level | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const {showAllCourts} = useCourtFocus()
   
   // Remove player dialog state
   const [showRemovePlayerDialog, setShowRemovePlayerDialog] = useState(false);
@@ -109,7 +111,7 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
   
   // Get all courts from the court management system
   const { items: allCourts, isLoading: isLoadingAllCourts } = useCourts();
-
+    
   // Handle remove player
   const handleRemovePlayer = (participant: Participant, team: 'A' | 'B', courtId: string) => {
     setPlayerToRemove({ participant, team, courtId });
@@ -467,6 +469,16 @@ const GameManagementTab: React.FC<GameManagementTabProps> = ({
                     >
                       <Trophy className="h-4 w-4 mr-2" />
                       Play Screen
+                    </Button>
+                    <Button value="outline" onClick={() => {
+                      const courtWithMatch = courts.find(court => {
+                          const hasMatch = courtTeams[court.id] && (courtTeams[court.id].A.length > 0 || courtTeams[court.id].B.length > 0);
+                          return hasMatch;
+                        });
+                      onViewMatchupScreen(courtWithMatch?.id || "")
+                      showAllCourts()
+                    }} >
+                      All Court
                     </Button>
                     </div>
                     {(courtInfoList.length > 0 ? courtInfoList : courts).length > 0 && (
