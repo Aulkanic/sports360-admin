@@ -117,7 +117,7 @@ const CourtMatchmakingCard: React.FC<{
         </div>
       )}
 
-      <div className="relative p-3 bg-[#B85537]">
+      <div className="relative p-3 z-4 bg-[#B85537]">
         <div
           className="relative"
           style={{
@@ -128,7 +128,7 @@ const CourtMatchmakingCard: React.FC<{
         >
           <div className="absolute inset-2 rounded-sm bg-white pointer-events-none" />
           <div
-            className="absolute left-2 right-2 bg-black z-4"
+            className="absolute left-2 right-2 bg-black z-0"
             style={{ top: `${midPct}%`, height: 2, transform: "translateY(-1px)" }}
           />
           <div
@@ -144,19 +144,35 @@ const CourtMatchmakingCard: React.FC<{
             style={{ top: `${lowerNVZ}%`, height: 2, transform: "translateY(-1px)" }}
           />
           <div
-            className="absolute bg-white z-8"
+            className="absolute bg-white z-0"
             style={{ left: "50%", width: 2, top: "8px", bottom: `${100 - upperNVZ}%`, transform: "translateX(-1px)" }}
           />
           <div
-            className="absolute bg-white z-8"
+            className="absolute bg-white z-0"
             style={{ left: "50%", width: 2, top: `${lowerNVZ}%`, bottom: "8px", transform: "translateX(-1px)" }}
           />
 
           <div
-            className="absolute grid place-items-center z-6 bg-black text-white px-8 py-2 text-sm font-extrabold"
+            className="absolute grid place-items-center z-0 bg-black text-white px-8 py-2 text-sm font-extrabold"
             style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
           >
             VS
+          </div>
+
+          {/* Team A Label */}
+          <div
+            className="absolute z-10 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded"
+            style={{ left: "50%", top: "20%", transform: "translate(-50%, -50%)" }}
+          >
+            TEAM A
+          </div>
+
+          {/* Team B Label */}
+          <div
+            className="absolute z-10 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded"
+            style={{ left: "50%", top: "80%", transform: "translate(-50%, -50%)" }}
+          >
+            TEAM B
           </div>
 
           {/* overlays keep same geometry, panels are now taller via min-h */}

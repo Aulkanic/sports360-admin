@@ -33,7 +33,6 @@ export interface UseCourtInfoProps {
 export interface UseCourtInfoReturn {
   courtInfoList: CourtInfo[];
   getCourtInfo: (courtId: string) => CourtInfo | undefined;
-  updateCourtStatus: (courtId: string, status: "Open" | "IN-GAME" | "Closed") => void;
   updateCourtTeams: (courtId: string, teams: { A: Participant[]; B: Participant[] }) => void;
   updateTeamNames: (courtId: string, names: { A: string; B: string }) => void;
   refreshCourtInfo: () => void;
@@ -135,6 +134,7 @@ export const useCourtInfo = ({
           playerStatus: { id: 1, description: 'IN-GAME' },
           isApproved: true,
           gamesPlayed: 0,
+          matchCount: 0,
           readyTime: new Date(participant.joinedAt).getTime(),
           skillScore: 2,
           paymentStatus: undefined,
@@ -253,11 +253,6 @@ export const useCourtInfo = ({
     return courtInfoList.find(court => court.id === courtId);
   }, [courtInfoList]);
 
-  // Update court status
-  const updateCourtStatus = useCallback((courtId: string, status: "Open" | "IN-GAME" | "Closed") => {
-    // This would typically update the backend and refresh the data
-    console.log(`Updating court ${courtId} status to ${status}`);
-  }, []);
 
   // Update court teams
   const updateCourtTeams = useCallback((courtId: string, teams: { A: Participant[]; B: Participant[] }) => {
@@ -278,7 +273,6 @@ export const useCourtInfo = ({
   return {
     courtInfoList,
     getCourtInfo,
-    updateCourtStatus,
     updateCourtTeams,
     updateTeamNames,
     refreshCourtInfo

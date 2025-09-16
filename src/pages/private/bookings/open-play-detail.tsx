@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useEffect } from "react";
 
 import AddPlayerModal from "@/components/features/open-play/AddPlayerModal";
@@ -186,10 +185,8 @@ const OpenPlayDetailPage: React.FC = () => {
   useEffect(() => {
     if (tab === "game") {
       const occurrenceId = currentOccurrenceId || occurrence?.id;
-      console.log('Game tab accessed, occurrenceId:', occurrenceId, 'hasFetchedForGameTab:', hasFetchedForGameTab.current);
       
       if (occurrenceId && !hasFetchedForGameTab.current && fetchGameMatchesRef.current) {
-        console.log('Fetching game matches for game tab...');
         hasFetchedForGameTab.current = true;
         fetchGameMatchesRef.current();
       }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOpenPlay, type OpenPlaySessionUI } from './useOpenPlay';
@@ -69,10 +71,6 @@ export const useOpenPlaySessions = () => {
       // Check if it's dummy data
       const sessionToDelete = sessions.find(s => s.id === sessionId);
       if (sessionToDelete?.isDummy) {
-        // For dummy data, just update state without API call
-        console.log('Deleting dummy session:', sessionId);
-        // Note: This would need to be handled by the parent component
-        // since we can't directly update the sessions state here
         setDeleteId(null);
         return;
       }
@@ -89,11 +87,8 @@ export const useOpenPlaySessions = () => {
   }, [sessions, deleteSession]);
 
   // Update participant status in local state
-  const updateParticipantStatus = useCallback((playerId: string, to: string) => {
+  const updateParticipantStatus = useCallback((_playerId: string, _to: string) => {
     if (!participantsSessionId) return;
-    // This would need to be handled by the parent component
-    // since we can't directly update the sessions state here
-    console.log('Update participant status:', { playerId, to, participantsSessionId });
   }, [participantsSessionId]);
 
   // Get selected session

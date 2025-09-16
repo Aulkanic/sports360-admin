@@ -1,134 +1,30 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import UsersTable from "./table";
-import type { UserRow } from "./table";
 import ResponsiveOverlay from "@/components/responsive-overlay";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Search, Users, UserCheck, UserX, UserPlus } from "lucide-react";
-import { getAllUsers, getUserStats, type User, type UserStats } from "@/services/user.service";
-
-type UserTypeFilter = "All" | "Admin" | "Player" | "Coach" | "Sports/hub" | "Guest";
-type StatusFilter = "All" | "REGULAR" | "GUEST";
+import { useUsers } from "@/hooks/useUsers";
+import { useUserFilters, type UserTypeFilter, type StatusFilter } from "@/hooks/useUserFilters";
+import { useUserModal } from "@/hooks/useUserModal";
 
 const UsersPage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<User | null>(null);
-  const [query, setQuery] = useState("");
-  const [userTypeFilter, setUserTypeFilter] = useState<UserTypeFilter>("All");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
-  const [refreshing, setRefreshing] = useState(false);
-
-  const isEditing = useMemo(() => Boolean(editing), [editing]);
-
-  // Fetch users and stats
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [usersResponse, statsData] = await Promise.all([
-        getAllUsers(),
-        getUserStats()
-      ]);
-      setUsers(usersResponse.data);
-      setStats(statsData);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      // toast.error('Failed to fetch users');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Refresh data
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
-  };
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Filter users based on search and filters
-  useEffect(() => {
-    let filtered = users;
-
-    // Filter by user type
-    if (userTypeFilter !== "All") {
-      filtered = filtered.filter(user => user.userTypeRef.description === userTypeFilter);
-    }
-
-    // Filter by status
-    if (statusFilter !== "All") {
-      filtered = filtered.filter(user => user.accountStatus.description === statusFilter);
-    }
-
-    // Filter by search query
-    if (query.trim()) {
-      const searchTerm = query.toLowerCase();
-      filtered = filtered.filter(user =>
-        user.userName.toLowerCase().includes(searchTerm) ||
-        user.email.toLowerCase().includes(searchTerm) ||
-        user.personalInfo.firstName.toLowerCase().includes(searchTerm) ||
-        user.personalInfo.lastName.toLowerCase().includes(searchTerm) ||
-        (user.personalInfo.contactNo && user.personalInfo.contactNo.includes(searchTerm))
-      );
-    }
-
-    setFilteredUsers(filtered);
-  }, [users, query, userTypeFilter, statusFilter]);
-
-  // Convert API users to table rows
-  const userRows: UserRow[] = useMemo(() => {
-    return filteredUsers.map(user => ({
-      id: user.id,
-      userName: user.userName,
-      email: user.email,
-      fullName: `${user.personalInfo.firstName} ${user.personalInfo.lastName}`,
-      userType: user.userTypeRef.description,
-      status: user.accountStatus.description,
-      contactNo: user.personalInfo.contactNo || 'N/A',
-      createdAt: user.createdAt,
-      lastLogin: user.updatedAt,
-      personalInfo: user.personalInfo
-    }));
-  }, [filteredUsers]);
-
-  const handleAddClick = () => {
-    setEditing(null);
-    setOpen(true);
-  };
-
-  const handleEditOpen = (user: User) => {
-    setEditing(user);
-    setOpen(true);
-  };
-
-  const handleUserAction = async (userId: string, action: 'activate' | 'deactivate' | 'delete') => {
-    try {
-      if (action === 'delete') {
-        // Handle delete logic here
-        console.log(`User ${userId} deleted successfully`);
-        await fetchData();
-      } else {
-        // Handle activate/deactivate logic here
-        console.log(`User ${userId} ${action}d successfully`);
-        await fetchData();
-      }
-    } catch (error) {
-      console.error(`Error ${action}ing user:`, error);
-    }
-  };
-
-  const userTypeOptions: UserTypeFilter[] = ["All", "Admin", "Player", "Coach", "Sports/hub", "Guest"];
-  const statusOptions: StatusFilter[] = ["All", "REGULAR", "GUEST"];
-
+  // Custom hooks for data management
+  const { users, loading, stats, refreshing, handleRefresh, handleUserAction } = useUsers();
+  const {
+    query,
+    setQuery,
+    userTypeFilter,
+    setUserTypeFilter,
+    statusFilter,
+    setStatusFilter,
+    userRows,
+    userTypeOptions,
+    statusOptions
+  } = useUserFilters(users);
+  const { open, setOpen, editing, isEditing, handleAddClick, handleEditOpen, handleClose } = useUserModal();
+ 
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -290,7 +186,7 @@ const UsersPage: React.FC = () => {
         }}
         onEditClick={(row) => {
           const user = users.find(u => u.id === row.id);
-          if (user) handleEditOpen(user as User);
+          if (user) handleEditOpen(user);
         }}
         onUserAction={handleUserAction}
       />
@@ -303,20 +199,20 @@ const UsersPage: React.FC = () => {
         ariaLabel={isEditing ? "User Details" : "Add User"}
         footer={
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Close
             </Button>
-            {isEditing && (
+            {isEditing && editing && (
               <>
                 <Button 
                   variant="outline" 
-                  onClick={() => handleUserAction(editing!.id, 'activate')}
+                  onClick={() => handleUserAction(editing.id, 'activate')}
                 >
                   Activate
                 </Button>
                 <Button 
                   variant="destructive" 
-                  onClick={() => handleUserAction(editing!.id, 'delete')}
+                  onClick={() => handleUserAction(editing.id, 'delete')}
                 >
                   Delete
                 </Button>

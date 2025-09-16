@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useRef } from "react";
 import type { Court, Match, Participant } from "@/components/features/open-play/types";
 import { getGameMatchesByOccurrenceId, type GameMatch } from "@/services/game-match.service";
@@ -33,7 +36,6 @@ export const useGameMatches = ({
   convertGameMatchToMatch,
   convertGameMatchToCourtTeams,
   availableCourts,
-  getUserAvatarUrl,
 }: UseGameMatchesProps) => {
   const hasFetchedGameMatches = useRef(false);
   const lastFetchTime = useRef(0);
@@ -43,19 +45,16 @@ export const useGameMatches = ({
     const occurrenceId = currentOccurrenceId || occurrence?.id;
     
     if (!occurrenceId) {
-      console.log('No occurrence ID available for fetching game matches');
       return;
     }
 
     if (isLoadingGameMatches) {
-      console.log('Already loading game matches, skipping duplicate call');
       return;
     }
 
     // Debounce: prevent calls within 500ms of each other
     const now = Date.now();
     if (now - lastFetchTime.current < 500) {
-      console.log('Debouncing fetchGameMatches call - too soon after last fetch');
       return;
     }
     lastFetchTime.current = now;
@@ -64,7 +63,6 @@ export const useGameMatches = ({
     try {
       // Check if this is dummy data
       if (isDummySession) {
-        console.log('Dummy session detected, skipping API call for game matches');
         // For dummy data, just set empty state
         setMatches([]);
         setCourtTeams({});
@@ -74,9 +72,7 @@ export const useGameMatches = ({
         return;
       }
 
-      console.log('Fetching game matches for occurrence:', occurrenceId);
       const fetchedGameMatches = await getGameMatchesByOccurrenceId(occurrenceId);
-      console.log('Fetched game matches:', fetchedGameMatches);
       
       // Store raw game matches for match detection
       setGameMatches(fetchedGameMatches);
@@ -91,27 +87,15 @@ export const useGameMatches = ({
       const activeGameMatches = fetchedGameMatches.filter(gameMatch => {
         const statusId = gameMatch.matchStatusId;
         const isActive = statusId && Number(statusId) <= 10;
-        console.log(`🔍 Filtering match ${gameMatch.id}:`, { matchStatusId: statusId, type: typeof statusId, isActive });
         return isActive;
       });
       
       const completedGameMatches = fetchedGameMatches.filter(gameMatch => {
         const statusId = gameMatch.matchStatusId;
         const isCompleted = statusId && Number(statusId) > 10;
-        console.log(`🔍 Filtering completed match ${gameMatch.id}:`, { matchStatusId: statusId, type: typeof statusId, isCompleted });
         return isCompleted;
       });
       
-      console.log('🔍 MATCH FILTERING DEBUG:', {
-        totalMatches: fetchedGameMatches.length,
-        activeMatches: activeGameMatches.length,
-        completedMatches: completedGameMatches.length,
-        activeMatchIds: activeGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId })),
-        completedMatchIds: completedGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId })),
-        allMatchStatusIds: fetchedGameMatches.map(m => ({ id: m.id, matchStatusId: m.matchStatusId, type: typeof m.matchStatusId }))
-      });
-      
-      console.log(`Filtered ${activeGameMatches.length} active matches and ${completedGameMatches.length} completed matches out of ${fetchedGameMatches.length} total matches`);
       
       // Group matches by courtId to handle multiple matches per court
       const matchesByCourt: Record<string, any[]> = {};
@@ -124,14 +108,6 @@ export const useGameMatches = ({
       
       // Process each court and its matches
       Object.entries(matchesByCourt).forEach(([courtId, courtMatches]) => {
-        console.log(`🏟️ Processing court ${courtId} with ${courtMatches.length} matches`);
-        console.log(`🏟️ Court ${courtId} match statuses:`, courtMatches.map(m => ({
-          id: m.id,
-          matchStatusId: m.matchStatusId,
-          matchStatus: m.matchStatus,
-          gameStatus: m.gameStatus,
-          participants: m.participants?.length || 0
-        })));
         
         // Find the match with the most participants (or the first one if all are empty)
         const matchWithParticipants = courtMatches.find(match => match.participants && match.participants.length > 0) || courtMatches[0];
@@ -154,11 +130,6 @@ export const useGameMatches = ({
           participants: allParticipants
         };
         
-        console.log(`Processing court ${courtId} with ${allParticipants.length} total participants:`, allParticipants.map(p => ({
-          id: p.participantId,
-          name: p.user?.personalInfo ? `${p.user.personalInfo.firstName} ${p.user.personalInfo.lastName}` : p.user?.userName,
-          teamNumber: p.teamNumber
-        })));
         
         const courtTeams = convertGameMatchToCourtTeams(combinedMatch);
         newCourtTeams[courtId] = courtTeams;
@@ -182,13 +153,6 @@ export const useGameMatches = ({
                             m.matchStatus?.toLowerCase() === 'ingame' || 
                             m.gameStatus?.toLowerCase() === 'ingame' ||
                             m.gameStatus?.toLowerCase() === 'in_progress';
-              if (inGame) {
-                console.log(`Court ${courtId} is IN-GAME based on match:`, {
-                  id: m.id,
-                  matchStatus: m.matchStatus,
-                  gameStatus: m.gameStatus
-                });
-              }
               return inGame;
             });
             
@@ -201,31 +165,19 @@ export const useGameMatches = ({
                               m.matchStatus?.toLowerCase() === 'ended' || 
                               m.gameStatus?.toLowerCase() === 'ended' ||
                               m.gameStatus?.toLowerCase() === 'completed';
-              if (completed) {
-                console.log(`Court ${courtId} is Closed based on match:`, {
-                  id: m.id,
-                  matchStatus: m.matchStatus,
-                  gameStatus: m.gameStatus
-                });
-              }
               return completed;
             });
             
             if (isCompleted) return 'Closed';
             
-            console.log(`Court ${courtId} is Open - no active or completed matches found`);
             return 'Open';
           })()
         };
         newCourts.push(court);
-        
-        console.log(`Court ${courtId} final teams:`, courtTeams);
       });
       
       // Process completed matches and add them to convertedMatches
-      console.log(`Processing ${completedGameMatches.length} completed matches`);
       completedGameMatches.forEach(gameMatch => {
-        console.log(`Processing completed match ${gameMatch.id} for court ${gameMatch.courtId}`);
         const completedMatch = convertGameMatchToMatch(gameMatch);
         convertedMatches.push(completedMatch);
       });
@@ -239,16 +191,11 @@ export const useGameMatches = ({
           const existingTeams = merged[courtId];
           
           if (newTeams && (newTeams.A.length > 0 || newTeams.B.length > 0)) {
-            console.log(`Updating court ${courtId} teams with server data:`, newTeams);
-            console.log(`Previous teams for court ${courtId}:`, existingTeams);
-            
             // Merge teams: use server data if available, otherwise keep existing
             merged[courtId] = {
               A: newTeams.A.length > 0 ? newTeams.A : (existingTeams?.A || []),
               B: newTeams.B.length > 0 ? newTeams.B : (existingTeams?.B || [])
             };
-            
-            console.log(`Final merged teams for court ${courtId}:`, merged[courtId]);
           }
         });
         return merged;
@@ -282,17 +229,7 @@ export const useGameMatches = ({
         return mergedCourts;
       });
       
-      // Debug: Log the updated court teams
-      console.log('Updated court teams:', newCourtTeams);
-      console.log('Players in matches:', Object.values(newCourtTeams).flatMap(t => [...t.A, ...t.B]).map(p => p.id));
-      
-      // Show info about empty matches
-      const emptyMatches = fetchedGameMatches.filter(match => !match.participants || match.participants.length === 0);
-      if (emptyMatches.length > 0) {
-        console.log(`Found ${emptyMatches.length} matches with no participants yet`);
-      }
     } catch (error) {
-      console.error('Error fetching game matches:', error);
       // Don't show alert for this as it's not critical for basic functionality
     } finally {
       setIsLoadingGameMatches(false);

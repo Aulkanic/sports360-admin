@@ -23,6 +23,7 @@ export type Participant = {
   waitlistReason?: string;
   // Game history for matchmaking
   gamesPlayed?: number;
+  matchCount?: number;
   readyTime?: number;
   skillScore?: number;
   skill?: any;

@@ -22,7 +22,9 @@ export interface UserRow {
     birthday: string | null;
     country: string | null;
     contactNo: string | null;
-    photoUrl: string | null;
+    upload: {
+      filePath: string | null;
+    };
   };
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback } from 'react';
 import { useOpenPlay } from './useOpenPlay';
 import { useCreateSessionForm } from './useCreateSessionForm';
@@ -188,7 +189,7 @@ export const useOpenPlayForm = (sportshubId?: string) => {
       // Create session data for API
       const sessionData = {
         sessionTitle: form.title.trim(),
-        eventType: form.eventType === 'one-time' ? 'single' : form.eventType === 'recurring' ? 'recurring' : 'single',
+        eventType: (form.eventType === 'recurring' ? 'recurring' : 'single') as 'recurring' | 'single',
         date: form.date,
         startTime: form.startTime,
         endTime: form.endTime,
@@ -206,12 +207,16 @@ export const useOpenPlayForm = (sportshubId?: string) => {
         } : undefined
       };
 
-      // Create session via API
-      await createSession(sessionData);
-      
-      // Show success message
-      alert('Session created successfully!');
-      
+      // Create session via API and handle promise
+      try {
+        await createSession(sessionData);
+        // Show success message
+        alert('Session created successfully!');
+      } catch (error) {
+        // Handle error if needed (could log or show a message)
+        console.error('Failed to create session:', error);
+        throw error; // rethrow to be caught by outer catch
+      }
       // Close form and reset
       closeForm();
       setCreateError(null); // Clear any errors
@@ -221,13 +226,11 @@ export const useOpenPlayForm = (sportshubId?: string) => {
       
       // Check if it's a structured API error (thrown from service)
       if (error && typeof error === 'object' && error.success === false) {
-        console.log('Setting structured error:', error);
         setCreateError(error as ApiError);
         closeForm(); // Close the form modal
         setErrorModalOpen(true); // Open the error modal
       } else {
         // Fallback for unexpected errors
-        console.log('Setting fallback error for:', error);
         setCreateError({
           success: false,
           message: 'Failed to create session',

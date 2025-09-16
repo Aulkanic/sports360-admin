@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ==============================
 // TYPES
@@ -22,6 +23,7 @@ export interface OpenPlayParticipant {
   notes?: string;
   // Additional fields for compatibility
   gamesPlayed?: number;
+  matchCount?: number;
   skillScore?: number;
   readyTime?: number;
   // API structure
@@ -727,9 +729,6 @@ export const convertOccurrenceFromAPI = (apiOccurrence: any): OpenPlayOccurrence
  * Convert backend participant data to frontend format
  */
 export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticipant => {
-  console.log('Converting participant from API:', apiParticipant);
-  
-  // Map skill level from API
   const mapSkillLevel = (skillLevel: string): Level => {
     switch (skillLevel?.toLowerCase()) {
       case 'beginner':
@@ -825,7 +824,6 @@ export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticip
   const participantName = apiParticipant.user?.personalInfo ? 
     `${apiParticipant.user.personalInfo.firstName} ${apiParticipant.user.personalInfo.lastName}`.trim() :
     apiParticipant.user?.userName || 'Unknown Player';
-
   return {
     id: apiParticipant.id.toString(),
     name: participantName,
@@ -844,6 +842,7 @@ export const convertParticipantFromAPI = (apiParticipant: any): OpenPlayParticip
     notes: apiParticipant.notes,
     // Add additional fields for compatibility
     gamesPlayed: apiParticipant.gamesPlayed || 0,
+    matchCount: apiParticipant.matchCount || 0,
     skillScore: apiParticipant.skillScore || 2,
     readyTime: apiParticipant.readyTime,
     // API structure

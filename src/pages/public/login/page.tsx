@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { urls } from "@/routes";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,6 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-      console.log("Login successful");
       navigate(urls.superadmindashboard);
     } catch (error: any) {
       console.error("Login failed:", error);

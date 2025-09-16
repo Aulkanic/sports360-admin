@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // SportsHubRegisterPage.tsx
 // Responsive stepper + Leaflet map + reverse geocoding (Nominatim)
 
@@ -485,8 +486,6 @@ const SportsHubRegisterPage: React.FC = () => {
         ownerId: form.ownerId || undefined,
         sportsId: form.sportsId || undefined
       };
-
-      console.log("Submitting registration data:", registrationData);
       
       const result = await registerSportsHub(registrationData);
       

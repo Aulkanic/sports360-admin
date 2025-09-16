@@ -256,12 +256,12 @@ const DetailsParticipantsTab: React.FC<DetailsParticipantsTabProps> = ({
                                   )}
                                 </span>
                               </div>
-                              {participant.gamesPlayed !== undefined && (
+                              {participant.matchCount !== undefined && (
                                 <Badge
                                   variant="outline"
                                   className="text-xs text-blue-700 border-blue-300 bg-blue-50"
                                 >
-                                  {participant.gamesPlayed} games
+                                  {participant.matchCount} games
                                 </Badge>
                               )}
                             </div>

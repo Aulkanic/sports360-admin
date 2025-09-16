@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback } from "react";
 import { mapParticipantStatusToPlayerStatusId, mapStatusToPlayerStatusId, updateParticipantPlayerStatusByAdmin } from "@/services/open-play.service";
 
@@ -104,8 +106,6 @@ export const useParticipantManagement = ({
       
       // Refresh session data to get updated participant information from server
       await refreshSessionData();
-      
-      console.log(`Successfully approved participant ${participantId} as ${targetStatus}`);
     } catch (error) {
       console.error('Error approving waitlist participant:', error);
       alert('Failed to approve participant. Please try again.');
@@ -125,14 +125,10 @@ export const useParticipantManagement = ({
         alert('No occurrence ID available. Please refresh the page and try again.');
         return;
       }
-      
-      // Call the API to update the player status
+    
       await updateParticipantPlayerStatusByAdmin(participantId, occurrenceId, playerStatusId);
-      
-      // Refresh session data to get updated participant information from server
       await refreshSessionData();
-      
-      console.log(`Successfully rejected participant ${participantId}`);
+    
     } catch (error) {
       console.error('Error rejecting waitlist participant:', error);
       alert('Failed to reject participant. Please try again.');
@@ -140,17 +136,11 @@ export const useParticipantManagement = ({
   }, [currentOccurrenceId, occurrence, refreshSessionData]);
 
   // Handle adding new player
-  const handleAddPlayer = useCallback(async (playerData: any) => {
+  const handleAddPlayer = useCallback(async (_playerData: any) => {
     setIsAddingPlayer(true);
     try {
       // Close modal first
       setAddPlayerOpen(false);
-      
-      // Show success message (you could add a toast notification here)
-      console.log('Player added successfully:', playerData);
-      
-      // Show success message
-      console.log('✅ Player added successfully');
     } catch (error) {
       console.error('Error adding player:', error);
     } finally {
@@ -160,8 +150,6 @@ export const useParticipantManagement = ({
 
   // Handle successful player addition
   const handlePlayerAddSuccess = useCallback(async () => {
-    console.log('Player added successfully via API');
-    // Add a small delay to ensure the API has processed the new participant
     setTimeout(async () => {
       await refreshSessionData();
     }, 1000);

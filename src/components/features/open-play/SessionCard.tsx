@@ -110,7 +110,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
   onOpenParticipants,
 }) => {
   const navigate = useNavigate();
-  console.log(s)
+
   const maxParticipants = s.maxParticipants ?? 10;
   const participantCount = s.participants?.length ?? 0;
   const isActive = s.isActive ?? participantCount > 0;

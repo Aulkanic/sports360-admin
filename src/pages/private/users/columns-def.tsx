@@ -1,9 +1,6 @@
-import type { ColDef, ICellRendererParams } from "ag-grid-community";
-import { Button } from "@/components/ui/button";
-import type { UserRow } from "./table";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Edit, UserCheck, UserX, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { ColDef, ICellRendererParams } from "ag-grid-community";
+import { Edit, MoreHorizontal, Trash2, UserCheck, UserX } from "lucide-react";
+import type { UserRow } from "./table";
 
 const userTypeVariant = (userType: string) => {
   switch (userType) {
@@ -23,17 +23,6 @@ const userTypeVariant = (userType: string) => {
   }
 };
 
-const statusVariant = (status: string) => {
-  switch (status) {
-    case "REGULAR": return "default";
-    case "GUEST": return "secondary";
-    default: return "muted";
-  }
-};
-
-const getInitials = (firstName: string, lastName: string) => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-};
 
 export const baseUsersColumnDefs: ColDef[] = [
   {
@@ -48,10 +37,7 @@ export const baseUsersColumnDefs: ColDef[] = [
       return (
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.personalInfo.photoUrl || undefined} />
-            <AvatarFallback className="text-xs">
-              {getInitials(user.personalInfo.firstName, user.personalInfo.lastName)}
-            </AvatarFallback>
+            <AvatarImage src={user.personalInfo.upload?.filePath || '/default_avatar.png'} />
           </Avatar>
           <div className="flex flex-col">
             <span className="font-medium text-sm">{user.userName}</span>
@@ -80,18 +66,6 @@ export const baseUsersColumnDefs: ColDef[] = [
     minWidth: 120,
     cellRenderer: (params: ICellRendererParams<UserRow>) => (
       <Badge variant={userTypeVariant(params.value)} className="text-xs">
-        {params.value}
-      </Badge>
-    ),
-  },
-  {
-    field: "status",
-    headerName: "Status",
-    sortable: true,
-    filter: true,
-    minWidth: 100,
-    cellRenderer: (params: ICellRendererParams<UserRow>) => (
-      <Badge variant={statusVariant(params.value)} className="text-xs">
         {params.value}
       </Badge>
     ),

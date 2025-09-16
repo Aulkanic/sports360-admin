@@ -31,6 +31,7 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
   const style = {
     opacity: isDragging ? 0.65 : (isLoading ? 0.7 : 1),
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    zIndex: isDragging ? 9999 : 50, // Higher z-index when dragging
   } as React.CSSProperties;
   return (
     <div
@@ -38,7 +39,7 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
       style={style}
       {...(isLoading ? {} : listeners)}
       {...(isLoading ? {} : attributes)}
-      className={`rounded-lg border relative bg-card p-3 flex items-center gap-3 hover:shadow-sm transition ${
+      className={`rounded-lg z-50 border relative bg-card p-3 flex items-center gap-3 hover:shadow-sm transition ${
         isLoading ? 'cursor-not-allowed' : ''
       }`}
     >
@@ -91,7 +92,7 @@ const DraggablePill: React.FC<DraggablePillProps> = ({
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Trophy className="h-3 w-3" />
-              <span>{participant.gamesPlayed ?? 0} games</span>
+              <span>{participant.matchCount ?? 0} games</span>
             </div>
             {participant.readyTime && (
               <div className="flex items-center gap-1">
