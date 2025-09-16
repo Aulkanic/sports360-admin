@@ -56,7 +56,7 @@ interface FocusedActiveMatchCardProps {
 }
 
 
-const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }) => {
+const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court, onFocus }) => {
   const tlAbstractRef = useRef<HTMLImageElement>(null);
   const trAbstractRef = useRef<HTMLImageElement>(null);
   const teamUpRef = useRef<HTMLImageElement>(null);
@@ -155,7 +155,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
         duration: 0.6,
         ease: 'power2.out'
       }, '-=0.2');
-
+      onFocus(court.id)
   }, []);
 
   return (
@@ -190,18 +190,7 @@ const FocusedActiveMatchCard: React.FC<FocusedActiveMatchCardProps> = ({ court }
             <h2 className="text-3xl font-bold text-white mb-2">
               {court.name}
             </h2>
-            <div className="flex items-center justify-center gap-4 text-lg">
-              <span className={`px-4 py-2 rounded-full font-semibold ${
-                court.status === 'Open' ? 'bg-green-500 text-white' :
-                court.status === 'In-Game' ? 'bg-blue-500 text-white' :
-                'bg-red-500 text-white'
-              }`}>
-                {court.status}
-              </span>
-              <span className="text-gray-300">
-                Capacity: {court.capacity}
-              </span>
-            </div>
+            
             {court.startTime && court.endTime && (
               <div className="mt-2 text-gray-300">
                 <span className="text-sm">

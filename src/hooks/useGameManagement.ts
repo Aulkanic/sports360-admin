@@ -791,13 +791,12 @@ export const useGameManagement = ({
     const occurrenceId = currentOccurrenceId || occurrence?.id;
 
     const existingWindow = window.open('', 'matchupWindow');
-    if (existingWindow && !existingWindow.closed) {
+    if (existingWindow && !existingWindow.closed) { 
       existingWindow.location.href = `/matchup-multi/${matchId}?occurrenceId=${occurrenceId}`;
       existingWindow.focus();
       existingWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);
     } else {
       const newWindow = window.open(`/matchup-multi/${matchId}?occurrenceId=${occurrenceId}`, 'matchupWindow', 'width=1920,height=1080');
-      
       if (newWindow) {
         newWindow.addEventListener('load', () => {
           newWindow.postMessage({ type: 'MATCHUP_DATA', data: matchupData }, window.location.origin);

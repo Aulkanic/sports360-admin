@@ -81,6 +81,7 @@ const MatchupScreenMulti: React.FC = () => {
     );
   }
 
+  
   return (
     <>
       <SplashVideo
@@ -100,6 +101,7 @@ const MatchupScreenMulti: React.FC = () => {
         <div className="inset-0 h-screen w-screen overflow-hidden relative z-50" style={{ margin: 0, padding: 0 }}>
           {/* Focused Court Content - Takes full screen */}
           <div className="w-full h-full">
+            
             <FocusedCourtView
               court={matchup.courts.find(c => c.id === focusedCourtId)!}
               focusedCourtId={focusedCourtId}
