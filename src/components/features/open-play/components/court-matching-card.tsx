@@ -159,27 +159,27 @@ const CourtMatchmakingCard: React.FC<{
             VS
           </div>
 
-          {/* Team A Label */}
+          {/* Team 1 Label */}
           <div
             className="absolute z-10 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded"
             style={{ left: "50%", top: "20%", transform: "translate(-50%, -50%)" }}
           >
-            TEAM A
+            {currentMatch?.team1Name || "TEAM A"}
           </div>
 
-          {/* Team B Label */}
+          {/* Team 2 Label */}
           <div
             className="absolute z-10 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded"
             style={{ left: "50%", top: "80%", transform: "translate(-50%, -50%)" }}
           >
-            TEAM B
+            {currentMatch?.team2Name || "TEAM B"}
           </div>
 
           {/* overlays keep same geometry, panels are now taller via min-h */}
           <div className="absolute" style={{ left: "12px", right: "12px", top: "12px", bottom: `${100 - upperNVZ + 4}%` }}>
             <MatchCardPanel
               id={(hasMatch || hasActiveMatch) ? `${court.id}:A` : `disabled:${court.id}:A`}
-              title={`Team A (${teamA.length}/${perTeam})`}
+              title={`${currentMatch?.team1Name || "Team A"} (${teamA.length}/${perTeam})`}
               className={`h-full backdrop-blur-[1px] border-white/40 ${!(hasMatch || hasActiveMatch) ? 'opacity-50 pointer-events-none' : ''}`}
               disabled={!(hasMatch || hasActiveMatch)}
             >
@@ -198,7 +198,7 @@ const CourtMatchmakingCard: React.FC<{
           <div className="absolute" style={{ left: "12px", right: "12px", top: `${lowerNVZ + 4}%`, bottom: "12px" }}>
             <MatchCardPanel
               id={(hasMatch || hasActiveMatch) ? `${court.id}:B` : `disabled:${court.id}:B`}
-              title={`Team B (${teamB.length}/${perTeam})`}
+              title={`${currentMatch?.team2Name || "Team B"} (${teamB.length}/${perTeam})`}
               className={`h-full backdrop-blur-[1px] border-white/40 ${!(hasMatch || hasActiveMatch) ? 'opacity-50 pointer-events-none' : ''}`}
               disabled={!(hasMatch || hasActiveMatch)}
             >
